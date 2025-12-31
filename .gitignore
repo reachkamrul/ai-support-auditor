@@ -1,0 +1,51 @@
+# Logs and temp files
+*.log
+debug.log
+error_log
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# WordPress specific
+wp-config.php
+.htaccess
+
+# Backup files
+*.sql
+*.bak
+backup/
+backups/
+
+# Node modules (if you add any front-end tooling later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Composer (if you add PHP dependencies later)
+/vendor/
+
+# Environment files
+.env
+.env.local
+
+# Uploaded files/media (if plugin stores any)
+uploads/
+
+# Database dumps
+*.sql.gz
+*.sql.zip
+
+credentials.txt

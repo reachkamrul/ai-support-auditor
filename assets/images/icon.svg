@@ -1,0 +1,11 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Blue rounded rectangle (bottom layer, tilted left) -->
+  <rect x="1" y="4" width="8" height="12" rx="2" fill="#3b82f6" transform="rotate(-12 5 10)"/>
+  
+  <!-- Red rounded rectangle (top layer, tilted right) -->
+  <rect x="7" y="3" width="8" height="12" rx="2" fill="#ef4444" transform="rotate(12 11 9)"/>
+  
+  <!-- Overlapping area creates darker purple-blue blend -->
+  <rect x="5" y="5" width="6" height="10" rx="1.5" fill="#6366f1" opacity="0.9"/>
+</svg>
+

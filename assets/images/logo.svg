@@ -1,0 +1,18 @@
+<svg width="240" height="48" viewBox="0 0 240 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Graphic: Overlapping rounded rectangles (left side) -->
+  <g transform="translate(0, 10)">
+    <!-- Blue rounded rectangle (bottom-right, tilted left) -->
+    <rect x="0" y="4" width="24" height="24" rx="5" fill="#3b82f6" transform="rotate(-10 12 16)" opacity="0.85"/>
+    
+    <!-- Red rounded rectangle (top-left, tilted right) -->
+    <rect x="6" y="0" width="24" height="24" rx="5" fill="#ef4444" transform="rotate(10 18 12)" opacity="0.85"/>
+    
+    <!-- Overlapping area creates darker purple-blue blend -->
+    <rect x="4" y="4" width="18" height="18" rx="4" fill="#6366f1" opacity="0.95"/>
+  </g>
+  
+  <!-- Text: Support (thin) Ops (bold) -->
+  <text x="36" y="34" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="24" text-anchor="start" letter-spacing="0.3px">
+    <tspan font-weight="300" fill="#4b5563">Support</tspan><tspan font-weight="700" fill="#111827"> Ops</tspan>
+  </text>
+</svg>
