@@ -49,3 +49,11 @@ uploads/
 *.sql.zip
 
 credentials.txt
+CLAUDE.md
+deploy.sh
+
+# Playwright
+test-results/
+playwright-report/
+tests/browser/screenshots/
+/tests

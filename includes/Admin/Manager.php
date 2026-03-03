@@ -100,6 +100,7 @@ class Manager {
         echo '<div class="wrap ops-wrapper">';
         echo '<div class="ops-header">';
         echo '<img src="' . esc_url($logo_url) . '" alt="Support Ops & AI Auditor Logo" class="ops-logo">';
+        echo '<span style="display:inline-block;background:#0ea5e9;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;">v' . SUPPORT_OPS_VERSION . ' (deployed: 2 Mar 2026)</span>';
         $this->render_tabs($tab);
         echo '</div>';
         echo '<hr class="wp-header-end">';

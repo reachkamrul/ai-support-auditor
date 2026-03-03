@@ -39,6 +39,7 @@ class Manager {
             ticket_id varchar(50) NOT NULL,
             status varchar(20) DEFAULT 'pending' NOT NULL,
             overall_score int(3) DEFAULT 0,
+            overall_sentiment varchar(20) DEFAULT NULL,
             error_message text DEFAULT NULL,
             raw_json longtext DEFAULT NULL,
             audit_response longtext DEFAULT NULL,
@@ -198,6 +199,9 @@ class Manager {
         
         // Auto-migrate ais_agents table
         $this->migrate_agents_table();
+
+        // Auto-migrate ais_agent_evaluations table
+        $this->migrate_evaluations_table();
         
         // Check version and run setup if needed
         $current_version = get_option('ai_audit_db_version', '22.1');
@@ -235,6 +239,12 @@ class Manager {
             $wpdb->query("ALTER TABLE $table ADD INDEX status (status)");
         }
         
+        // Add overall_sentiment column
+        $col3 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'overall_sentiment'");
+        if (empty($col3)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN overall_sentiment varchar(20) DEFAULT NULL AFTER overall_score");
+        }
+
         // Remove UNIQUE constraint on ticket_id
         $unique_indexes = $wpdb->get_results("SHOW INDEX FROM $table WHERE Key_name = 'ticket_id' AND Non_unique = 0");
         if (!empty($unique_indexes)) {
@@ -273,6 +283,30 @@ class Manager {
         }
     }
     
+    /**
+     * Migrate evaluations table — drop dead columns
+     */
+    private function migrate_evaluations_table() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_agent_evaluations';
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+            return;
+        }
+
+        // Drop dead overall_score column (real score is overall_agent_score)
+        $col = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'overall_score'");
+        if (!empty($col)) {
+            $wpdb->query("ALTER TABLE $table DROP COLUMN overall_score");
+        }
+
+        // Drop dead evaluation_data column
+        $col2 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'evaluation_data'");
+        if (!empty($col2)) {
+            $wpdb->query("ALTER TABLE $table DROP COLUMN evaluation_data");
+        }
+    }
+
     /**
      * Seed shift definitions
      */

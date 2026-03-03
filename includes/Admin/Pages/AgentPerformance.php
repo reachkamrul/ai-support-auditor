@@ -440,12 +440,9 @@ class AgentPerformance {
                                     </div>
                                 </td>
                                 <td class="score-cell">
-                                    <?php 
+                                    <?php
                                     $score = intval($agent->avg_overall_score);
-                                    $score_class = 'score-negative';
-                                    if ($score >= 80) $score_class = 'score-good';
-                                    elseif ($score >= 60) $score_class = 'score-ok';
-                                    elseif ($score >= 40) $score_class = 'score-warning';
+                                    $score_class = Dashboard::score_class($score);
                                     ?>
                                     <span class="col-score <?php echo $score_class; ?>"><?php echo $score; ?></span>
                                 </td>
@@ -1355,12 +1352,9 @@ class AgentPerformance {
                         <td><strong style="color:var(--color-text-primary);">#<?php echo esc_html($ticket->ticket_id); ?></strong></td>
                         <td style="color:var(--color-text-secondary);"><?php echo date('Y-m-d', strtotime($ticket->created_at)); ?></td>
                         <td class="score-cell">
-                        <?php 
+                        <?php
                         $score = intval($ticket->overall_agent_score);
-                        $score_class = 'score-negative';
-                        if ($score >= 80) $score_class = 'score-good';
-                        elseif ($score >= 60) $score_class = 'score-ok';
-                        elseif ($score >= 40) $score_class = 'score-warning';
+                        $score_class = Dashboard::score_class($score);
                         ?>
                         <span class="col-score <?php echo $score_class; ?>"><?php echo $score; ?></span>
                     </td>

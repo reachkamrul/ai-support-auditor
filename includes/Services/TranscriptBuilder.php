@@ -182,12 +182,7 @@ class TranscriptBuilder {
             $is_agent = true;
         }
         
-        // Rule C: Explicit hardcoded catch
-        if ($person_email === 'reachkamrul@gmail.com') {
-            $is_agent = true;
-        }
-        
-        // Rule D: Type check
+        // Rule C: Type check
         if ($response->person_type === 'agent' || $response->person_type === 'user') {
             $is_agent = true;
         }

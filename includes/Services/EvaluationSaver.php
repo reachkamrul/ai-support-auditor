@@ -40,15 +40,22 @@ class EvaluationSaver {
             // Auto-create agent if not exists
             $this->ensure_agent_exists($agent_email, $eval);
             
+            // Clamp scores to valid ranges
+            $timing = max(-200, min(100, intval($eval['timing_score'] ?? 0)));
+            $resolution = max(-200, min(100, intval($eval['resolution_score'] ?? 0)));
+            $communication = max(-200, min(100, intval($eval['communication_score'] ?? 0)));
+            $agent_score = max(-200, min(100, intval($eval['overall_agent_score'] ?? 0)));
+            $contribution_pct = max(0, min(100, intval($eval['contribution_percentage'] ?? 0)));
+
             $wpdb->insert($evaluations_table, [
                 'ticket_id' => $ticket_id,
                 'agent_email' => $agent_email,
                 'agent_name' => sanitize_text_field($eval['agent_name'] ?? ''),
-                'timing_score' => intval($eval['timing_score'] ?? 0),
-                'resolution_score' => intval($eval['resolution_score'] ?? 0),
-                'communication_score' => intval($eval['communication_score'] ?? 0),
-                'overall_agent_score' => intval($eval['overall_agent_score'] ?? 0),
-                'contribution_percentage' => intval($eval['contribution_percentage'] ?? 0),
+                'timing_score' => $timing,
+                'resolution_score' => $resolution,
+                'communication_score' => $communication,
+                'overall_agent_score' => $agent_score,
+                'contribution_percentage' => $contribution_pct,
                 'reply_count' => intval($eval['reply_count'] ?? 0),
                 'reasoning' => sanitize_text_field($eval['reasoning'] ?? ''),
                 'shift_compliance' => !empty($eval['shift_compliance']) 

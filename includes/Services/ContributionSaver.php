@@ -54,32 +54,16 @@ class ContributionSaver {
     
     private function save_evaluation_contribution($ticket_id, $eval) {
         global $wpdb;
-        
+
         $agent_email = sanitize_email($eval['agent_email'] ?? '');
-        $agent_name = sanitize_text_field($eval['agent_name'] ?? '');
-        
-        $detailed_data = [
-            'timing_score' => intval($eval['timing_score'] ?? 0),
-            'resolution_score' => intval($eval['resolution_score'] ?? 0),
-            'communication_score' => intval($eval['communication_score'] ?? 0),
-            'overall_agent_score' => intval($eval['overall_agent_score'] ?? 0),
-            'shift_compliance' => $eval['shift_compliance'] ?? [],
-            'response_breakdown' => $eval['response_breakdown'] ?? [],
-            'key_achievements' => $eval['key_achievements'] ?? [],
-            'areas_for_improvement' => $eval['areas_for_improvement'] ?? []
-        ];
-        
+
         $wpdb->insert($wpdb->prefix . 'ais_agent_contributions', [
             'ticket_id' => $ticket_id,
             'agent_email' => $agent_email,
             'contribution_percentage' => intval($eval['contribution_percentage'] ?? 0),
             'reply_count' => intval($eval['reply_count'] ?? 0),
             'quality_score' => intval($eval['overall_agent_score'] ?? 0),
-            'reasoning' => json_encode([
-                'agent_name' => $agent_name,
-                'reasoning' => sanitize_text_field($eval['reasoning'] ?? ''),
-                'detailed_evaluation' => $detailed_data
-            ], JSON_UNESCAPED_UNICODE)
+            'reasoning' => sanitize_text_field($eval['reasoning'] ?? '')
         ]);
     }
     

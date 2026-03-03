@@ -443,12 +443,9 @@ class Analytics {
                                         <span class="agent-name-cell"><?php echo esc_html($stat->agent_name); ?></span>
                                     </td>
                                     <td style="text-align:center;">
-                                        <?php 
+                                        <?php
                                         $score = intval($stat->avg_overall_score);
-                                        $score_class = 'score-negative';
-                                        if ($score >= 80) $score_class = 'score-good';
-                                        elseif ($score >= 60) $score_class = 'score-ok';
-                                        elseif ($score >= 40) $score_class = 'score-warning';
+                                        $score_class = Dashboard::score_class($score);
                                         ?>
                                         <span class="col-score <?php echo $score_class; ?>"><?php echo $score; ?></span>
                                     </td>

@@ -60,6 +60,8 @@ class AuditEndpoint {
                 );
             }
             
+            $save_warnings = [];
+
             // Validate status
             $status = isset($data['status']) ? sanitize_text_field($data['status']) : 'success';
             if (!in_array($status, ['pending', 'success', 'failed'])) {
@@ -69,7 +71,7 @@ class AuditEndpoint {
             // Prepare update data
             $update_data = [
                 'status' => $status,
-                'overall_score' => isset($data['score']) ? intval($data['score']) : null,
+                'overall_score' => isset($data['score']) ? max(-200, min(100, intval($data['score']))) : null,
                 'error_message' => isset($data['error_message']) ? sanitize_text_field($data['error_message']) : null
             ];
             
@@ -93,16 +95,223 @@ class AuditEndpoint {
                         
                     // Parse and save related data
                     $audit = $this->parse_audit_response($data['audit_response']);
-                    
+
                     if ($audit && is_array($audit)) {
-                        try {
-                            $this->contribution_saver->save($ticket_id, $audit);
-                            $this->evaluation_saver->save($ticket_id, $audit);
-                            $this->problem_saver->save($ticket_id, $audit);
-                            $this->topic_updater->update($audit);
-                        } catch (\Exception $e) {
-                            error_log('API Error: Failed to save audit data for ticket ' . $ticket_id . ' - ' . $e->getMessage());
-                            // Continue even if saving related data fails
+                        // Count Critical HR violations and High-severity issues for score enforcement
+                        $critical_hr_count = 0;
+                        $high_count = 0;
+                        $medium_count = 0;
+                        foreach ($audit['problem_contexts'] ?? [] as $pc) {
+                            $sev = $pc['severity'] ?? '';
+                            $cat = $pc['category'] ?? '';
+                            if ($sev === 'Critical' && $cat === 'HR Violation') {
+                                $critical_hr_count++;
+                            } elseif ($sev === 'High') {
+                                $high_count++;
+                            } elseif ($sev === 'Medium') {
+                                $medium_count++;
+                            }
+                        }
+
+                        // Recalculate overall_score using rubric formula
+                        $ai_score = intval($audit['audit_summary']['overall_score'] ?? 0);
+                        if ($critical_hr_count > 0 || $high_count > 0 || $medium_count > 0) {
+                            $calculated = 100
+                                - ($critical_hr_count * 100)
+                                - ($high_count * 30)
+                                - ($medium_count * 15);
+                            // Allow up to +20 recovery if AI score suggests positive elements
+                            if ($ai_score > $calculated) {
+                                $calculated = min($calculated + 20, $ai_score);
+                            }
+                            // Critical HR = score must be ≤ 0
+                            if ($critical_hr_count > 0) {
+                                $calculated = min($calculated, 0);
+                            }
+                            $ai_score = max(-200, $calculated);
+                            $audit['audit_summary']['overall_score'] = $ai_score;
+                        }
+                        $update_data['overall_score'] = $ai_score;
+
+                        // Enforce sentiment based on corrected score
+                        if ($ai_score < 0) {
+                            $update_data['overall_sentiment'] = 'Negative';
+                        } elseif ($ai_score <= 50) {
+                            $update_data['overall_sentiment'] = 'Mixed';
+                        } else {
+                            $update_data['overall_sentiment'] = 'Positive';
+                        }
+                        // Sync sentiment in audit JSON blob for consistency
+                        $audit['audit_summary']['overall_sentiment'] = $update_data['overall_sentiment'];
+
+                        // Post-process AI scores for accuracy
+                        if (!empty($audit['agent_evaluations'])) {
+                            // Count Critical HR violations per agent from problem_contexts
+                            $hr_violations_by_agent = [];
+                            foreach ($audit['problem_contexts'] ?? [] as $pc) {
+                                if (($pc['category'] ?? '') === 'HR Violation'
+                                    && ($pc['severity'] ?? '') === 'Critical') {
+                                    foreach ($pc['handling_agents'] ?? [] as $ha) {
+                                        $aid = $ha['agent_id'] ?? '';
+                                        if ($aid) {
+                                            $hr_violations_by_agent[$aid] = ($hr_violations_by_agent[$aid] ?? 0) + 1;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Track agents with missing shift data
+                            $shift_data_notes = [];
+
+                            foreach ($audit['agent_evaluations'] as &$ev) {
+                                // --- TIMING_SCORE: Responsibility-based, threshold-enforced ---
+                                $ai_timing = isset($ev['timing_score']) ? intval($ev['timing_score']) : 0;
+                                $ai_timing = max(-100, min(0, $ai_timing)); // basic clamp
+
+                                // Parse response_breakdown to find worst on-shift delay
+                                $max_on_shift_delay_hours = 0;
+                                $has_on_shift_data = false;
+                                foreach ($ev['response_breakdown'] ?? [] as $rb) {
+                                    if (!empty($rb['was_on_shift'])) {
+                                        $has_on_shift_data = true;
+                                        $delay_hours = $this->parse_delay_hours($rb['time_since_previous'] ?? '0');
+                                        if ($delay_hours > $max_on_shift_delay_hours) {
+                                            $max_on_shift_delay_hours = $delay_hours;
+                                        }
+                                    }
+                                }
+
+                                // Check shift data availability via database
+                                $agent_email = $ev['agent_email'] ?? '';
+                                $shift_data_exists = true;
+                                if ($agent_email) {
+                                    $timestamps = array_column($ev['response_breakdown'] ?? [], 'timestamp');
+                                    if (!empty($timestamps)) {
+                                        $earliest = min($timestamps);
+                                        $latest = max($timestamps);
+                                        $shift_count = $wpdb->get_var($wpdb->prepare(
+                                            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_agent_shifts
+                                             WHERE agent_email = %s
+                                             AND shift_end >= %s
+                                             AND shift_start <= %s",
+                                            $agent_email, $earliest, $latest
+                                        ));
+                                        if (intval($shift_count) === 0) {
+                                            $shift_data_exists = false;
+                                            $shift_data_notes[] = [
+                                                'agent' => $agent_email,
+                                                'agent_name' => $ev['agent_name'] ?? '',
+                                                'period' => $earliest . ' to ' . $latest,
+                                                'status' => 'no_shift_data',
+                                                'note' => 'Timing score excused — no shift records found for this period'
+                                            ];
+                                        }
+                                    }
+                                }
+
+                                // Calculate our threshold-based penalty ceiling
+                                $threshold_penalty = $this->calculate_timing_penalty($max_on_shift_delay_hours);
+
+                                if (!$shift_data_exists) {
+                                    // Shift data missing → excuse timing entirely
+                                    $ev['timing_score'] = 0;
+                                } else {
+                                    // Always use our calculated penalty from response_breakdown delays.
+                                    // AI's timing_score is unreliable (Gemini ignores prose rules),
+                                    // so we enforce thresholds from actual on-shift delay data.
+                                    $ev['timing_score'] = $threshold_penalty;
+                                }
+
+                                // Clamp resolution_score (0 to 100)
+                                // Cap resolution proportional to contribution
+                                if (isset($ev['resolution_score'])) {
+                                    $res = intval($ev['resolution_score']);
+                                    $contrib = intval($ev['contribution_percentage'] ?? 0);
+                                    if ($contrib <= 5 && $res > 5) {
+                                        $res = 5;
+                                    } elseif ($contrib <= 10 && $res > 10) {
+                                        $res = 10;
+                                    } elseif ($contrib <= 20 && $res > 20) {
+                                        $res = 20;
+                                    }
+                                    $ev['resolution_score'] = max(0, min(100, $res));
+                                }
+
+                                // Clamp communication_score (-60 to +30)
+                                if (isset($ev['communication_score'])) {
+                                    $comm = intval($ev['communication_score']);
+
+                                    // Cap communication for low-reply agents (≤2 replies = baseline only)
+                                    $reply_count = intval($ev['reply_count'] ?? 0);
+                                    if ($reply_count <= 2 && $comm > 10) {
+                                        $comm = 10; // 1-2 routine responses can't earn more than +10
+                                    }
+
+                                    // If agent has Critical HR violations but communication_score is positive,
+                                    // auto-correct: each HR violation = -25 per rubric checklist
+                                    $agent_email = $ev['agent_email'] ?? '';
+                                    $hr_count = $hr_violations_by_agent[$agent_email] ?? 0;
+                                    if ($hr_count > 0 && $comm > 0) {
+                                        $comm = min($comm, 30 - ($hr_count * 25));
+                                    }
+
+                                    $ev['communication_score'] = max(-60, min(30, $comm));
+                                }
+
+                                // Recalculate overall_agent_score
+                                $ev['overall_agent_score'] = intval($ev['timing_score'] ?? 0)
+                                    + intval($ev['resolution_score'] ?? 0)
+                                    + intval($ev['communication_score'] ?? 0);
+                            }
+                            unset($ev);
+
+                            // Store shift data notes in audit JSON for tracking
+                            if (!empty($shift_data_notes)) {
+                                $audit['audit_summary']['shift_data_notes'] = $shift_data_notes;
+                            }
+
+                            // Remove customer HR violations and product-bug problem_contexts
+                            $audit['problem_contexts'] = array_values(array_filter(
+                                $audit['problem_contexts'] ?? [],
+                                function($pc) {
+                                    // Filter out product bugs — "Technical Inaccuracy" is not a valid
+                                    // agent performance category (removed from schema). Always filter it.
+                                    $cat = $pc['category'] ?? '';
+                                    if ($cat === 'Technical Inaccuracy') {
+                                        return false;
+                                    }
+
+                                    // Keep everything except customer-related HR violations
+                                    if ($cat === 'HR Violation') {
+                                        $desc = strtolower($pc['issue_description'] ?? '');
+                                        if (strpos($desc, 'customer') === 0 || strpos($desc, 'the customer') !== false) {
+                                            if (strpos($desc, 'agent') === false) {
+                                                return false;
+                                            }
+                                        }
+                                    }
+                                    return true;
+                                }
+                            ));
+
+                            $update_data['audit_response'] = json_encode($audit, JSON_UNESCAPED_UNICODE);
+                        }
+
+                        $savers = [
+                            'contributions' => [$this->contribution_saver, 'save', [$ticket_id, $audit]],
+                            'evaluations'   => [$this->evaluation_saver, 'save', [$ticket_id, $audit]],
+                            'problems'      => [$this->problem_saver, 'save', [$ticket_id, $audit]],
+                            'topics'        => [$this->topic_updater, 'update', [$audit]],
+                        ];
+
+                        foreach ($savers as $name => [$saver, $method, $args]) {
+                            try {
+                                call_user_func_array([$saver, $method], $args);
+                            } catch (\Exception $e) {
+                                $msg = "Failed to save {$name} for ticket {$ticket_id}: " . $e->getMessage();
+                                error_log('API Error: ' . $msg);
+                                $save_warnings[] = $msg;
+                            }
                         }
                     }
                 } catch (\Exception $e) {
@@ -124,9 +333,7 @@ class AuditEndpoint {
                 $result = $wpdb->update(
                     $wpdb->prefix . 'ais_audits',
                     $update_data,
-                    ['id' => $pending_audit->id],
-                    ['%s', '%d', '%s', '%s', '%s'],
-                    ['%d']
+                    ['id' => $pending_audit->id]
                 );
                 
                 if ($result === false) {
@@ -143,8 +350,7 @@ class AuditEndpoint {
                 if ($status === 'pending') {
                     $result = $wpdb->insert(
                         $wpdb->prefix . 'ais_audits',
-                        array_merge($update_data, ['ticket_id' => $ticket_id]),
-                        ['%s', '%d', '%s', '%s', '%s', '%d']
+                        array_merge($update_data, ['ticket_id' => $ticket_id])
                     );
                     
                     if ($result === false) {
@@ -169,9 +375,7 @@ class AuditEndpoint {
                         $result = $wpdb->update(
                             $wpdb->prefix . 'ais_audits',
                             $update_data,
-                            ['id' => $latest_audit->id],
-                            ['%s', '%d', '%s', '%s', '%s'],
-                            ['%d']
+                            ['id' => $latest_audit->id]
                         );
                         
                         if ($result === false) {
@@ -187,8 +391,7 @@ class AuditEndpoint {
                     } else {
                         $result = $wpdb->insert(
                             $wpdb->prefix . 'ais_audits',
-                            array_merge($update_data, ['ticket_id' => $ticket_id]),
-                            ['%s', '%d', '%s', '%s', '%s', '%d']
+                            array_merge($update_data, ['ticket_id' => $ticket_id])
                         );
                         
                         if ($result === false) {
@@ -206,10 +409,15 @@ class AuditEndpoint {
             }
             
             $response = [
-                'status' => 'saved', 
-                'ticket_id' => $ticket_id, 
+                'status' => 'saved',
+                'ticket_id' => $ticket_id,
                 'audit_id' => $audit_id
             ];
+
+            if (!empty($save_warnings)) {
+                $response['status'] = 'saved_with_warnings';
+                $response['warnings'] = $save_warnings;
+            }
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('API save_result success: ' . json_encode($response));
@@ -257,6 +465,38 @@ class AuditEndpoint {
         }, $results);
     }
     
+    /**
+     * Parse delay duration string to hours.
+     * Handles formats: "6h 26m 32s", "2 hours", "1 day 3h", "0 hours", "3 days", etc.
+     */
+    private function parse_delay_hours($time_str) {
+        $hours = 0;
+        $time_str = strtolower(trim($time_str));
+        if (preg_match('/(\d+)\s*d(ay)?s?/', $time_str, $m)) {
+            $hours += intval($m[1]) * 24;
+        }
+        if (preg_match('/(\d+)\s*h(our|r)?s?/', $time_str, $m)) {
+            $hours += intval($m[1]);
+        }
+        if (preg_match('/(\d+)\s*m(in(ute)?)?s?/', $time_str, $m)) {
+            $hours += intval($m[1]) / 60.0;
+        }
+        return $hours;
+    }
+
+    /**
+     * Calculate timing penalty from delay duration using v2 thresholds.
+     * Returns 0 to -80 (never positive, never below -80 for single delay).
+     */
+    private function calculate_timing_penalty($delay_hours) {
+        if ($delay_hours <= 4) return 0;
+        if ($delay_hours <= 8) return -5;
+        if ($delay_hours <= 12) return -15;
+        if ($delay_hours <= 24) return -30;
+        if ($delay_hours <= 48) return -50;
+        return -80;
+    }
+
     private function parse_audit_response($audit_response) {
         if (is_array($audit_response) || is_object($audit_response)) {
             return is_object($audit_response) ? (array)$audit_response : $audit_response;
