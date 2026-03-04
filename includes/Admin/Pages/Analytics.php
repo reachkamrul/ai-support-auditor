@@ -223,62 +223,9 @@ class Analytics {
                 border-color: var(--color-primary-hover);
             }
             
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-                gap: 20px;
-                margin-bottom: 24px;
-            }
+            /* stats-grid/stat-card overrides removed — using global styles */
             
-            .stat-card {
-                background: var(--color-bg);
-                border: 1px solid var(--color-border);
-                border-radius: var(--radius-md);
-                padding: 24px;
-                box-shadow: var(--shadow-xs);
-                transition: all 0.2s ease;
-            }
-            
-            .stat-card:hover {
-                box-shadow: var(--shadow-sm);
-                border-color: var(--color-border-strong);
-                transform: translateY(-2px);
-            }
-            
-            .stat-label {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            .stat-value {
-                font-size: 32px;
-                font-weight: 700;
-                color: var(--color-text-primary);
-                line-height: 1.2;
-                margin-bottom: 8px;
-            }
-            
-            .stat-change {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--color-text-secondary);
-                margin-top: 4px;
-            }
-            
-            .stat-change.positive {
-                color: var(--color-success);
-            }
-            
-            .stat-change.negative {
-                color: var(--color-error);
-            }
+            /* stat-card overrides removed — using global styles */
             
             .analytics-grid {
                 display: grid;
@@ -339,26 +286,17 @@ class Analytics {
                 color: var(--color-text-primary);
             }
             
-            .empty-state {
-                text-align: center;
-                padding: 60px 20px;
-                color: var(--color-text-secondary);
-            }
-            
-            .empty-state-text {
-                font-size: 14px;
-                margin: 0;
-            }
+            /* empty-state removed — using global .ops-empty-state */
         </style>
         
         <div class="ops-card" style="margin-bottom:24px;">
             <div class="analytics-header">
                 <h3>Analytics Dashboard</h3>
                 <div class="analytics-filters">
-                    <a href="?page=ai-ops&tab=analytics&days=7" class="ops-btn <?php echo $days==7?'primary':'secondary'; ?>">7 Days</a>
-                    <a href="?page=ai-ops&tab=analytics&days=30" class="ops-btn <?php echo $days==30?'primary':'secondary'; ?>">30 Days</a>
-                    <a href="?page=ai-ops&tab=analytics&days=90" class="ops-btn <?php echo $days==90?'primary':'secondary'; ?>">90 Days</a>
-                    <a href="?page=ai-ops&tab=analytics&days=365" class="ops-btn <?php echo $days==365?'primary':'secondary'; ?>">1 Year</a>
+                    <a href="?page=ai-ops&section=analytics&days=7" class="ops-btn <?php echo $days==7?'primary':'secondary'; ?>">7 Days</a>
+                    <a href="?page=ai-ops&section=analytics&days=30" class="ops-btn <?php echo $days==30?'primary':'secondary'; ?>">30 Days</a>
+                    <a href="?page=ai-ops&section=analytics&days=90" class="ops-btn <?php echo $days==90?'primary':'secondary'; ?>">90 Days</a>
+                    <a href="?page=ai-ops&section=analytics&days=365" class="ops-btn <?php echo $days==365?'primary':'secondary'; ?>">1 Year</a>
                 </div>
             </div>
         </div>
@@ -369,11 +307,11 @@ class Analytics {
         ?>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">📋 Total Audits</div>
+                <div class="stat-label">Total audits</div>
                 <div class="stat-value"><?php echo number_format($total_audits); ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">⭐ Average Score</div>
+                <div class="stat-label">Average score</div>
                 <div class="stat-value" style="<?php echo $avg_score < 0 ? 'color: var(--color-error);' : ''; ?>">
                     <?php echo $avg_score > 0 ? round($avg_score) : ($total_audits > 0 ? '0' : '-'); ?>
                 </div>
@@ -406,8 +344,8 @@ class Analytics {
         <div class="analytics-grid">
             <div class="ops-card">
                 <div class="analytics-card-header">
-                <h3>🏆 Top Performing Agents</h3>
-                    <a href="<?php echo admin_url('admin.php?page=ai-ops&tab=agent-performance'); ?>" class="ops-btn secondary leaderboard-link">
+                <h3>Top performing agents</h3>
+                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=agent-performance'); ?>" class="ops-btn secondary leaderboard-link">
                         View Full Dashboard →
                     </a>
                 </div>
@@ -424,8 +362,8 @@ class Analytics {
                     <tbody>
                         <?php if (empty($agent_stats)): ?>
                             <tr>
-                                <td colspan="4" class="empty-state">
-                                    <p class="empty-state-text">No data available</p>
+                                <td colspan="4" class="ops-empty-state">
+                                    <div class="ops-empty-state-title">No data available</div>
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -470,8 +408,8 @@ class Analytics {
             <h3>Common Problem Categories</h3>
             </div>
             <?php if (empty($problem_stats)): ?>
-                <div class="empty-state">
-                    <p class="empty-state-text">No problems identified yet</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No problems identified yet</div>
                 </div>
             <?php else: ?>
                 <table class="audit-table">
@@ -504,12 +442,12 @@ class Analytics {
         ?>
         <div class="ops-card" style="margin-bottom:24px;">
             <div class="analytics-card-header">
-            <h3>📚 Documentation Gaps (Doc Central)</h3>
+            <h3>Documentation gaps</h3>
             </div>
             <p class="analytics-card-description">AI-identified knowledge base gaps that need documentation</p>
             <?php if (empty($doc_gaps)): ?>
-                <div class="empty-state">
-                    <p class="empty-state-text">No documentation gaps identified yet</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No documentation gaps identified yet</div>
                 </div>
             <?php else: ?>
                 <table class="audit-table">
@@ -538,12 +476,12 @@ class Analytics {
         ?>
         <div class="ops-card">
             <div class="analytics-card-header">
-            <h3>❓ Recommended FAQ Topics</h3>
+            <h3>Recommended FAQ topics</h3>
             </div>
             <p class="analytics-card-description">AI-suggested FAQ articles based on recurring customer questions</p>
             <?php if (empty($faq_topics)): ?>
-                <div class="empty-state">
-                    <p class="empty-state-text">No FAQ recommendations yet</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No FAQ recommendations yet</div>
                 </div>
             <?php else: ?>
                 <table class="audit-table">

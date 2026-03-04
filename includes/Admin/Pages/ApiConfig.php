@@ -24,38 +24,37 @@ class ApiConfig {
             $new_token = wp_generate_password(32, true, true);
             update_option('ai_audit_secret_token', $new_token);
             $token = $new_token;
-            echo '<div class="notice notice-success is-dismissible"><p><strong>✅ New security token generated!</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>New security token generated.</strong></p></div>';
         }
         
         $base_url = get_site_url();
         ?>
         
         <div class="ops-card">
-            <h3>🔐 REST API Security Configuration</h3>
-            <p>This security token is required for n8n to communicate with WordPress.</p>
-            
-            <div style="background:#f9f9f9;padding:20px;border-radius:4px;margin-top:15px;border:1px solid #ddd;">
-                <h4 style="margin-top:0">Current Security Token</h4>
+            <h3>API security</h3>
+            <p style="margin:0 0 16px;color:var(--color-text-secondary);font-size:13px;">This security token is required for n8n to communicate with WordPress.</p>
+
+            <div style="padding:20px;border-radius:var(--radius-md);margin-top:4px;background:var(--color-bg-subtle);border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 12px;font-size:14px;font-weight:500;">Current security token</h4>
                 <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
-                    <code data-token="<?php echo esc_attr($token); ?>" 
-                          style="flex:1;background:#fff;padding:12px;border:1px solid #ccc;border-radius:4px;font-size:13px;word-break:break-all;">
+                    <code data-token="<?php echo esc_attr($token); ?>" class="ops-token-display" style="flex:1;">
                         <?php echo esc_html($token); ?>
                     </code>
-                    <button class="ops-btn secondary" onclick="copyToken()">📋 Copy</button>
+                    <button class="ops-btn secondary" onclick="copyToken()">Copy</button>
                 </div>
-                
-                <form method="post" onsubmit="return confirm('⚠️ Regenerating will break all existing n8n workflows. Continue?')">
-                    <button name="regenerate_token" class="ops-btn danger">🔄 Regenerate Token</button>
+
+                <form method="post" onsubmit="return confirm('Regenerating will break all existing n8n workflows. Continue?')">
+                    <button name="regenerate_token" class="ops-btn danger">Regenerate Token</button>
                 </form>
             </div>
         </div>
         
         <div class="ops-card">
-            <h3>📡 API Endpoints</h3>
+            <h3>API endpoints</h3>
             <p style="margin-bottom:20px;">Base URL: <code><?php echo esc_html($base_url); ?>/wp-json/ai-audit/v1</code></p>
             <p style="margin-bottom:20px;color:#666;">All endpoints (except Agent endpoints) require <code>X-Audit-Token</code> header with the security token above.</p>
             
-            <h4 style="margin-top:25px;margin-bottom:15px;color:#333;">🔍 Audit Endpoints</h4>
+            <h4 style="margin-top:25px;margin-bottom:15px;">Audit endpoints</h4>
             <table class="audit-table" style="margin-bottom:30px;">
                 <thead>
                     <tr>
@@ -87,7 +86,7 @@ class ApiConfig {
                 </tbody>
             </table>
             
-            <h4 style="margin-top:25px;margin-bottom:15px;color:#333;">⏰ Shift Endpoints</h4>
+            <h4 style="margin-top:25px;margin-bottom:15px;">Shift endpoints</h4>
             <table class="audit-table" style="margin-bottom:30px;">
                 <thead>
                     <tr>
@@ -119,7 +118,7 @@ class ApiConfig {
                 </tbody>
             </table>
             
-            <h4 style="margin-top:25px;margin-bottom:15px;color:#333;">🤖 System Message Endpoints</h4>
+            <h4 style="margin-top:25px;margin-bottom:15px;">System message endpoints</h4>
             <table class="audit-table" style="margin-bottom:30px;">
                 <thead>
                     <tr>
@@ -151,7 +150,7 @@ class ApiConfig {
                 </tbody>
             </table>
             
-            <h4 style="margin-top:25px;margin-bottom:15px;color:#333;">👥 Agent Endpoints (Admin Only)</h4>
+            <h4 style="margin-top:25px;margin-bottom:15px;">Agent endpoints (admin only)</h4>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -189,8 +188,8 @@ class ApiConfig {
                 </tbody>
             </table>
             
-            <div style="margin-top:30px;padding:15px;background:#f0f9ff;border-left:4px solid #0ea5e9;border-radius:4px;">
-                <h4 style="margin-top:0;color:#0c4a6e;">📝 Usage Example</h4>
+            <div style="margin-top:30px;padding:15px;background:var(--color-info-bg);border-left:3px solid var(--color-primary);border-radius:var(--radius-sm);">
+                <h4 style="margin-top:0;">Usage example</h4>
                 <pre style="background:#fff;padding:12px;border-radius:4px;overflow-x:auto;font-size:12px;margin:10px 0 0 0;"><code>curl -X POST "<?php echo esc_html($base_url); ?>/wp-json/ai-audit/v1/save-result" \
   -H "Content-Type: application/json" \
   -H "X-Audit-Token: <?php echo esc_html($token); ?>" \
@@ -211,7 +210,7 @@ class ApiConfig {
             const tokenElement = document.querySelector('[data-token]');
             const token = tokenElement ? tokenElement.dataset.token : '';
             navigator.clipboard.writeText(token).then(() => {
-                alert('✅ Token copied to clipboard!');
+                alert('Token copied to clipboard.');
             });
         }
         </script>

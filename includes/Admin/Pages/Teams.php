@@ -63,7 +63,7 @@ class Teams {
         ?>
         <!-- Team Cards -->
         <?php if (!empty($teams)): ?>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(350px, 1fr));gap:20px;margin-bottom:24px;">
+        <div class="ops-grid-auto" style="margin-bottom:24px;">
             <?php foreach ($teams as $team):
                 $data = $team_data[$team->id];
                 $member_count = count($data['members']);
@@ -89,7 +89,7 @@ class Teams {
 
                 <?php if ($member_count > 0): ?>
                 <div style="margin-top:12px;">
-                    <div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:6px;">Agents</div>
+                    <div class="ops-section-label" style="margin-bottom:6px;">Agents</div>
                     <div style="display:flex;flex-wrap:wrap;gap:4px;">
                         <?php
                         foreach ($data['members'] as $email) {
@@ -98,7 +98,7 @@ class Teams {
                                 if ($a->email === $email) { $agent = $a; break; }
                             }
                             $name = $agent ? trim($agent->first_name . ' ' . $agent->last_name) : $email;
-                            echo '<span style="display:inline-block;padding:3px 8px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:11px;">' . esc_html($name) . '</span>';
+                            echo '<span class="ops-chip">' . esc_html($name) . '</span>';
                         }
                         ?>
                     </div>
@@ -107,7 +107,7 @@ class Teams {
 
                 <?php if ($product_count > 0): ?>
                 <div style="margin-top:10px;">
-                    <div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:6px;">Products</div>
+                    <div class="ops-section-label" style="margin-bottom:6px;">Products</div>
                     <div style="display:flex;flex-wrap:wrap;gap:4px;">
                         <?php
                         foreach ($data['products'] as $pid) {
@@ -115,7 +115,7 @@ class Teams {
                             foreach ($products as $p) {
                                 if ($p->id == $pid) { $pname = $p->title; break; }
                             }
-                            echo '<span style="display:inline-block;padding:3px 8px;background:' . esc_attr($team->color) . '22;border:1px solid ' . esc_attr($team->color) . '44;border-radius:var(--radius-pill);font-size:11px;color:var(--color-text-primary);">' . esc_html($pname ?: "Product #$pid") . '</span>';
+                            echo '<span class="ops-chip" style="background:' . esc_attr($team->color) . '12;border-color:' . esc_attr($team->color) . '33;">' . esc_html($pname ?: "Product #$pid") . '</span>';
                         }
                         ?>
                     </div>
@@ -125,8 +125,11 @@ class Teams {
             <?php endforeach; ?>
         </div>
         <?php else: ?>
-            <div class="ops-card" style="text-align:center;padding:40px;">
-                <p style="color:var(--color-text-tertiary);">No teams created yet. Use the form below to create your first team.</p>
+            <div class="ops-card">
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No teams yet</div>
+                    <div class="ops-empty-state-description">Use the form below to create your first team.</div>
+                </div>
             </div>
         <?php endif; ?>
 
@@ -134,7 +137,7 @@ class Teams {
         <div class="ops-card" id="team-form">
             <h3>
                 <?php if ($editing): ?>
-                    <span style="background:var(--color-warning-bg);color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px;">EDITING</span>
+                    <span style="background:var(--color-warning-bg);color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:8px;">Editing</span>
                     <?php echo esc_html($editing['team']->name); ?>
                 <?php else: ?>
                     Create New Team

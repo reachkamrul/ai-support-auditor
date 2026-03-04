@@ -156,11 +156,9 @@ class TimingSettings {
             }
             .toggle-status-badge {
                 font-size: 11px;
-                font-weight: 600;
+                font-weight: 500;
                 padding: 4px 10px;
                 border-radius: 999px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             .toggle-status-badge.active { background: #dcfce7; color: #065f46; }
             .toggle-status-badge.inactive { background: #fee2e2; color: #991b1b; }

@@ -103,11 +103,9 @@ class Agents {
             }
             
             .agent-stat-label {
-                font-size: 11px;
-                font-weight: 600;
-                color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--color-text-tertiary);
             }
             
             .agent-stat-value {
@@ -261,7 +259,7 @@ class Agents {
                 </div>
                 <div class="agents-stats">
                     <div class="agent-stat">
-                        <span class="agent-stat-label">Total Agents</span>
+                        <span class="agent-stat-label">Total agents</span>
                         <span class="agent-stat-value"><?php echo count($agents); ?></span>
                     </div>
                     <div class="agent-stat">
@@ -274,10 +272,9 @@ class Agents {
             </div>
             
             <?php if (empty($agents)): ?>
-                <div class="empty-state">
-                    <div class="empty-state-icon">👤</div>
-                    <div class="empty-state-text">No agents found</div>
-                    <div class="empty-state-subtext">Add your first agent using the form below</div>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No agents found</div>
+                    <div class="ops-empty-state-description">Add your first agent using the form below</div>
                 </div>
             <?php else: ?>
             <table class="audit-table">
@@ -332,7 +329,7 @@ class Agents {
                         </td>
                         <td>
                             <span class="status-badge <?php echo $a->is_active ? 'success' : 'failed'; ?>">
-                                <?php echo $a->is_active ? 'ACTIVE' : 'INACTIVE'; ?>
+                                <?php echo $a->is_active ? 'Active' : 'Inactive'; ?>
                             </span>
                         </td>
                             <td style="text-align: right;">
@@ -379,13 +376,11 @@ class Agents {
             
             .agent-form-header .form-mode {
                 font-size: 11px;
-                font-weight: 600;
+                font-weight: 500;
                 color: var(--color-text-secondary);
                 padding: 5px 12px;
                 background: var(--color-bg-subtle);
                 border-radius: var(--radius-pill);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             
             .agent-form {
@@ -408,12 +403,10 @@ class Agents {
             
             .agent-form label {
                 display: block;
-                font-weight: 600;
-                font-size: 12px;
+                font-weight: 500;
+                font-size: 13px;
                 margin-bottom: 8px;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             
             .agent-form label.required::after {
@@ -529,12 +522,10 @@ class Agents {
             }
             
             .form-section-title {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--color-text-secondary);
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--color-text-tertiary);
                 margin-bottom: 20px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
                 display: flex;
                 align-items: center;
                 gap: 12px;

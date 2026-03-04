@@ -22,7 +22,7 @@ class SystemMessage {
             $message = wp_unslash($_POST['system_message']);
             update_option('ai_audit_system_message', $message);
             update_option('ai_audit_system_message_updated', current_time('mysql'));
-            echo '<div class="notice notice-success is-dismissible"><p><strong>✅ System message saved successfully!</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>System message saved successfully.</strong></p></div>';
         }
         
         $current_message = get_option('ai_audit_system_message', '');
@@ -93,8 +93,7 @@ class SystemMessage {
             }
             
             .last-saved::before {
-                content: "⏱️";
-                font-size: 14px;
+                content: "";
             }
             
             .tip-box {
@@ -169,8 +168,7 @@ class SystemMessage {
             }
             
             #test-result h4::before {
-                content: "📊";
-                font-size: 18px;
+                content: "";
             }
             
             #test-result-content {
@@ -227,11 +225,9 @@ class SystemMessage {
             }
             
             .test-detail-label {
-                font-weight: 600;
-                color: var(--color-text-secondary);
-                font-size: 12px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                font-weight: 500;
+                color: var(--color-text-tertiary);
+                font-size: 13px;
             }
             
             .test-detail-value {
@@ -309,7 +305,7 @@ class SystemMessage {
         <div class="ops-card">
             <div class="system-message-header">
                 <div>
-                    <h3 style="margin: 0 0 4px 0;">🤖 AI System Message Editor</h3>
+                    <h3 style="margin: 0 0 4px 0;">System message editor</h3>
                     <p style="margin: 0; color: var(--color-text-secondary); font-size: 13px;">
                         Configure the prompt that guides AI ticket auditing. This message is sent to the AI model for every audit.
                     </p>
@@ -318,8 +314,8 @@ class SystemMessage {
             
             <form method="post" id="system-message-form">
                 <div>
-                    <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 8px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
-                        System Message
+                    <label style="font-weight: 500; font-size: 13px; display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
+                        System message
                     </label>
                     <textarea 
                         name="system_message" 
@@ -333,7 +329,6 @@ class SystemMessage {
                     </div>
                     
                     <div class="tip-box">
-                        <span style="font-size: 16px;">💡</span>
                         <div class="tip-text">
                             <strong>Dynamic Variables:</strong> Use <code>{{ $json.clean_transcript_json_safe }}</code> to inject the ticket transcript and <code>{{ $json.shift_context }}</code> to include shift information. These will be replaced with actual data when the audit runs.
                         </div>
@@ -342,10 +337,10 @@ class SystemMessage {
                 
                 <div class="system-message-actions">
                     <button name="save_system_message" class="ops-btn primary" type="submit">
-                        <span>💾</span> Save System Message
+                        Save System Message
                     </button>
                     <button type="button" class="ops-btn secondary" onclick="resetToDefault()">
-                        <span>🔄</span> Reset to Default
+                        Reset to Default
                     </button>
                     <span class="last-saved">
                         Last saved: <strong><?php echo esc_html(get_option('ai_audit_system_message_updated', 'Never')); ?></strong>
@@ -355,22 +350,22 @@ class SystemMessage {
         </div>
         
         <div class="ops-card">
-            <h3 style="margin: 0 0 4px 0;">🧪 Test System Message</h3>
+            <h3 style="margin: 0 0 4px 0;">Test system message</h3>
             <p style="margin: 0 0 0 0; color: var(--color-text-secondary); font-size: 13px;">
                 Test your system message with a real ticket to preview how the AI will respond before deploying.
             </p>
             
             <form method="post" id="test-form">
                 <div>
-                    <label style="font-weight: 600; font-size: 12px; display: block; margin-bottom: 8px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
-                        Test Ticket ID
+                    <label style="font-weight: 500; font-size: 13px; display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
+                        Test ticket ID
                     </label>
                     <input type="number" name="test_ticket_id" id="test_ticket_id" class="ops-input" 
                            placeholder="Enter ticket ID (e.g., 110)" required>
                 </div>
                 <div>
                     <button type="button" class="ops-btn primary" onclick="testSystemMessage()">
-                        <span>🚀</span> Test Message
+                        Test Message
                     </button>
                 </div>
             </form>

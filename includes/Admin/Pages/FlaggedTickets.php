@@ -77,9 +77,9 @@ class FlaggedTickets {
 
         ?>
         <!-- Summary Stats -->
-        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);margin-bottom:24px;">
-            <div class="stat-card" <?php echo $count_review > 0 ? 'style="border-color:var(--color-error);"' : ''; ?>>
-                <div class="stat-label">Needs Review</div>
+        <div class="stats-grid">
+            <div class="stat-card <?php echo $count_review > 0 ? 'ops-card--accent-error' : ''; ?>">
+                <div class="stat-label">Needs review</div>
                 <div class="stat-value" style="<?php echo $count_review > 0 ? 'color:var(--color-error);' : ''; ?>"><?php echo $count_review; ?></div>
             </div>
             <div class="stat-card">
@@ -123,9 +123,10 @@ class FlaggedTickets {
         <!-- Flagged Tickets Table -->
         <div class="ops-card" style="padding:0;overflow:hidden;">
             <?php if (empty($flags)): ?>
-                <p style="color:var(--color-text-tertiary);text-align:center;padding:40px 0;">
-                    <?php echo $filter_status === 'needs_review' ? 'No tickets need review. You\'re all caught up!' : 'No flagged tickets match your filters.'; ?>
-                </p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title"><?php echo $filter_status === 'needs_review' ? 'All caught up' : 'No results'; ?></div>
+                    <div class="ops-empty-state-description"><?php echo $filter_status === 'needs_review' ? 'No tickets need review right now.' : 'No flagged tickets match your filters.'; ?></div>
+                </div>
             <?php else: ?>
                 <table class="audit-table">
                     <thead>
@@ -188,13 +189,13 @@ class FlaggedTickets {
 
         <!-- Pagination -->
         <?php if ($total_pages > 1): ?>
-            <div style="display:flex;justify-content:center;gap:4px;margin-top:16px;">
+            <div class="ops-pagination" style="justify-content:center;">
                 <?php
                 $base = admin_url('admin.php?page=ai-ops&section=flagged&flag_type=' . urlencode($filter_type) . '&flag_status=' . urlencode($filter_status));
                 for ($p = 1; $p <= $total_pages; $p++):
                     $active = $p === $page_num ? 'primary' : 'secondary';
                 ?>
-                    <a href="<?php echo $base . '&pg=' . $p; ?>" class="ops-btn <?php echo $active; ?>" style="height:30px;min-width:30px;padding:0 8px;font-size:12px;"><?php echo $p; ?></a>
+                    <a href="<?php echo $base . '&pg=' . $p; ?>" class="ops-btn <?php echo $active; ?>" style="height:32px;min-width:32px;padding:0 10px;"><?php echo $p; ?></a>
                 <?php endfor; ?>
             </div>
         <?php endif; ?>

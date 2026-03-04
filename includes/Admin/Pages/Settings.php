@@ -118,13 +118,11 @@ class Settings {
             
             .shift-form-mode {
                 font-size: 11px;
-                font-weight: 600;
+                font-weight: 500;
                 color: var(--color-text-secondary);
                 padding: 5px 12px;
                 background: var(--color-bg-subtle);
                 border-radius: var(--radius-pill);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             
             .shift-form-row {
@@ -141,11 +139,9 @@ class Settings {
             }
             
             .shift-form-group label {
-                font-size: 12px;
-                font-weight: 600;
+                font-size: 13px;
+                font-weight: 500;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             
             .shift-form-group.name {
@@ -217,8 +213,9 @@ class Settings {
             <h3>Shift Types</h3>
             </div>
             <?php if (empty($defs)): ?>
-                <div class="empty-shifts">
-                    <p class="empty-shifts-text">No shift types defined. Add your first shift type below.</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No shift types defined</div>
+                    <div class="ops-empty-state-description">Add your first shift type below.</div>
                 </div>
             <?php else: ?>
             <table class="audit-table">

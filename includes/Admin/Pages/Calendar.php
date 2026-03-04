@@ -140,11 +140,9 @@ class Calendar {
             
             #bulk-gen label {
                 display: block;
-                font-size: 12px;
-                font-weight: 600;
+                font-size: 13px;
+                font-weight: 500;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
                 margin-bottom: 8px;
             }
             
@@ -202,15 +200,13 @@ class Calendar {
             }
             
             .cal-head {
-                background: var(--color-bg-subtle);
+                background: transparent;
                 padding: 12px 8px;
                 text-align: center;
-                font-weight: 600;
-                font-size: 12px;
-                color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                border-bottom: 2px solid var(--color-border);
+                font-weight: 500;
+                font-size: 13px;
+                color: var(--color-text-tertiary);
+                border-bottom: 1px solid var(--color-border);
             }
             
             .cal-cell {
@@ -265,176 +261,199 @@ class Calendar {
                 opacity: 0.8;
             }
             
+            /* ── Day Modal ── */
             #day-modal {
                 display: none;
                 position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.6);
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.5);
                 z-index: 9999;
                 backdrop-filter: blur(4px);
-                /* Removed CSS animation - using jQuery fadeIn instead */
             }
-            
+
             .day-modal-content {
                 background: var(--color-bg);
-                width: 500px;
-                max-width: 90%;
-                max-height: 90vh;
-                margin: 5vh auto;
-                border-radius: var(--radius-lg);
+                width: 480px;
+                max-width: 92%;
+                max-height: 85vh;
+                margin: 8vh auto;
+                border-radius: 16px;
                 padding: 0;
-                box-shadow: var(--shadow-lg);
+                box-shadow: var(--shadow-overlay, 0 24px 48px rgba(0,0,0,.16));
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
-                animation: slideUp 0.3s ease;
+                animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             }
-            
-            @keyframes slideUp {
-                from {
-                    transform: translateY(20px);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
+
+            @keyframes modalSlideUp {
+                from { transform: translateY(16px) scale(0.98); opacity: 0; }
+                to   { transform: translateY(0) scale(1); opacity: 1; }
             }
-            
+
+            /* ── Header ── */
             .day-modal-header {
-                padding: 24px;
+                padding: 20px 24px;
                 border-bottom: 1px solid var(--color-border);
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                background: var(--color-bg-subtle);
+                background: var(--color-bg);
+                position: sticky;
+                top: 0; z-index: 1;
             }
-            
+
             .day-modal-header h3 {
                 margin: 0;
-                font-size: 18px;
+                font-size: 15px;
                 font-weight: 600;
                 color: var(--color-text-primary);
+                letter-spacing: -0.01em;
             }
-            
+
             .day-modal-close {
-                background: none;
-                border: none;
-                font-size: 24px;
+                background: none; border: none;
+                font-size: 20px;
                 color: var(--color-text-tertiary);
-                cursor: pointer;
-                line-height: 1;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: var(--radius-sm);
-                transition: all 0.2s ease;
+                cursor: pointer; line-height: 1;
+                width: 32px; height: 32px;
+                display: flex; align-items: center; justify-content: center;
+                border-radius: 8px;
+                transition: all 0.15s ease;
             }
-            
             .day-modal-close:hover {
                 color: var(--color-text-primary);
-                background: var(--color-bg-hover);
+                background: var(--color-bg-subtle);
             }
-            
+
+            /* ── Shift list ── */
             #modal-list {
-                max-height: 300px;
+                max-height: 260px;
                 overflow-y: auto;
-                margin: 24px;
-                padding: 0;
+                padding: 16px 24px 0;
             }
-            
+            #modal-list::-webkit-scrollbar { width: 6px; }
+            #modal-list::-webkit-scrollbar-track { background: transparent; }
+            #modal-list::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+
             .shift-list-item {
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                padding: 12px 16px;
-                margin-bottom: 8px;
+                gap: 12px;
+                padding: 10px 14px;
+                margin-bottom: 6px;
                 background: var(--color-bg-subtle);
-                border-radius: var(--radius-sm);
-                border-left: 3px solid var(--color-primary);
-                transition: all 0.2s ease;
+                border-radius: 10px;
+                border: 1px solid var(--color-border);
+                transition: all 0.15s ease;
             }
-            
+            .shift-list-item:last-child { margin-bottom: 0; }
             .shift-list-item:hover {
-                background: var(--color-bg-hover);
-                border-left-color: var(--color-primary-hover);
+                border-color: var(--color-border-strong);
             }
-            
+
             .shift-list-name {
-                font-weight: 600;
+                font-weight: 500;
                 color: var(--color-text-primary);
-                font-size: 14px;
+                font-size: 13px;
+                flex: 1;
             }
-            
+
             .shift-list-type {
                 background: var(--color-primary-light);
                 color: var(--color-primary);
-                padding: 4px 12px;
+                padding: 3px 10px;
                 border-radius: var(--radius-pill);
                 font-size: 11px;
-                font-weight: 600;
-                margin: 0 8px;
+                font-weight: 500;
+                white-space: nowrap;
             }
-            
+
             .shift-list-delete {
-                color: var(--color-error);
+                color: var(--color-text-tertiary);
                 border: none;
-                background: var(--color-error-bg);
-                padding: 6px 12px;
-                border-radius: var(--radius-sm);
+                background: transparent;
+                padding: 4px;
+                border-radius: 6px;
                 cursor: pointer;
-                font-weight: 600;
-                font-size: 12px;
-                transition: all 0.2s ease;
+                font-size: 16px;
+                line-height: 1;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px; height: 28px;
             }
-            
             .shift-list-delete:hover {
-                background: var(--color-error);
-                color: white;
+                background: var(--color-error-bg);
+                color: var(--color-error);
             }
-            
+
+            /* ── Divider between list & form ── */
+            .day-modal-divider {
+                height: 1px;
+                background: var(--color-border);
+                margin: 0 24px;
+            }
+
+            /* ── Add shift form ── */
             .day-modal-form {
-                background: var(--color-bg-subtle);
-                padding: 24px;
-                border-top: 1px solid var(--color-border);
+                padding: 20px 24px 24px;
+                background: var(--color-bg);
             }
-            
+
+            .day-modal-form-title {
+                font-size: 11px;
+                font-weight: 500;
+                color: var(--color-text-tertiary);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 14px;
+            }
+
+            .day-modal-form-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
             .day-modal-form .form-group {
-                margin-bottom: 20px;
+                margin-bottom: 0;
             }
-            
+
             .day-modal-form .form-group label {
                 display: block;
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 500;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
             }
-            
+
             .day-modal-form .form-group label span {
                 color: var(--color-error);
             }
-            
+
+            .day-modal-form .ops-input,
+            .day-modal-form .select2-container .select2-selection--single {
+                height: 36px !important;
+                font-size: 13px !important;
+                border-radius: 8px !important;
+            }
+
             .day-modal-actions {
                 display: flex;
-                gap: 12px;
+                gap: 8px;
                 justify-content: flex-end;
-                margin-top: 24px;
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 1px solid var(--color-border);
             }
-            
-            .empty-shifts-message {
-                text-align: center;
-                padding: 40px 20px;
-                color: var(--color-text-secondary);
-                font-style: italic;
-                font-size: 14px;
+
+            .day-modal-actions .ops-btn {
+                height: 34px;
+                font-size: 13px;
+                border-radius: 8px;
             }
         </style>
         
@@ -510,46 +529,44 @@ class Calendar {
             </div>
         </div>
         
-        <div id="day-modal" onclick="if(event.target.id==='day-modal'){jQuery('#day-modal').fadeOut(); isOpeningModal = false;}">
+        <div id="day-modal" onclick="if(event.target.id==='day-modal'){jQuery('#day-modal').fadeOut(); document.body.classList.remove('modal-open'); isOpeningModal = false;}">
             <div class="day-modal-content">
                 <div class="day-modal-header">
                     <h3 id="modal-title">Manage Shift</h3>
-                    <button class="day-modal-close" onclick="jQuery('#day-modal').fadeOut(); if(typeof isOpeningModal !== 'undefined') isOpeningModal = false;">&times;</button>
+                    <button class="day-modal-close" onclick="jQuery('#day-modal').fadeOut(); document.body.classList.remove('modal-open'); if(typeof isOpeningModal !== 'undefined') isOpeningModal = false;">&times;</button>
                 </div>
                 
                 <div id="modal-list"></div>
-                
+
                 <div class="day-modal-form">
                     <input type="hidden" id="edit-id">
                     <input type="hidden" id="active-date">
-                    
-                    <div class="form-group">
-                        <label>
-                            Select Agent <span>*</span>
-                        </label>
-                        <select id="modal-agent" required class="ops-input">
-                            <option value="">Choose an agent...</option>
-                            <?php foreach($agents as $a): ?>
-                                <option value="<?php echo esc_attr($a->email); ?>"><?php echo esc_html($a->first_name); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+
+                    <div class="day-modal-form-title">Add shift</div>
+                    <div class="day-modal-form-grid">
+                        <div class="form-group">
+                            <label>Agent <span>*</span></label>
+                            <select id="modal-agent" required class="ops-input">
+                                <option value="">Select agent...</option>
+                                <?php foreach($agents as $a): ?>
+                                    <option value="<?php echo esc_attr($a->email); ?>"><?php echo esc_html($a->first_name . ' ' . $a->last_name); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Shift type <span>*</span></label>
+                            <select id="modal-def" required class="ops-input">
+                                <option value="">Select shift...</option>
+                                <?php foreach($shift_defs as $sd): ?>
+                                    <option value="<?php echo esc_attr($sd->id); ?>"><?php echo esc_html($sd->name); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            Select Shift <span>*</span>
-                        </label>
-                        <select id="modal-def" required class="ops-input">
-                            <option value="">Choose a shift...</option>
-                            <?php foreach($shift_defs as $sd): ?>
-                                <option value="<?php echo esc_attr($sd->id); ?>"><?php echo esc_html($sd->name); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
+
                     <div class="day-modal-actions">
-                        <button class="ops-btn secondary" onclick="jQuery('#day-modal').fadeOut()">Cancel</button>
-                        <button class="ops-btn primary" onclick="saveShift()">Save Shift</button>
+                        <button class="ops-btn secondary" onclick="jQuery('#day-modal').fadeOut(); document.body.classList.remove('modal-open');">Cancel</button>
+                        <button class="ops-btn primary" onclick="saveShift()">Add Shift</button>
                     </div>
                 </div>
             </div>
@@ -609,6 +626,7 @@ class Calendar {
                 $('#edit-id').val('');
                 
                 renderList(shifts);
+                document.body.classList.add('modal-open');
                 $('#day-modal').fadeIn(300, function() {
                     // Reset flag after animation completes
                     setTimeout(function() {
@@ -640,11 +658,11 @@ class Calendar {
                         h += '<div class="shift-list-item">';
                         h += '<span class="shift-list-name">' + (s.first_name || 'User') + '</span>';
                         h += '<span class="shift-list-type">' + s.shift_type + '</span>';
-                        h += '<button class="shift-list-delete" onclick="delS(' + s.id + ')">Delete</button>';
+                        h += '<button class="shift-list-delete" onclick="delS(' + s.id + ')" title="Remove">&times;</button>';
                         h += '</div>';
                     });
                 } else {
-                    h = '<div class="empty-shifts-message">No shifts scheduled for this day</div>';
+                    h = '<div style="padding:20px 0 8px;text-align:center;"><div style="font-size:13px;color:var(--color-text-tertiary);">No shifts on this day</div></div>';
                 }
                 $('#modal-list').html(h);
             };
@@ -686,6 +704,15 @@ class Calendar {
                 });
             };
             
+            // ESC key to close modal
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape' && $('#day-modal').is(':visible')) {
+                    $('#day-modal').fadeOut();
+                    document.body.classList.remove('modal-open');
+                    isOpeningModal = false;
+                }
+            });
+
             window.delS = function(id) {
                 if(confirm('🗑️ Are you sure you want to delete this shift?\n\nThis action cannot be undone.')) {
                     $.post(ajaxurl, {action:'ai_ops_delete', id:id}, function(){

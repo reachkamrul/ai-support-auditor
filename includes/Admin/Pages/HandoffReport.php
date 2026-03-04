@@ -23,7 +23,7 @@ class HandoffReport {
 
         // Check table exists
         if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
-            echo '<div class="ops-card" style="text-align:center;padding:40px;"><p style="color:var(--color-text-tertiary);">Handoff tracking will appear here once tickets with reassignments are audited.</p></div>';
+            echo '<div class="ops-card"><div class="ops-empty-state"><div class="ops-empty-state-title">Handoff tracking not active yet</div><div class="ops-empty-state-description">Data will appear here once tickets with reassignments are audited.</div></div></div>';
             return;
         }
 
@@ -77,39 +77,44 @@ class HandoffReport {
 
         ?>
         <!-- Period Filter -->
-        <div style="display:flex;gap:6px;margin-bottom:16px;">
+        <div class="ops-period-filter">
             <?php foreach ([30 => '30 Days', 60 => '60 Days', 90 => '90 Days'] as $d => $label):
                 $active = ($days === $d) ? 'primary' : 'secondary';
             ?>
-                <a href="<?php echo admin_url('admin.php?page=ai-ops&section=handoffs&period=' . $d); ?>" class="ops-btn <?php echo $active; ?>" style="font-size:12px;height:30px;padding:0 12px;"><?php echo $label; ?></a>
+                <a href="<?php echo admin_url('admin.php?page=ai-ops&section=handoffs&period=' . $d); ?>" class="ops-btn <?php echo $active; ?>"><?php echo $label; ?></a>
             <?php endforeach; ?>
         </div>
 
         <!-- KPI Cards -->
-        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+        <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Compliance Rate</div>
+                <div class="stat-label">Compliance rate</div>
                 <div class="stat-value <?php echo $compliance_rate >= 80 ? 'handoff-good' : ($compliance_rate >= 50 ? 'handoff-neutral' : 'handoff-bad'); ?>"><?php echo $compliance_rate; ?>%</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Handoff Events</div>
+                <div class="stat-label">Total handoff events</div>
                 <div class="stat-value"><?php echo $total_events; ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Failed Handoffs</div>
+                <div class="stat-label">Failed handoffs</div>
                 <div class="stat-value" style="<?php echo $failed_handoffs > 0 ? 'color:var(--color-error);' : ''; ?>"><?php echo $failed_handoffs; ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Avg Gap (failed)</div>
+                <div class="stat-label">Avg gap (failed)</div>
                 <div class="stat-value"><?php echo $avg_gap ? $avg_gap . 'h' : '—'; ?></div>
             </div>
         </div>
 
         <!-- Agent Handoff Table -->
         <div class="ops-card" style="padding:0;overflow:hidden;margin-bottom:24px;">
-            <h3 style="padding:16px 16px 0;">Agent Handoff Compliance</h3>
+            <div style="padding:20px 20px 0;">
+                <h3>Agent handoff compliance</h3>
+            </div>
             <?php if (empty($agents)): ?>
-                <p style="color:var(--color-text-tertiary);text-align:center;padding:30px 0;">No handoff data yet. Audited tickets with reassignments will populate this report.</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No handoff data yet</div>
+                    <div class="ops-empty-state-description">Audited tickets with reassignments will populate this report.</div>
+                </div>
             <?php else: ?>
                 <table class="audit-table" style="font-size:13px;">
                     <thead>
@@ -148,7 +153,9 @@ class HandoffReport {
         <!-- Recent Failed Handoffs -->
         <?php if (!empty($recent_failures)): ?>
         <div class="ops-card" style="padding:0;overflow:hidden;">
-            <h3 style="padding:16px 16px 0;">Recent Failed Handoffs</h3>
+            <div style="padding:20px 20px 0;">
+                <h3>Recent failed handoffs</h3>
+            </div>
             <table class="audit-table" style="font-size:13px;">
                 <thead>
                     <tr>

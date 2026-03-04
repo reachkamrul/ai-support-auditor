@@ -88,25 +88,25 @@ class Dashboard {
 
         ?>
         <!-- KPI Cards -->
-        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total Audits (30d)</div>
+                <div class="stat-label">Total audits (30d)</div>
                 <div class="stat-value"><?php echo $audits_30; ?></div>
                 <?php echo $audit_trend; ?>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Average Score</div>
+                <div class="stat-label">Average score</div>
                 <div class="stat-value">
                     <span class="col-score <?php echo self::score_class(floatval($avg_score_30)); ?>"><?php echo $avg_score_30 ?? '—'; ?></span>
                 </div>
                 <?php echo $score_trend; ?>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Active Agents (30d)</div>
+                <div class="stat-label">Active agents (30d)</div>
                 <div class="stat-value"><?php echo $active_agents; ?></div>
             </div>
-            <div class="stat-card" style="<?php echo $flagged_count > 0 ? 'border-color:var(--color-error);' : ''; ?>">
-                <div class="stat-label">Flagged Tickets</div>
+            <div class="stat-card <?php echo $flagged_count > 0 ? 'ops-card--accent-error' : ''; ?>">
+                <div class="stat-label">Flagged tickets</div>
                 <div class="stat-value" style="<?php echo $flagged_count > 0 ? 'color:var(--color-error);' : ''; ?>"><?php echo $flagged_count; ?></div>
                 <?php if ($flagged_count > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" style="font-size:12px;">View all &rarr;</a>
@@ -118,27 +118,31 @@ class Dashboard {
 
         <!-- Orphaned Tickets (Watchdog) -->
         <?php $orphan_count = $watchdog ? count($watchdog['orphaned_tickets']) : 0; ?>
-        <div class="ops-card <?php echo $orphan_count > 0 ? 'watchdog-alert' : 'watchdog-clear'; ?>" style="margin-bottom:24px;">
-            <h3 style="display:flex;align-items:center;justify-content:space-between;">
-                <span>Orphaned Tickets <?php if ($orphan_count > 0): ?><span class="ops-nav-badge" style="display:inline;margin-left:8px;"><?php echo $orphan_count; ?></span><?php endif; ?></span>
-                <span style="display:flex;align-items:center;gap:10px;">
+        <div class="ops-card <?php echo $orphan_count > 0 ? 'watchdog-alert' : 'watchdog-clear'; ?>">
+            <div class="ops-card-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <h3 style="margin:0;">Orphaned tickets</h3>
+                    <?php if ($orphan_count > 0): ?><span class="status-badge failed"><?php echo $orphan_count; ?></span><?php endif; ?>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
                     <?php if ($watchdog): ?>
-                        <span id="watchdog-last-scan" style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">Last scanned: <?php echo $this->time_ago($watchdog['scanned_at']); ?></span>
+                        <span id="watchdog-last-scan" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">Last scanned: <?php echo $this->time_ago($watchdog['scanned_at']); ?></span>
                     <?php endif; ?>
-                    <button type="button" id="watchdog-sync-btn" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 10px;display:inline-flex;align-items:center;gap:4px;">
+                    <button type="button" id="watchdog-sync-btn" class="ops-btn secondary" style="height:30px;padding:0 10px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                         <span id="watchdog-sync-text">Sync Now</span>
                     </button>
-                </span>
-            </h3>
+                </div>
+            </div>
             <?php if (!$watchdog): ?>
-                <p style="color:var(--color-text-tertiary);text-align:center;padding:12px 0;">
-                    Watchdog not active yet. It will scan every 15 minutes once the cron is running.
-                </p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">Watchdog not active yet</div>
+                    <div class="ops-empty-state-description">It will scan every 15 minutes once the cron is running.</div>
+                </div>
             <?php elseif ($orphan_count === 0): ?>
-                <p style="color:var(--color-success);text-align:center;padding:12px 0;">
+                <div style="color:var(--color-success);text-align:center;padding:12px 0;">
                     All <?php echo $watchdog['total_open']; ?> open tickets have on-shift agents assigned. <?php echo $watchdog['on_shift_count']; ?> agents on shift.
-                </p>
+                </div>
             <?php else:
                 $per_page = 10;
                 $total_pages = ceil($orphan_count / $per_page);
@@ -170,34 +174,35 @@ class Dashboard {
                     </tbody>
                 </table>
                 <?php if ($total_pages > 1): ?>
-                <div id="orphan-pagination" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;">
-                    <button type="button" id="orphan-prev" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" disabled>&laquo; Prev</button>
-                    <span id="orphan-page-info" style="font-size:12px;color:var(--color-text-tertiary);min-width:100px;text-align:center;">Page 1 of <?php echo $total_pages; ?> (<?php echo $orphan_count; ?> tickets)</span>
-                    <button type="button" id="orphan-next" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;">Next &raquo;</button>
+                <div class="ops-pagination" id="orphan-pagination" style="justify-content:center;">
+                    <button type="button" id="orphan-prev" class="ops-btn secondary" style="height:30px;" disabled>&laquo; Prev</button>
+                    <span id="orphan-page-info" class="ops-pagination-info">Page 1 of <?php echo $total_pages; ?> (<?php echo $orphan_count; ?> tickets)</span>
+                    <button type="button" id="orphan-next" class="ops-btn secondary" style="height:30px;">Next &raquo;</button>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
 
         <!-- Two-column layout: Flagged Preview + On Shift Today -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <div class="ops-grid-2">
 
             <!-- Flagged Tickets Preview -->
             <div class="ops-card">
-                <h3 style="display:flex;align-items:center;justify-content:space-between;">
-                    Tickets Needing Attention
+                <div class="ops-card-header">
+                    <h3 style="margin:0;">Tickets needing attention</h3>
                     <?php if ($flagged_count > 0): ?>
-                        <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" class="ops-btn secondary" style="font-size:12px;height:30px;">View All (<?php echo $flagged_count; ?>)</a>
+                        <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" class="ops-btn secondary" style="height:30px;">View all (<?php echo $flagged_count; ?>)</a>
                     <?php endif; ?>
-                </h3>
+                </div>
                 <?php if (!$flagged_exists): ?>
-                    <p style="color:var(--color-text-tertiary);text-align:center;padding:20px 0;">
-                        Flagged tickets will appear here once the auto-flagging system is active.
-                    </p>
+                    <div class="ops-empty-state">
+                        <div class="ops-empty-state-title">Not active yet</div>
+                        <div class="ops-empty-state-description">Flagged tickets will appear here once the auto-flagging system is active.</div>
+                    </div>
                 <?php elseif (empty($flagged_tickets)): ?>
-                    <p style="color:var(--color-success);text-align:center;padding:20px 0;">
+                    <div style="color:var(--color-success);text-align:center;padding:20px 0;">
                         No tickets need review right now.
-                    </p>
+                    </div>
                 <?php else: ?>
                     <table class="audit-table" style="font-size:13px;">
                         <thead><tr><th>Ticket</th><th>Flag</th><th>Score</th><th>Date</th></tr></thead>
@@ -217,7 +222,7 @@ class Dashboard {
 
             <!-- On Shift Today + Queue Balance -->
             <div class="ops-card">
-                <h3>On Shift Today — Queue Balance</h3>
+                <h3>On shift today</h3>
                 <?php
                 // Build queue map: prefer watchdog snapshot, fallback to live DB query
                 $queue_data = $watchdog ? $watchdog['queue_balance'] : [];
@@ -242,9 +247,10 @@ class Dashboard {
                 }
                 ?>
                 <?php if (empty($on_shift_today)): ?>
-                    <p style="color:var(--color-text-tertiary);text-align:center;padding:20px 0;">
-                        No shifts scheduled for today.
-                    </p>
+                    <div class="ops-empty-state">
+                        <div class="ops-empty-state-title">No shifts scheduled</div>
+                        <div class="ops-empty-state-description">No agents have shifts assigned for today.</div>
+                    </div>
                 <?php else: ?>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;">
                         <?php foreach ($on_shift_today as $agent):
@@ -273,12 +279,15 @@ class Dashboard {
 
         <!-- Recent Audits -->
         <div class="ops-card">
-            <h3 style="display:flex;align-items:center;justify-content:space-between;">
-                Recent Audits
-                <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits'); ?>" class="ops-btn secondary" style="font-size:12px;height:30px;">View All &rarr;</a>
-            </h3>
+            <div class="ops-card-header">
+                <h3 style="margin:0;">Recent audits</h3>
+                <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits'); ?>" class="ops-btn secondary" style="height:30px;">View all &rarr;</a>
+            </div>
             <?php if (empty($recent_audits)): ?>
-                <p style="color:var(--color-text-tertiary);text-align:center;padding:20px 0;">No audits yet.</p>
+                <div class="ops-empty-state">
+                    <div class="ops-empty-state-title">No audits yet</div>
+                    <div class="ops-empty-state-description">Audits will appear here once tickets are processed by the AI workflow.</div>
+                </div>
             <?php else: ?>
                 <table class="audit-table" style="font-size:13px;">
                     <thead>

@@ -98,7 +98,7 @@ class AllAudits {
                     </div>
                     <div class="audit-filter-group" style="justify-content:flex-end;">
                         <label>&nbsp;</label>
-                        <button type="submit" class="ops-btn primary" style="height:38px;">Filter</button>
+                        <button type="submit" class="ops-btn primary">Filter</button>
                     </div>
                 </form>
             </div>
@@ -184,9 +184,9 @@ class AllAudits {
         <style>
             .audits-filters-wrapper {
                 padding: 20px;
-                background: var(--color-bg-subtle);
+                background: var(--color-bg);
                 border-bottom: 1px solid var(--color-border);
-                border-radius: var(--radius-md) var(--radius-md) 0 0;
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             }
             .audit-filters {
                 display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;
@@ -195,8 +195,7 @@ class AllAudits {
                 display: flex; flex-direction: column; gap: 8px;
             }
             .audit-filter-group label {
-                font-size: 12px; font-weight: 600; color: var(--color-text-secondary);
-                text-transform: uppercase; letter-spacing: 0.5px;
+                font-size: 13px; font-weight: 500; color: var(--color-text-tertiary);
             }
             .audit-filter-group.wide { flex: 2; min-width: 250px; }
             .audit-filter-group.narrow { flex: 1; min-width: 150px; }
@@ -212,36 +211,26 @@ class AllAudits {
             .btn-force { min-width: 90px; }
             .btn-view:disabled, .btn-force:disabled { opacity: 0.6; cursor: not-allowed; }
             .btn-force:disabled { background: var(--color-text-tertiary); border-color: var(--color-text-tertiary); }
-            .empty-audits { text-align: center; padding: 60px 20px; color: var(--color-text-secondary); }
-            .empty-audits-text { font-size: 14px; margin: 0; }
+            .empty-audits { text-align: center; padding: 48px 24px; color: var(--color-text-secondary); }
+            .empty-audits-text { font-size: var(--font-size-base); margin: 0; color: var(--color-text-tertiary); }
 
             /* Pagination */
             .audit-pagination {
                 display: flex; align-items: center; justify-content: space-between;
                 padding: 16px 20px; border-top: 1px solid var(--color-border);
-                background: var(--color-bg-subtle);
             }
-            .pagination-info { font-size: 13px; color: var(--color-text-secondary); }
-            .pagination-links { display: flex; gap: 4px; }
+            .pagination-info { font-size: 13px; color: var(--color-text-tertiary); }
+            .pagination-links { display: flex; gap: 2px; }
 
-            /* Modal */
-            .audit-modal {
-                display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.6); z-index: 9999; backdrop-filter: blur(4px);
-                animation: fadeIn 0.2s ease;
-            }
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            /* Modal — inherits global .audit-modal styles, page-specific overrides */
             .audit-modal-content {
-                background: var(--color-bg); width: 90%; max-width: 960px; max-height: 90vh;
-                margin: 5vh auto; border-radius: var(--radius-lg); padding: 0;
-                box-shadow: var(--shadow-lg); overflow: hidden;
-                display: flex; flex-direction: column; animation: slideUp 0.3s ease;
+                max-width: 880px;
             }
-            @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
             .audit-modal-header {
                 padding: 20px 24px; border-bottom: 1px solid var(--color-border);
                 display: flex; align-items: center; justify-content: space-between;
                 background: var(--color-bg-subtle); flex-shrink: 0;
+                position: sticky; top: 0; z-index: 1;
             }
             .audit-modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
             .close-modal {
@@ -263,9 +252,10 @@ class AllAudits {
             /* Parsed audit sections */
             .ar-section { margin-bottom: 24px; }
             .ar-section:last-child { margin-bottom: 0; }
+            .ar-section + .ar-section { padding-top: 24px; border-top: 1px solid var(--color-border); }
             .ar-section-title {
-                font-size: 13px; font-weight: 700; color: var(--color-text-secondary);
-                text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;
+                font-size: 13px; font-weight: 600; color: var(--color-text-secondary);
+                margin-bottom: 12px;
                 padding-bottom: 8px; border-bottom: 1px solid var(--color-border);
             }
             .ar-score-grid {
@@ -275,7 +265,7 @@ class AllAudits {
                 background: var(--color-bg-subtle); border: 1px solid var(--color-border);
                 border-radius: var(--radius-md); padding: 16px; text-align: center;
             }
-            .ar-score-label { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; margin-bottom: 6px; }
+            .ar-score-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); margin-bottom: 6px; }
             .ar-score-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
             .ar-score-value.score-good { color: var(--color-success); }
             .ar-score-value.score-ok { color: var(--color-info); }
@@ -298,12 +288,12 @@ class AllAudits {
             .ar-agent-score-item {
                 display: flex; flex-direction: column; align-items: center; gap: 2px;
             }
-            .ar-agent-score-item .label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
+            .ar-agent-score-item .label { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); }
             .ar-agent-score-item .value { font-size: 18px; font-weight: 700; }
             .ar-mini-table { width: 100%; font-size: 13px; border-collapse: collapse; }
             .ar-mini-table th {
-                text-align: left; font-size: 11px; font-weight: 600; color: var(--color-text-tertiary);
-                text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--color-border);
+                text-align: left; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary);
+                padding: 6px 8px; border-bottom: 1px solid var(--color-border);
             }
             .ar-mini-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); }
             .ar-badge {
@@ -383,7 +373,7 @@ class AllAudits {
 
         echo "<tr id='row-{$row->ticket_id}'>
             <td style='font-weight:600;color:var(--color-text-primary);'>#{$row->ticket_id}</td>
-            <td><span class='status-badge {$row->status}'>" . strtoupper($row->status) . "</span></td>
+            <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span></td>
             <td style='text-align:center;'><span class='col-score {$score_class}'>{$score_display}</span>{$sentiment_badge}</td>
             <td class='col-summary'>" . esc_html(substr($sum, 0, 100)) . "...<textarea id='json-{$row->ticket_id}' class='json-storage' style='display:none'>" . esc_textarea($j) . "</textarea></td>
             <td style='text-align:right;padding-right:16px;'>
@@ -523,7 +513,7 @@ class AllAudits {
                 // Key achievements
                 var achievements = ev.key_achievements || [];
                 if (achievements.length) {
-                    h += '<div style="margin-top:12px;"><strong style="font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;">Achievements:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
+                    h += '<div style="margin-top:12px;"><strong style="font-size:11px;color:var(--color-text-secondary);">Achievements:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
                     achievements.forEach(function(a) { h += '<li style="color:var(--color-success);">' + escHtml(a) + '</li>'; });
                     h += '</ul></div>';
                 }
@@ -531,7 +521,7 @@ class AllAudits {
                 // Areas for improvement
                 var improvements = ev.areas_for_improvement || [];
                 if (improvements.length) {
-                    h += '<div style="margin-top:8px;"><strong style="font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;">Areas for Improvement:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
+                    h += '<div style="margin-top:8px;"><strong style="font-size:11px;color:var(--color-text-secondary);">Areas for Improvement:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
                     improvements.forEach(function(a) { h += '<li style="color:var(--color-warning);">' + escHtml(a) + '</li>'; });
                     h += '</ul></div>';
                 }
@@ -567,7 +557,7 @@ class AllAudits {
 
                 $.post(ajaxurl, {action:'ai_audit_force', ticket_id:tid}, function(res){
                     if(res.success){
-                        row.find('.status-badge').first().attr('class', 'status-badge pending').text('PENDING');
+                        row.find('.status-badge').first().attr('class', 'status-badge pending').text('Pending');
                         row.find('.col-summary').html('Audit in progress...<textarea id="json-' + tid + '" class="json-storage" style="display:none"></textarea>');
 
                         var attempts=0, maxAttempts=60;
@@ -593,7 +583,7 @@ class AllAudits {
             });
 
             function updateRowUI(row, data, tid){
-                row.find('.status-badge').first().attr('class', 'status-badge '+data.status).text(data.status.toUpperCase());
+                row.find('.status-badge').first().attr('class', 'status-badge '+data.status).text(data.status.charAt(0).toUpperCase() + data.status.slice(1));
 
                 var src = data.audit_response ? data.audit_response : data.raw_json;
                 if(typeof src === 'object') src = JSON.stringify(src);
@@ -642,6 +632,7 @@ class AllAudits {
                 }
 
                 $('#audit-modal').fadeIn(200);
+                document.body.classList.add('modal-open');
             });
 
             // Toggle JSON / Parsed
@@ -659,9 +650,13 @@ class AllAudits {
                 }
             });
 
-            $('.close-modal').click(function(){ $('#audit-modal').fadeOut(); });
-            $('#audit-modal').click(function(e){ if($(e.target).is('#audit-modal')) $(this).fadeOut(); });
-            $(document).keyup(function(e) { if (e.key === "Escape") $('#audit-modal').fadeOut(); });
+            function closeAuditModal() {
+                $('#audit-modal').fadeOut();
+                document.body.classList.remove('modal-open');
+            }
+            $('.close-modal').click(closeAuditModal);
+            $('#audit-modal').click(function(e){ if($(e.target).is('#audit-modal')) closeAuditModal(); });
+            $(document).keyup(function(e) { if (e.key === "Escape") closeAuditModal(); });
         });
         </script>
         <?php
