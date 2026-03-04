@@ -31,5 +31,10 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Cleanup cron on deactivation
+register_deactivation_hook(__FILE__, function() {
+    wp_clear_scheduled_hook('ais_watchdog_scan');
+});
+
 // Initialize plugin
 SupportOps\Plugin::get_instance();

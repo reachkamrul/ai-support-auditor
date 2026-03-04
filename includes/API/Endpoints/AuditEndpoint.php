@@ -346,6 +346,46 @@ class AuditEndpoint {
                                 $save_warnings[] = $msg;
                             }
                         }
+
+                        // Auto-flag tickets needing attention
+                        $this->auto_flag_ticket($wpdb, $ticket_id, $ai_score, $audit);
+
+                        // Handoff compliance scoring
+                        try {
+                            $assignment_parser = new \SupportOps\Services\AssignmentParser();
+                            $handoff_scorer = new \SupportOps\Services\HandoffScorer();
+                            $assignment_history = $assignment_parser->parse_assignment_history($ticket_id);
+
+                            if (count($assignment_history) > 1) {
+                                $handoff_scores = $handoff_scorer->score($ticket_id, $assignment_history);
+
+                                // Inject handoff_score into evaluations for EvaluationSaver
+                                foreach ($audit['agent_evaluations'] as &$ev) {
+                                    $email = $ev['agent_email'] ?? '';
+                                    if (isset($handoff_scores[$email])) {
+                                        $ev['handoff_score'] = $handoff_scores[$email]['handoff_score'];
+                                    }
+                                }
+                                unset($ev);
+
+                                // Store assignment history in audit JSON
+                                $audit['assignment_history'] = $assignment_history;
+                                $update_data['audit_response'] = json_encode($audit, JSON_UNESCAPED_UNICODE);
+
+                                // Update handoff_score in already-saved evaluations
+                                foreach ($handoff_scores as $email => $score_data) {
+                                    if ($score_data['handoff_score'] !== null) {
+                                        $wpdb->update(
+                                            $wpdb->prefix . 'ais_agent_evaluations',
+                                            ['handoff_score' => $score_data['handoff_score']],
+                                            ['ticket_id' => $ticket_id, 'agent_email' => $email]
+                                        );
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            error_log('Handoff scoring failed for ticket ' . $ticket_id . ': ' . $e->getMessage());
+                        }
                     }
                 } catch (\Exception $e) {
                     error_log('API Error: Failed to process audit_response - ' . $e->getMessage());
@@ -532,6 +572,78 @@ class AuditEndpoint {
             }
         }
         return intval($settings['default_penalty']);
+    }
+
+    /**
+     * Auto-flag tickets that need manager attention.
+     */
+    private function auto_flag_ticket($wpdb, $ticket_id, $score, $audit) {
+        $table = $wpdb->prefix . 'ais_flagged_tickets';
+
+        // Check if table exists
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            return;
+        }
+
+        $settings = get_option('ai_audit_flag_settings', []);
+        $score_threshold  = intval($settings['score_threshold'] ?? 40);
+        $timing_threshold = intval($settings['timing_threshold'] ?? -30);
+
+        // Get audit_id for linking
+        $audit_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}ais_audits WHERE ticket_id = %d ORDER BY id DESC LIMIT 1",
+            $ticket_id
+        ));
+
+        // Remove old flags for this ticket (re-audit = fresh flags)
+        $wpdb->delete($table, ['ticket_id' => $ticket_id]);
+
+        // Flag 1: Low score
+        if ($score < $score_threshold) {
+            $wpdb->insert($table, [
+                'ticket_id'    => $ticket_id,
+                'audit_id'     => $audit_id,
+                'flag_type'    => 'low_score',
+                'flag_details' => json_encode(['score' => $score, 'threshold' => $score_threshold]),
+                'created_at'   => current_time('mysql'),
+            ]);
+        }
+
+        // Flag 2: Problem context (Critical or High severity)
+        foreach ($audit['problem_contexts'] ?? [] as $pc) {
+            if (in_array($pc['severity'] ?? '', ['Critical', 'High'])) {
+                $wpdb->insert($table, [
+                    'ticket_id'    => $ticket_id,
+                    'audit_id'     => $audit_id,
+                    'flag_type'    => 'problem_context',
+                    'flag_details' => json_encode([
+                        'severity'    => $pc['severity'],
+                        'category'    => $pc['category'] ?? '',
+                        'description' => substr($pc['issue_description'] ?? '', 0, 200),
+                    ]),
+                    'created_at'   => current_time('mysql'),
+                ]);
+                break; // One flag per type
+            }
+        }
+
+        // Flag 3: Long delay
+        foreach ($audit['agent_evaluations'] ?? [] as $ev) {
+            if (intval($ev['timing_score'] ?? 0) < $timing_threshold) {
+                $wpdb->insert($table, [
+                    'ticket_id'    => $ticket_id,
+                    'audit_id'     => $audit_id,
+                    'flag_type'    => 'long_delay',
+                    'flag_details' => json_encode([
+                        'agent_name'   => $ev['agent_name'] ?? '',
+                        'agent_email'  => $ev['agent_email'] ?? '',
+                        'timing_score' => $ev['timing_score'],
+                    ]),
+                    'created_at'   => current_time('mysql'),
+                ]);
+                break; // One flag per type
+            }
+        }
     }
 
     private function parse_audit_response($audit_response) {

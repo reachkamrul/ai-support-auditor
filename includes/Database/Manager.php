@@ -21,7 +21,12 @@ class Manager {
         'agent_contributions',
         'agent_evaluations',
         'problem_contexts',
-        'doc_central_meta'
+        'doc_central_meta',
+        'flagged_tickets',
+        'teams',
+        'team_members',
+        'team_products',
+        'handoff_events'
     ];
     
     /**
@@ -130,6 +135,7 @@ class Manager {
             timing_score int(4) DEFAULT 0,
             resolution_score int(4) DEFAULT 0,
             communication_score int(4) DEFAULT 0,
+            handoff_score int(4) DEFAULT NULL,
             overall_agent_score int(4) DEFAULT 0,
             contribution_percentage int(3) DEFAULT 0,
             reply_count int(11) DEFAULT 0,
@@ -176,6 +182,69 @@ class Manager {
             UNIQUE KEY doc_url (doc_url)
         ) $charset_collate;");
         
+        // 10. Flagged Tickets
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_flagged_tickets (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            ticket_id varchar(50) NOT NULL,
+            audit_id bigint(20) DEFAULT NULL,
+            flag_type varchar(30) NOT NULL,
+            flag_details text DEFAULT NULL,
+            status varchar(20) DEFAULT 'needs_review' NOT NULL,
+            reviewer_notes text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            reviewed_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY ticket_id (ticket_id),
+            KEY status (status),
+            KEY flag_type (flag_type)
+        ) $charset_collate;");
+
+        // 11. Teams
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_teams (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            name varchar(100) NOT NULL,
+            color varchar(20) DEFAULT '#3b82f6',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id)
+        ) $charset_collate;");
+
+        // 12. Team Members
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_team_members (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            team_id bigint(20) NOT NULL,
+            agent_email varchar(100) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY team_agent (team_id, agent_email)
+        ) $charset_collate;");
+
+        // 13. Team Products
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_team_products (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            team_id bigint(20) NOT NULL,
+            product_id int(11) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY team_product (team_id, product_id)
+        ) $charset_collate;");
+
+        // 14. Handoff Events
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_handoff_events (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            ticket_id varchar(50) NOT NULL,
+            agent_email varchar(100) NOT NULL,
+            shift_end datetime DEFAULT NULL,
+            reassigned_at datetime DEFAULT NULL,
+            handoff_score int(4) DEFAULT 0,
+            gap_hours decimal(6,2) DEFAULT 0,
+            reason text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY ticket_id (ticket_id),
+            KEY agent_email (agent_email),
+            KEY created_at (created_at)
+        ) $charset_collate;");
+
         // Seed shift definitions
         $this->seed_shift_definitions();
         
@@ -202,6 +271,9 @@ class Manager {
 
         // Auto-migrate ais_agent_evaluations table
         $this->migrate_evaluations_table();
+
+        // Auto-create new tables if missing (flagged_tickets, teams, etc.)
+        $this->ensure_new_tables();
         
         // Check version and run setup if needed
         $current_version = get_option('ai_audit_db_version', '22.1');
@@ -304,6 +376,84 @@ class Manager {
         $col2 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'evaluation_data'");
         if (!empty($col2)) {
             $wpdb->query("ALTER TABLE $table DROP COLUMN evaluation_data");
+        }
+
+        // Add handoff_score column
+        $col3 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'handoff_score'");
+        if (empty($col3)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN handoff_score int(4) DEFAULT NULL AFTER communication_score");
+        }
+    }
+
+    /**
+     * Ensure new tables exist (for upgrades from older versions)
+     */
+    private function ensure_new_tables() {
+        global $wpdb;
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $new_tables = [
+            'ais_flagged_tickets' => "CREATE TABLE {$wpdb->prefix}ais_flagged_tickets (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                ticket_id varchar(50) NOT NULL,
+                audit_id bigint(20) DEFAULT NULL,
+                flag_type varchar(30) NOT NULL,
+                flag_details text DEFAULT NULL,
+                status varchar(20) DEFAULT 'needs_review' NOT NULL,
+                reviewer_notes text DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                reviewed_at datetime DEFAULT NULL,
+                PRIMARY KEY  (id),
+                KEY ticket_id (ticket_id),
+                KEY status (status),
+                KEY flag_type (flag_type)
+            ) $charset_collate;",
+            'ais_teams' => "CREATE TABLE {$wpdb->prefix}ais_teams (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                name varchar(100) NOT NULL,
+                color varchar(20) DEFAULT '#3b82f6',
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id)
+            ) $charset_collate;",
+            'ais_team_members' => "CREATE TABLE {$wpdb->prefix}ais_team_members (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                team_id bigint(20) NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY team_agent (team_id, agent_email)
+            ) $charset_collate;",
+            'ais_team_products' => "CREATE TABLE {$wpdb->prefix}ais_team_products (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                team_id bigint(20) NOT NULL,
+                product_id int(11) NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY team_product (team_id, product_id)
+            ) $charset_collate;",
+            'ais_handoff_events' => "CREATE TABLE {$wpdb->prefix}ais_handoff_events (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                ticket_id varchar(50) NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                shift_end datetime DEFAULT NULL,
+                reassigned_at datetime DEFAULT NULL,
+                handoff_score int(4) DEFAULT 0,
+                gap_hours decimal(6,2) DEFAULT 0,
+                reason text DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY ticket_id (ticket_id),
+                KEY agent_email (agent_email),
+                KEY created_at (created_at)
+            ) $charset_collate;",
+        ];
+
+        foreach ($new_tables as $name => $sql) {
+            $full_name = $wpdb->prefix . $name;
+            if ($wpdb->get_var("SHOW TABLES LIKE '{$full_name}'") !== $full_name) {
+                dbDelta($sql);
+            }
         }
     }
 

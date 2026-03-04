@@ -43,6 +43,11 @@ class Plugin {
      * Transcript builder
      */
     private $transcript;
+
+    /**
+     * Ticket watchdog
+     */
+    private $watchdog;
     
     /**
      * Get singleton instance
@@ -72,6 +77,7 @@ class Plugin {
         $this->ajax = new AJAX\Manager($this->database);
         $this->assets = new Admin\Assets();
         $this->transcript = new Services\TranscriptBuilder($this->database);
+        $this->watchdog = new Services\TicketWatchdog();
     }
     
     /**
@@ -97,9 +103,14 @@ class Plugin {
         add_action('wp_ajax_ai_ops_delete', [$this->ajax, 'delete_shift']);
         add_action('wp_ajax_ai_audit_test_system_message', [$this->ajax, 'test_system_message']);
         add_action('wp_ajax_ai_audit_check_test_status', [$this->ajax, 'check_test_status']);
+        add_action('wp_ajax_ai_watchdog_sync', [$this->ajax, 'force_watchdog_sync']);
         
         // Admin post actions
         add_action('admin_post_export_agent_data', [$this->admin, 'export_agent_data']);
+
+        // Ticket Watchdog cron
+        add_action('ais_watchdog_scan', [$this->watchdog, 'scan']);
+        add_filter('cron_schedules', [$this, 'add_cron_schedules']);
     }
     
     /**
@@ -110,6 +121,22 @@ class Plugin {
         if (!get_option('ai_audit_secret_token')) {
             update_option('ai_audit_secret_token', wp_generate_password(32, true, true));
         }
+
+        // Schedule watchdog cron if not already scheduled
+        if (!wp_next_scheduled('ais_watchdog_scan')) {
+            wp_schedule_event(time(), 'every_fifteen_minutes', 'ais_watchdog_scan');
+        }
+    }
+
+    /**
+     * Add custom cron schedules
+     */
+    public function add_cron_schedules($schedules) {
+        $schedules['every_fifteen_minutes'] = [
+            'interval' => 15 * MINUTE_IN_SECONDS,
+            'display'  => 'Every 15 Minutes',
+        ];
+        return $schedules;
     }
     
     /**

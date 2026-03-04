@@ -82,4 +82,28 @@ class Manager {
     public function check_test_status() {
         $this->handlers['test']->check_test_status();
     }
+
+    /**
+     * Force watchdog sync
+     */
+    public function force_watchdog_sync() {
+        check_ajax_referer('ai_ops_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $watchdog = new \SupportOps\Services\TicketWatchdog();
+        $watchdog->scan();
+
+        $snapshot = \SupportOps\Services\TicketWatchdog::get_snapshot();
+        $orphan_count = $snapshot ? count($snapshot['orphaned_tickets']) : 0;
+
+        wp_send_json_success([
+            'orphan_count' => $orphan_count,
+            'on_shift' => $snapshot['on_shift_count'] ?? 0,
+            'total_open' => $snapshot['total_open'] ?? 0,
+            'scanned_at' => $snapshot['scanned_at'] ?? '',
+        ]);
+    }
 }

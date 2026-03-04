@@ -95,14 +95,6 @@ class Assets {
             }
 
             /* ===== GLOBAL STYLES ===== */
-            /* Hide WordPress admin notices on all plugin pages */
-            .wrap .notice,
-            .wrap .updated,
-            .wrap .error,
-            .wrap .warning,
-            .wrap .info {
-                display: none !important;
-            }
             
             /* Plugin Logo Styles */
             .ops-logo {
@@ -143,7 +135,7 @@ class Assets {
             }
             
             /* ===== CARD COMPONENT ===== */
-            .ops-card { 
+            .ops-card {
                 background: var(--color-bg);
                 border: 1px solid var(--color-border);
                 box-shadow: var(--shadow-xs);
@@ -151,6 +143,7 @@ class Assets {
                 margin-bottom: var(--space-lg);
                 border-radius: var(--radius-md);
                 transition: all 0.2s ease;
+                overflow-x: auto;
             }
             .ops-card:hover {
                 box-shadow: var(--shadow-sm);
@@ -232,7 +225,7 @@ class Assets {
             }
             
             /* ===== TABLE COMPONENT ===== */
-            .audit-table { 
+            .audit-table {
                 width: 100%;
                 border-collapse: separate;
                 border-spacing: 0;
@@ -602,6 +595,267 @@ class Assets {
                 border-color: var(--color-border);
                 border-bottom-color: var(--color-bg);
                 margin-bottom: -1px;
+            }
+
+            /* ===== SIDEBAR LAYOUT ===== */
+            .ops-layout {
+                display: flex;
+                min-height: calc(100vh - 32px);
+                margin: 0;
+                font-family: var(--font-sans);
+            }
+
+            .ops-sidebar {
+                width: 250px;
+                background: #1e293b;
+                flex-shrink: 0;
+                position: sticky;
+                top: 32px;
+                height: calc(100vh - 32px);
+                overflow-y: auto;
+                z-index: 100;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .ops-sidebar-header {
+                padding: 20px 20px 16px;
+                border-bottom: 1px solid #334155;
+            }
+
+            .ops-sidebar-logo {
+                width: 180px;
+                height: auto;
+                display: block;
+                margin-bottom: 8px;
+                filter: brightness(0) invert(1);
+            }
+
+            .ops-sidebar-version {
+                display: inline-block;
+                background: #0ea5e9;
+                color: #fff;
+                font-size: 10px;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-weight: 500;
+            }
+
+            .ops-sidebar-nav {
+                flex: 1;
+                padding: 12px 0;
+                overflow-y: auto;
+            }
+
+            .ops-nav-section {
+                padding: 16px 20px 6px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 1.2px;
+                color: #64748b;
+            }
+
+            .ops-nav-section:first-child {
+                padding-top: 4px;
+            }
+
+            .ops-nav-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 9px 20px;
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.15s ease;
+                border-left: 3px solid transparent;
+                cursor: pointer;
+            }
+
+            .ops-nav-item:hover {
+                color: #e2e8f0;
+                background: #334155;
+            }
+
+            .ops-nav-item:focus {
+                color: #e2e8f0;
+                background: #334155;
+                outline: none;
+            }
+
+            .ops-nav-item.active {
+                color: #ffffff;
+                background: #334155;
+                border-left-color: #3b82f6;
+                font-weight: 600;
+            }
+
+            .ops-nav-icon {
+                width: 18px;
+                height: 18px;
+                flex-shrink: 0;
+                opacity: 0.7;
+            }
+
+            .ops-nav-item.active .ops-nav-icon {
+                opacity: 1;
+            }
+
+            .ops-nav-badge {
+                margin-left: auto;
+                background: #ef4444;
+                color: #fff;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 7px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+                line-height: 1.4;
+            }
+
+            .ops-main-content {
+                flex: 1;
+                padding: 24px 32px;
+                background: var(--color-bg-subtle);
+                min-width: 0;
+                overflow-x: hidden;
+            }
+
+            .ops-page-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 24px;
+            }
+
+            .ops-page-title {
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--color-text-primary);
+                margin: 0;
+                letter-spacing: -0.02em;
+            }
+
+            .ops-page-subtitle {
+                font-size: 13px;
+                color: var(--color-text-tertiary);
+                margin-top: 4px;
+            }
+
+            /* Sidebar footer */
+            .ops-sidebar-footer {
+                padding: 12px 20px;
+                border-top: 1px solid #334155;
+                font-size: 11px;
+                color: #64748b;
+            }
+
+            /* Watchdog: orphan detection widget */
+            .watchdog-alert { border-left: 4px solid var(--color-error); }
+            .watchdog-clear { border-left: 4px solid var(--color-success); }
+            .badge-offshift {
+                background: var(--color-error-bg, #fef2f2);
+                color: #991b1b;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: var(--radius-pill);
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .badge-onshift {
+                background: var(--color-success-bg, #dcfce7);
+                color: #065f46;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: var(--radius-pill);
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .queue-count {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 24px;
+                height: 20px;
+                border-radius: var(--radius-pill);
+                font-size: 11px;
+                font-weight: 700;
+                padding: 0 6px;
+            }
+            .queue-count.low { background: var(--color-success-bg, #dcfce7); color: #065f46; }
+            .queue-count.medium { background: var(--color-warning-bg, #fef9c3); color: #92400e; }
+            .queue-count.high { background: var(--color-error-bg, #fef2f2); color: #991b1b; }
+            .handoff-good { color: var(--color-success, #16a34a); }
+            .handoff-neutral { color: var(--color-text-secondary, #6b7280); }
+            .handoff-bad { color: var(--color-error, #dc2626); }
+
+            /* Override old wrapper styles when using sidebar layout */
+            .ops-layout .ops-main-content .ops-wrapper {
+                max-width: none;
+                padding: 0;
+            }
+
+            /* Remove WP admin padding/margins so our layout fills edge-to-edge */
+            body.toplevel_page_ai-ops #wpcontent {
+                padding-left: 0;
+                overflow-x: hidden;
+            }
+            body.toplevel_page_ai-ops #wpbody-content {
+                overflow: visible;
+            }
+            body.toplevel_page_ai-ops .wrap {
+                margin: 0;
+            }
+
+            /* Hide ALL WP/plugin admin notices on our pages */
+            body.toplevel_page_ai-ops .notice,
+            body.toplevel_page_ai-ops .updated,
+            body.toplevel_page_ai-ops .update-nag,
+            body.toplevel_page_ai-ops .error:not(.ops-card),
+            body.toplevel_page_ai-ops .is-dismissible,
+            body.toplevel_page_ai-ops #wpbody-content > .notice,
+            body.toplevel_page_ai-ops #wpbody-content > .updated,
+            body.toplevel_page_ai-ops #wpbody-content > div.error,
+            body.toplevel_page_ai-ops #wpbody-content > div.update-nag {
+                display: none !important;
+            }
+
+            /* ===== RESPONSIVE: collapse sidebar on small screens ===== */
+            @media (max-width: 960px) {
+                .ops-sidebar {
+                    width: 56px;
+                    overflow: visible;
+                }
+                .ops-sidebar-header {
+                    padding: 12px;
+                    text-align: center;
+                }
+                .ops-sidebar-logo,
+                .ops-sidebar-version,
+                .ops-nav-section,
+                .ops-sidebar-footer {
+                    display: none;
+                }
+                .ops-nav-item {
+                    padding: 12px;
+                    justify-content: center;
+                }
+                .ops-nav-item span:not(.ops-nav-icon):not(.ops-nav-badge) {
+                    display: none;
+                }
+                .ops-nav-item .ops-nav-badge {
+                    position: absolute;
+                    top: 4px;
+                    right: 4px;
+                    padding: 1px 5px;
+                    font-size: 9px;
+                }
+                .ops-main-content {
+                    padding: 16px;
+                }
             }
         </style>
         <?php

@@ -1,7 +1,7 @@
 <?php
 /**
- * Admin Manager
- * 
+ * Admin Manager — Sidebar Navigation
+ *
  * @package SupportOps\Admin
  */
 
@@ -10,54 +10,81 @@ namespace SupportOps\Admin;
 use SupportOps\Database\Manager as DatabaseManager;
 
 class Manager {
-    
-    /**
-     * Database manager
-     */
+
     private $database;
-    
-    /**
-     * Page renderers
-     */
     private $pages = [];
-    
+
     /**
-     * Constructor
+     * Sidebar navigation structure
      */
+    private $nav_sections = [
+        'OVERVIEW' => [
+            'dashboard'        => ['label' => 'Dashboard',        'icon' => 'grid'],
+            'flagged'          => ['label' => 'Flagged Tickets',  'icon' => 'flag',    'badge' => true],
+        ],
+        'TEAM' => [
+            'agents'           => ['label' => 'Agents',           'icon' => 'users'],
+            'teams'            => ['label' => 'Teams & Products', 'icon' => 'layers'],
+            'calendar'         => ['label' => 'Shift Calendar',   'icon' => 'calendar'],
+            'shift-settings'   => ['label' => 'Shift Settings',   'icon' => 'clock'],
+            'handoffs'         => ['label' => 'Handoff Report',   'icon' => 'repeat'],
+        ],
+        'AUDITS' => [
+            'audits'           => ['label' => 'All Audits',       'icon' => 'clipboard'],
+            'agent-reports'    => ['label' => 'Agent Reports',    'icon' => 'bar-chart'],
+            'analytics'        => ['label' => 'Analytics',        'icon' => 'trending-up'],
+        ],
+        'SETTINGS' => [
+            'timing-penalties' => ['label' => 'Timing Penalties', 'icon' => 'sliders'],
+            'system-message'   => ['label' => 'System Message',   'icon' => 'message-square'],
+            'api-config'       => ['label' => 'API Config',       'icon' => 'key'],
+        ],
+    ];
+
+    /**
+     * Map old tab= params to new section= params for backward compatibility
+     */
+    private $tab_to_section = [
+        'calendar'         => 'calendar',
+        'settings'         => 'shift-settings',
+        'timing-penalties' => 'timing-penalties',
+        'audits'           => 'audits',
+        'analytics'        => 'analytics',
+        'agents'           => 'agents',
+        'agent-performance'=> 'agent-reports',
+        'system-message'   => 'system-message',
+        'api-config'       => 'api-config',
+    ];
+
     public function __construct(DatabaseManager $database) {
         $this->database = $database;
         $this->init_pages();
         $this->register_hooks();
     }
-    
-    /**
-     * Initialize page renderers
-     */
+
     private function init_pages() {
         $this->pages = [
-            'dashboard' => new Pages\Dashboard($this->database),
-            'agents' => new Pages\Agents($this->database),
-            'agent_performance' => new Pages\AgentPerformance($this->database),
-            'calendar' => new Pages\Calendar($this->database),
-            'settings' => new Pages\Settings($this->database),
-            'analytics' => new Pages\Analytics($this->database),
-            'system_message' => new Pages\SystemMessage($this->database),
-            'api_config' => new Pages\ApiConfig($this->database),
-            'timing_settings' => new Pages\TimingSettings($this->database)
+            'dashboard'        => new Pages\Dashboard($this->database),
+            'all_audits'       => new Pages\AllAudits($this->database),
+            'agents'           => new Pages\Agents($this->database),
+            'agent_performance'=> new Pages\AgentPerformance($this->database),
+            'calendar'         => new Pages\Calendar($this->database),
+            'settings'         => new Pages\Settings($this->database),
+            'analytics'        => new Pages\Analytics($this->database),
+            'system_message'   => new Pages\SystemMessage($this->database),
+            'api_config'       => new Pages\ApiConfig($this->database),
+            'timing_settings'  => new Pages\TimingSettings($this->database),
+            'flagged_tickets'  => new Pages\FlaggedTickets($this->database),
+            'teams'            => new Pages\Teams($this->database),
+            'handoff_report'   => new Pages\HandoffReport($this->database),
         ];
     }
-    
-    /**
-     * Register WordPress hooks
-     */
+
     private function register_hooks() {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_head', [$this, 'enqueue_assets']);
     }
-    
-    /**
-     * Register admin menu
-     */
+
     public function register_menu() {
         $icon_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/icon.svg';
         add_menu_page(
@@ -69,7 +96,7 @@ class Manager {
             $icon_url,
             30
         );
-        
+
         add_submenu_page(
             'ai-ops',
             'Dashboard',
@@ -78,112 +105,235 @@ class Manager {
             'ai-ops',
             [$this, 'render_main_page']
         );
-        
-        // Agent Performance is now integrated as a tab in the main page
-        // Removed separate submenu item for consistency
     }
-    
-    /**
-     * Enqueue assets
-     */
+
     public function enqueue_assets() {
         $assets = new Assets();
         $assets->enqueue();
     }
-    
+
     /**
-     * Render main page
+     * Resolve current section from URL params
+     */
+    private function get_current_section() {
+        // Support new section= param
+        if (!empty($_GET['section'])) {
+            return sanitize_text_field($_GET['section']);
+        }
+        // Backward compat: map old tab= param
+        if (!empty($_GET['tab'])) {
+            $tab = sanitize_text_field($_GET['tab']);
+            return $this->tab_to_section[$tab] ?? 'dashboard';
+        }
+        return 'dashboard';
+    }
+
+    /**
+     * Render main page with sidebar layout
      */
     public function render_main_page() {
-        $tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'calendar';
-        
-        $logo_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/logo.svg?v=' . SUPPORT_OPS_VERSION;
-        echo '<div class="wrap ops-wrapper">';
-        echo '<div class="ops-header">';
-        echo '<img src="' . esc_url($logo_url) . '" alt="Support Ops & AI Auditor Logo" class="ops-logo">';
-        echo '<span style="display:inline-block;background:#0ea5e9;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;">v' . SUPPORT_OPS_VERSION . ' (deployed: 2 Mar 2026)</span>';
-        $this->render_tabs($tab);
+        $section = $this->get_current_section();
+
+        echo '<div class="ops-layout">';
+        $this->render_sidebar($section);
+        echo '<div class="ops-main-content">';
+        $this->render_section($section);
         echo '</div>';
-        echo '<hr class="wp-header-end">';
-        
-        switch ($tab) {
-            case 'audits':
+        echo '</div>';
+    }
+
+    /**
+     * Render sidebar navigation
+     */
+    private function render_sidebar($current_section) {
+        $logo_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/logo.svg?v=' . SUPPORT_OPS_VERSION;
+        $flagged_count = $this->get_flagged_count();
+
+        echo '<aside class="ops-sidebar">';
+
+        // Header with logo
+        echo '<div class="ops-sidebar-header">';
+        echo '<img src="' . esc_url($logo_url) . '" alt="Support Ops" class="ops-sidebar-logo">';
+        echo '<span class="ops-sidebar-version">v' . SUPPORT_OPS_VERSION . '</span>';
+        echo '</div>';
+
+        // Navigation
+        echo '<nav class="ops-sidebar-nav">';
+
+        foreach ($this->nav_sections as $section_label => $items) {
+            echo '<div class="ops-nav-section">' . esc_html($section_label) . '</div>';
+
+            foreach ($items as $key => $item) {
+                $active = ($key === $current_section) ? ' active' : '';
+                $url = admin_url('admin.php?page=ai-ops&section=' . $key);
+
+                echo '<a href="' . esc_url($url) . '" class="ops-nav-item' . $active . '">';
+                echo '<span class="ops-nav-icon">' . $this->get_icon($item['icon']) . '</span>';
+                echo '<span>' . esc_html($item['label']) . '</span>';
+
+                // Badge for flagged tickets
+                if (!empty($item['badge']) && $flagged_count > 0) {
+                    echo '<span class="ops-nav-badge">' . intval($flagged_count) . '</span>';
+                }
+
+                echo '</a>';
+            }
+        }
+
+        echo '</nav>';
+
+        // Footer
+        echo '<div class="ops-sidebar-footer">Support Ops & AI Auditor</div>';
+
+        echo '</aside>';
+    }
+
+    /**
+     * Render the active section content
+     */
+    private function render_section($section) {
+        switch ($section) {
+            case 'dashboard':
+                $this->render_page_header('Dashboard', 'Overview of your support operations');
                 $this->pages['dashboard']->render();
                 break;
-            case 'analytics':
-                $this->pages['analytics']->render();
+
+            case 'flagged':
+                $this->render_page_header('Flagged Tickets', 'Tickets that need your attention');
+                $this->pages['flagged_tickets']->render();
                 break;
-            case 'calendar':
-                $this->pages['calendar']->render();
-                break;
+
             case 'agents':
+                $this->render_page_header('Agents', 'Manage your support team agents');
                 $this->pages['agents']->render();
                 break;
-            case 'agent-performance':
+
+            case 'teams':
+                $this->render_page_header('Teams & Products', 'Organize agents into teams and map products');
+                $this->pages['teams']->render();
+                break;
+
+            case 'calendar':
+                $this->render_page_header('Shift Calendar', 'Visual monthly shift schedule');
+                $this->pages['calendar']->render();
+                break;
+
+            case 'shift-settings':
+                $this->render_page_header('Shift Settings', 'Define shift types and time ranges');
+                $this->pages['settings']->render();
+                break;
+
+            case 'handoffs':
+                $this->render_page_header('Handoff Report', 'Track agent shift-end handoff compliance');
+                $this->pages['handoff_report']->render();
+                break;
+
+            case 'audits':
+                $this->render_page_header('All Audits', 'Review AI audit results for all tickets');
+                $this->pages['all_audits']->render();
+                break;
+
+            case 'agent-reports':
                 $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'list';
                 $agent_email = isset($_GET['agent']) ? sanitize_email($_GET['agent']) : '';
                 if ($view === 'detail' && $agent_email) {
                     $this->pages['agent_performance']->render_detail($agent_email);
                 } else {
+                    $this->render_page_header('Agent Reports', 'Individual agent performance scores');
                     $this->pages['agent_performance']->render_list();
                 }
                 break;
-            case 'settings':
-                $this->pages['settings']->render();
+
+            case 'analytics':
+                $this->render_page_header('Analytics', 'Team-wide analytics and trends');
+                $this->pages['analytics']->render();
                 break;
+
             case 'timing-penalties':
+                $this->render_page_header('Timing Penalties', 'Configure delay rules and tag exclusions');
                 $this->pages['timing_settings']->render();
                 break;
+
             case 'system-message':
+                $this->render_page_header('System Message', 'Edit the AI prompt for auditing');
                 $this->pages['system_message']->render();
                 break;
+
             case 'api-config':
+                $this->render_page_header('API Config', 'Security tokens and endpoint reference');
                 $this->pages['api_config']->render();
                 break;
+
+            default:
+                $this->render_page_header('Dashboard', 'Overview of your support operations');
+                $this->pages['dashboard']->render();
+                break;
         }
-        
+    }
+
+    /**
+     * Render page header with title and subtitle
+     */
+    private function render_page_header($title, $subtitle = '') {
+        echo '<div class="ops-page-header">';
+        echo '<div>';
+        echo '<h1 class="ops-page-title">' . esc_html($title) . '</h1>';
+        if ($subtitle) {
+            echo '<p class="ops-page-subtitle">' . esc_html($subtitle) . '</p>';
+        }
+        echo '</div>';
         echo '</div>';
     }
-    
+
     /**
-     * Render agents page
+     * Render coming soon placeholder for Phase 2/3 features
      */
-    public function render_agents_page() {
-        $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'list';
-        $agent_email = isset($_GET['agent']) ? sanitize_email($_GET['agent']) : '';
-        
-        if ($view === 'detail' && $agent_email) {
-            $this->pages['agent_performance']->render_detail($agent_email);
-        } else {
-            $this->pages['agent_performance']->render_list();
-        }
+    private function render_coming_soon($feature, $description) {
+        echo '<div class="ops-card" style="text-align:center;padding:60px 40px;">';
+        echo '<div style="font-size:48px;margin-bottom:16px;opacity:0.3;">&#128736;</div>';
+        echo '<h3 style="font-size:20px;margin-bottom:8px;">' . esc_html($feature) . '</h3>';
+        echo '<p style="color:var(--color-text-secondary);max-width:400px;margin:0 auto;">' . esc_html($description) . '</p>';
+        echo '<span class="status-badge pending" style="margin-top:16px;">Coming Soon</span>';
+        echo '</div>';
     }
-    
+
     /**
-     * Render navigation tabs
+     * Get count of unreviewed flagged tickets
      */
-    private function render_tabs($current_tab) {
-        $tabs = [
-            'calendar' => 'Shift Calendar',
-            'settings' => 'Shift Settings',
-            'timing-penalties' => 'Timing Penalties',
-            'audits' => 'AI Audits',
-            'analytics' => 'Analytics',
-            'agents' => 'Agents',
-            'agent-performance' => 'Agent Performance',
-            'system-message' => 'System Message',
-            'api-config' => 'API Config'
+    private function get_flagged_count() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_flagged_tickets';
+        // Table may not exist yet (Phase 2)
+        $exists = $wpdb->get_var("SHOW TABLES LIKE '{$table}'");
+        if (!$exists) {
+            return 0;
+        }
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'needs_review'");
+    }
+
+    /**
+     * SVG icons for sidebar navigation
+     */
+    private function get_icon($name) {
+        $icons = [
+            'grid' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+            'flag' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+            'users' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            'layers' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+            'calendar' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            'clock' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+            'clipboard' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+            'bar-chart' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+            'trending-up' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+            'sliders' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+            'message-square' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+            'key' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
+            'repeat' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
         ];
-        
-        echo '<nav class="nav-tab-wrapper ops-nav-tabs">';
-        foreach ($tabs as $tab => $label) {
-            $active = ($tab === $current_tab) ? 'nav-tab-active' : '';
-            $url = admin_url("admin.php?page=ai-ops&tab=$tab");
-            echo "<a href='$url' class='nav-tab $active'>$label</a>";
-        }
-        echo '</nav>';
+
+        return $icons[$name] ?? '';
     }
-    
+
     /**
      * Export agent data to CSV
      */
@@ -191,48 +341,45 @@ class Manager {
         if (!current_user_can('manage_options')) {
             wp_die('Access denied');
         }
-        
+
         global $wpdb;
-        
+
         $agent_email = isset($_GET['agent']) ? sanitize_email($_GET['agent']) : '';
         $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : date('Y-m-d', strtotime('-30 days'));
         $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : date('Y-m-d');
-        
+
         if ($agent_email) {
             $this->export_single_agent($agent_email, $date_from, $date_to);
         } else {
             $this->export_all_agents($date_from, $date_to);
         }
     }
-    
-    /**
-     * Export single agent data
-     */
+
     private function export_single_agent($agent_email, $date_from, $date_to) {
         global $wpdb;
-        
+
         $summary = $wpdb->get_row($wpdb->prepare("
-            SELECT agent_name, agent_email FROM {$wpdb->prefix}ais_agent_evaluations 
+            SELECT agent_name, agent_email FROM {$wpdb->prefix}ais_agent_evaluations
             WHERE agent_email = %s LIMIT 1
         ", $agent_email));
-        
+
         $tickets = $wpdb->get_results($wpdb->prepare("
-            SELECT 
-                ticket_id, created_at, overall_agent_score, timing_score, 
+            SELECT
+                ticket_id, created_at, overall_agent_score, timing_score,
                 resolution_score, communication_score, reply_count
             FROM {$wpdb->prefix}ais_agent_evaluations
             WHERE agent_email = %s AND DATE(created_at) BETWEEN %s AND %s
             ORDER BY created_at DESC
         ", $agent_email, $date_from, $date_to));
-        
+
         $filename = 'agent_' . sanitize_file_name($summary->agent_name) . '_' . date('Y-m-d') . '.csv';
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
+
         $output = fopen('php://output', 'w');
         fputcsv($output, ['Ticket ID', 'Date', 'Overall Score', 'Timing', 'Resolution', 'Communication', 'Replies']);
-        
+
         foreach ($tickets as $ticket) {
             fputcsv($output, [
                 $ticket->ticket_id,
@@ -244,19 +391,16 @@ class Manager {
                 $ticket->reply_count
             ]);
         }
-        
+
         fclose($output);
         exit;
     }
-    
-    /**
-     * Export all agents data
-     */
+
     private function export_all_agents($date_from, $date_to) {
         global $wpdb;
-        
+
         $agents = $wpdb->get_results($wpdb->prepare("
-            SELECT 
+            SELECT
                 agent_email, agent_name,
                 COUNT(DISTINCT ticket_id) as total_tickets,
                 ROUND(AVG(overall_agent_score), 1) as avg_overall_score,
@@ -268,15 +412,15 @@ class Manager {
             GROUP BY agent_email, agent_name
             ORDER BY avg_overall_score DESC
         ", $date_from, $date_to));
-        
+
         $filename = 'all_agents_performance_' . date('Y-m-d') . '.csv';
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
+
         $output = fopen('php://output', 'w');
         fputcsv($output, ['Agent Name', 'Email', 'Total Tickets', 'Avg Overall Score', 'Avg Timing', 'Avg Resolution', 'Avg Communication']);
-        
+
         foreach ($agents as $agent) {
             fputcsv($output, [
                 $agent->agent_name,
@@ -288,7 +432,7 @@ class Manager {
                 $agent->avg_communication_score
             ]);
         }
-        
+
         fclose($output);
         exit;
     }

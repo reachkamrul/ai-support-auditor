@@ -54,6 +54,7 @@ class EvaluationSaver {
                 'timing_score' => $timing,
                 'resolution_score' => $resolution,
                 'communication_score' => $communication,
+                'handoff_score' => isset($eval['handoff_score']) ? intval($eval['handoff_score']) : null,
                 'overall_agent_score' => $agent_score,
                 'contribution_percentage' => $contribution_pct,
                 'reply_count' => intval($eval['reply_count'] ?? 0),
