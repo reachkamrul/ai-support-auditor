@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class Agents {
     
@@ -19,26 +20,75 @@ class Agents {
     
     public function render() {
         global $wpdb;
-        
+        $is_read_only = AccessControl::is_read_only('agents');
+
         // Handle agent save
-        if(isset($_POST['save_agent'])) {
-            $this->save_agent($_POST);
-            echo '<div class="notice notice-success is-dismissible"><p>Agent saved successfully.</p></div>';
+        if(!$is_read_only && isset($_POST['save_agent'])) {
+            if ($this->can_modify_agent($_POST['email'] ?? '', intval($_POST['id'] ?? 0))) {
+                $this->save_agent($_POST);
+                echo '<div class="notice notice-success is-dismissible"><p>Agent saved successfully.</p></div>';
+            } else {
+                echo '<div class="notice notice-error is-dismissible"><p>You can only edit agents in your team.</p></div>';
+            }
         }
-        
+
         // Handle delete
-        if(isset($_GET['del_agent'])) {
+        if(!$is_read_only && isset($_GET['del_agent'])) {
             $agent_id = intval($_GET['del_agent']);
-            $wpdb->delete($wpdb->prefix.'ais_agents', ['id'=>$agent_id]);
-            echo '<div class="notice notice-success is-dismissible"><p>Agent deleted.</p></div>';
+            $agent_email = $wpdb->get_var($wpdb->prepare(
+                "SELECT email FROM {$wpdb->prefix}ais_agents WHERE id=%d", $agent_id
+            ));
+            if ($this->can_modify_agent($agent_email ?: '', $agent_id)) {
+                $wpdb->delete($wpdb->prefix.'ais_agents', ['id'=>$agent_id]);
+                echo '<div class="notice notice-success is-dismissible"><p>Agent deleted.</p></div>';
+            } else {
+                echo '<div class="notice notice-error is-dismissible"><p>You can only delete agents in your team.</p></div>';
+            }
         }
-        
-        $agents = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ais_agents ORDER BY first_name ASC");
-        
+
+        // Team filtering for leads
+        $team_emails = AccessControl::get_team_agent_emails();
+        if (!empty($team_emails)) {
+            $escaped = implode(',', array_map(function ($e) use ($wpdb) {
+                return $wpdb->prepare('%s', $e);
+            }, $team_emails));
+            $agents = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ais_agents WHERE email IN ({$escaped}) ORDER BY first_name ASC");
+        } else {
+            $agents = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ais_agents ORDER BY first_name ASC");
+        }
+
         $this->render_list($agents);
-        $this->render_form($agents);
+        if (!$is_read_only) {
+            $this->render_form($agents);
+        }
     }
     
+    /**
+     * Check if current user can modify this agent (admin=all, lead=team only)
+     */
+    private function can_modify_agent($email, $agent_id = 0) {
+        if (AccessControl::is_admin()) {
+            return true;
+        }
+        if (!AccessControl::is_lead()) {
+            return false;
+        }
+        // For new agents (id=0), leads can add
+        if ($agent_id === 0 && empty($email)) {
+            return true;
+        }
+        // Check if agent email is in lead's team
+        $team_emails = AccessControl::get_team_agent_emails();
+        // For existing agent being edited, check old email
+        if ($agent_id > 0 && empty($email)) {
+            global $wpdb;
+            $email = $wpdb->get_var($wpdb->prepare(
+                "SELECT email FROM {$wpdb->prefix}ais_agents WHERE id=%d", $agent_id
+            ));
+        }
+        return in_array($email, $team_emails, true);
+    }
+
     private function save_agent($post_data) {
         global $wpdb;
         
@@ -48,6 +98,8 @@ class Agents {
             'last_name' => sanitize_text_field($post_data['lname']),
             'email' => sanitize_email($post_data['email']),
             'title' => sanitize_text_field($post_data['title']),
+            'role' => in_array($post_data['role'] ?? 'agent', ['agent', 'lead']) ? $post_data['role'] : 'agent',
+            'wp_user_id' => !empty($post_data['wp_user_id']) ? intval($post_data['wp_user_id']) : null,
             'fluent_agent_id' => !empty($post_data['fluent_id']) ? intval($post_data['fluent_id']) : null,
             'avatar_url' => esc_url_raw($post_data['avatar_url']),
             'is_active' => isset($post_data['is_active']) ? 1 : 0
@@ -331,19 +383,26 @@ class Agents {
                             <span class="status-badge <?php echo $a->is_active ? 'success' : 'failed'; ?>">
                                 <?php echo $a->is_active ? 'Active' : 'Inactive'; ?>
                             </span>
+                            <?php if (!empty($a->role) && $a->role === 'lead'): ?>
+                                <span class="status-badge warning" style="margin-left:4px;">Lead</span>
+                            <?php endif; ?>
                         </td>
                             <td style="text-align: right;">
+                                <?php if (!AccessControl::is_read_only('agents')): ?>
                                 <div class="agent-actions">
-                            <button class='ops-btn secondary' 
+                            <button class='ops-btn secondary'
                                     onclick='editAgent(<?php echo htmlspecialchars(json_encode($a), ENT_QUOTES, 'UTF-8'); ?>)'>
                                 Edit
                             </button>
-                            <a href='?page=ai-ops&tab=agents&del_agent=<?php echo $a->id; ?>' 
-                               class='ops-btn danger' 
-                                       onclick="return confirm('⚠️ Are you sure you want to delete this agent? This action cannot be undone.')">
+                            <a href='?page=ai-ops&section=agents&del_agent=<?php echo $a->id; ?>'
+                               class='ops-btn danger'
+                                       onclick="return confirm('Are you sure you want to delete this agent? This action cannot be undone.')">
                                 Delete
                             </a>
                                 </div>
+                                <?php else: ?>
+                                <span style="color:var(--color-text-tertiary);font-size:12px;">View only</span>
+                                <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -575,6 +634,35 @@ class Agents {
                     </div>
                 </div>
                 
+                <?php if (AccessControl::is_admin()): ?>
+                <div class="form-section">
+                    <div class="form-section-title">Role & Access</div>
+                    <div class="form-row">
+                        <div>
+                            <label>Role</label>
+                            <select name="role" id="ag_role" class="ops-input">
+                                <option value="agent">Agent</option>
+                                <option value="lead">Lead</option>
+                            </select>
+                            <small>Leads can view their team's audit reports</small>
+                        </div>
+                        <div>
+                            <label>WordPress User</label>
+                            <select name="wp_user_id" id="ag_wp_user" class="ops-input">
+                                <option value="">Not linked</option>
+                                <?php
+                                $wp_users = get_users(['role__in' => ['support_lead', 'administrator'], 'orderby' => 'display_name']);
+                                foreach ($wp_users as $wp_user):
+                                ?>
+                                    <option value="<?php echo $wp_user->ID; ?>"><?php echo esc_html($wp_user->display_name . ' (' . $wp_user->user_email . ')'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small>Link to WP account for dashboard login</small>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <div class="form-section">
                     <div class="form-section-title">Integration & Profile</div>
                 <div class="form-row">
@@ -620,6 +708,8 @@ class Agents {
             document.getElementById('ag_ln').value = a.last_name || '';
             document.getElementById('ag_em').value = a.email;
             document.getElementById('ag_title').value = a.title || '';
+            document.getElementById('ag_role').value = a.role || 'agent';
+            document.getElementById('ag_wp_user').value = a.wp_user_id || '';
             document.getElementById('ag_fid').value = a.fluent_agent_id || '';
             document.getElementById('ag_avatar').value = a.avatar_url || '';
             document.getElementById('ag_active').checked = a.is_active == 1;
@@ -650,6 +740,8 @@ class Agents {
             document.getElementById('ag_ln').value = '';
             document.getElementById('ag_em').value = '';
             document.getElementById('ag_title').value = '';
+            document.getElementById('ag_role').value = 'agent';
+            document.getElementById('ag_wp_user').value = '';
             document.getElementById('ag_fid').value = '';
             document.getElementById('ag_avatar').value = '';
             document.getElementById('ag_active').checked = true;

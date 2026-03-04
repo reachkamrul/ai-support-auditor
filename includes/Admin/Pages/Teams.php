@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class Teams {
 
@@ -19,14 +20,15 @@ class Teams {
 
     public function render() {
         global $wpdb;
+        $is_read_only = AccessControl::is_read_only('teams');
 
-        // Handle POST actions
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Handle POST actions (admin only)
+        if (!$is_read_only && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->handle_post();
         }
 
-        // Handle delete
-        if (!empty($_GET['delete_team'])) {
+        // Handle delete (admin only)
+        if (!$is_read_only && !empty($_GET['delete_team'])) {
             $this->delete_team(intval($_GET['delete_team']));
         }
 
@@ -81,10 +83,12 @@ class Teams {
                             <?php echo $product_count; ?> product<?php echo $product_count !== 1 ? 's' : ''; ?>
                         </p>
                     </div>
+                    <?php if (!$is_read_only): ?>
                     <div style="display:flex;gap:4px;">
                         <a href="?page=ai-ops&section=teams&edit_team=<?php echo $team->id; ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;">Edit</a>
                         <a href="?page=ai-ops&section=teams&delete_team=<?php echo $team->id; ?>" class="ops-btn danger" style="font-size:11px;height:28px;padding:0 8px;" onclick="return confirm('Delete this team?')">Delete</a>
                     </div>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($member_count > 0): ?>
@@ -134,6 +138,7 @@ class Teams {
         <?php endif; ?>
 
         <!-- Add / Edit Team Form -->
+        <?php if (!$is_read_only): ?>
         <div class="ops-card" id="team-form">
             <h3>
                 <?php if ($editing): ?>
@@ -214,6 +219,7 @@ class Teams {
                 </div>
             </form>
         </div>
+        <?php endif; ?>
         <?php
     }
 

@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class Analytics {
     
@@ -23,29 +24,40 @@ class Analytics {
         $days = isset($_GET['days']) ? intval($_GET['days']) : 30;
         $date_from = date('Y-m-d H:i:s', strtotime("-$days days"));
         
+        // Team filtering
+        $agent_filter = AccessControl::sql_agent_filter('ae.agent_email');
+        $ticket_filter = '';
+        $team_emails = AccessControl::get_team_agent_emails();
+        if (!empty($team_emails)) {
+            $escaped = implode(',', array_map(function ($e) use ($wpdb) {
+                return $wpdb->prepare('%s', $e);
+            }, $team_emails));
+            $ticket_filter = " AND ticket_id IN (SELECT DISTINCT ticket_id FROM {$wpdb->prefix}ais_agent_evaluations WHERE agent_email IN ({$escaped}))";
+        }
+
         // Fetch analytics data
         $agent_stats = $this->get_agent_stats($date_from);
         $problem_stats = $this->get_problem_stats($date_from);
         $doc_gaps = $this->get_doc_gaps($date_from);
         $faq_topics = $this->get_faq_topics($date_from);
-        
+
         $total_audits = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits 
-             WHERE status = 'success' AND created_at >= %s",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits
+             WHERE status = 'success' AND created_at >= %s{$ticket_filter}",
             $date_from
         ));
-        
+
         $avg_score = $wpdb->get_var($wpdb->prepare(
-            "SELECT COALESCE(AVG(overall_agent_score), 0) 
-             FROM {$wpdb->prefix}ais_agent_evaluations 
-             WHERE created_at >= %s",
+            "SELECT COALESCE(AVG(overall_agent_score), 0)
+             FROM {$wpdb->prefix}ais_agent_evaluations
+             WHERE created_at >= %s" . AccessControl::sql_agent_filter('agent_email'),
             $date_from
         ));
-        
+
         $total_agents = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT agent_email) 
-             FROM {$wpdb->prefix}ais_agent_evaluations 
-             WHERE created_at >= %s",
+            "SELECT COUNT(DISTINCT agent_email)
+             FROM {$wpdb->prefix}ais_agent_evaluations
+             WHERE created_at >= %s" . AccessControl::sql_agent_filter('agent_email'),
             $date_from
         ));
         
@@ -59,9 +71,10 @@ class Analytics {
     
     private function get_agent_stats($date_from) {
         global $wpdb;
-        
+
+        $team_filter = AccessControl::sql_agent_filter('ae.agent_email');
         return $wpdb->get_results($wpdb->prepare("
-            SELECT 
+            SELECT
                 ae.agent_email,
                 ae.agent_name,
                 COUNT(DISTINCT ae.ticket_id) as tickets_handled,
@@ -71,7 +84,7 @@ class Analytics {
                 ROUND(AVG(ae.communication_score), 1) as avg_communication_score,
                 SUM(ae.reply_count) as total_replies
             FROM {$wpdb->prefix}ais_agent_evaluations ae
-            WHERE ae.created_at >= %s
+            WHERE ae.created_at >= %s{$team_filter}
             GROUP BY ae.agent_email, ae.agent_name
             HAVING tickets_handled > 0
             ORDER BY avg_overall_score DESC, tickets_handled DESC

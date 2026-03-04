@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class Dashboard {
 
@@ -24,23 +25,35 @@ class Dashboard {
         $thirty_ago = date('Y-m-d', strtotime('-30 days'));
         $sixty_ago  = date('Y-m-d', strtotime('-60 days'));
 
+        // Team filter for leads
+        $team_emails = AccessControl::get_team_agent_emails();
+        $ticket_filter = '';
+        $agent_filter = '';
+        if (!empty($team_emails)) {
+            $escaped = implode(',', array_map(function ($e) use ($wpdb) {
+                return $wpdb->prepare('%s', $e);
+            }, $team_emails));
+            $ticket_filter = " AND ticket_id IN (SELECT DISTINCT ticket_id FROM {$wpdb->prefix}ais_agent_evaluations WHERE agent_email IN ({$escaped}))";
+            $agent_filter = " AND agent_email IN ({$escaped})";
+        }
+
         // --- KPI Data ---
         $audits_30   = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s", $thirty_ago
+            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s{$ticket_filter}", $thirty_ago
         ));
         $audits_prev = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) BETWEEN %s AND %s", $sixty_ago, $thirty_ago
+            "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) BETWEEN %s AND %s{$ticket_filter}", $sixty_ago, $thirty_ago
         ));
 
         $avg_score_30  = $wpdb->get_var($wpdb->prepare(
-            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s", $thirty_ago
+            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s{$ticket_filter}", $thirty_ago
         ));
         $avg_score_prev = $wpdb->get_var($wpdb->prepare(
-            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) BETWEEN %s AND %s", $sixty_ago, $thirty_ago
+            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) BETWEEN %s AND %s{$ticket_filter}", $sixty_ago, $thirty_ago
         ));
 
         $active_agents = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT agent_email) FROM {$wpdb->prefix}ais_agent_evaluations WHERE DATE(created_at) >= %s", $thirty_ago
+            "SELECT COUNT(DISTINCT agent_email) FROM {$wpdb->prefix}ais_agent_evaluations WHERE DATE(created_at) >= %s{$agent_filter}", $thirty_ago
         ));
 
         // Flagged tickets count
@@ -49,14 +62,31 @@ class Dashboard {
         $flagged_count = 0;
         $flagged_tickets = [];
         if ($flagged_exists) {
-            $flagged_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$flagged_table} WHERE status = 'needs_review'");
-            $flagged_tickets = $wpdb->get_results(
-                "SELECT f.*, a.overall_score, a.overall_sentiment
-                 FROM {$flagged_table} f
-                 LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
-                 WHERE f.status = 'needs_review'
-                 ORDER BY f.created_at DESC LIMIT 5"
-            );
+            if (!empty($team_emails)) {
+                $flagged_count = (int) $wpdb->get_var(
+                    "SELECT COUNT(DISTINCT f.id) FROM {$flagged_table} f
+                     INNER JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+                     INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae ON a.ticket_id = ae.ticket_id
+                     WHERE f.status = 'needs_review' AND ae.agent_email IN ({$escaped})"
+                );
+                $flagged_tickets = $wpdb->get_results(
+                    "SELECT DISTINCT f.*, a.overall_score, a.overall_sentiment
+                     FROM {$flagged_table} f
+                     LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+                     INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae ON a.ticket_id = ae.ticket_id
+                     WHERE f.status = 'needs_review' AND ae.agent_email IN ({$escaped})
+                     ORDER BY f.created_at DESC LIMIT 5"
+                );
+            } else {
+                $flagged_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$flagged_table} WHERE status = 'needs_review'");
+                $flagged_tickets = $wpdb->get_results(
+                    "SELECT f.*, a.overall_score, a.overall_sentiment
+                     FROM {$flagged_table} f
+                     LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+                     WHERE f.status = 'needs_review'
+                     ORDER BY f.created_at DESC LIMIT 5"
+                );
+            }
         }
 
         // Watchdog snapshot (orphaned tickets + queue balance)
@@ -66,18 +96,19 @@ class Dashboard {
         $recent_audits = $wpdb->get_results(
             "SELECT ticket_id, overall_score, overall_sentiment, status, created_at
              FROM {$wpdb->prefix}ais_audits
-             WHERE status = 'success'
+             WHERE status = 'success'{$ticket_filter}
              ORDER BY created_at DESC LIMIT 10"
         );
 
         // Agents on shift today
         $today_start = current_time('Y-m-d') . ' 00:00:00';
         $today_end   = current_time('Y-m-d') . ' 23:59:59';
+        $shift_agent_filter = !empty($team_emails) ? " AND s.agent_email IN ({$escaped})" : '';
         $on_shift_today = $wpdb->get_results($wpdb->prepare(
             "SELECT DISTINCT s.agent_email, a.first_name, a.last_name, s.shift_type, s.shift_color
              FROM {$wpdb->prefix}ais_agent_shifts s
              LEFT JOIN {$wpdb->prefix}ais_agents a ON s.agent_email = a.email
-             WHERE s.shift_start <= %s AND s.shift_end >= %s
+             WHERE s.shift_start <= %s AND s.shift_end >= %s{$shift_agent_filter}
              ORDER BY s.shift_start",
             $today_end, $today_start
         ));

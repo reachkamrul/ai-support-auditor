@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class AllAudits {
 
@@ -39,6 +40,25 @@ class AllAudits {
         // Server-side filters
         $filter_status = isset($_GET['audit_status']) ? sanitize_text_field($_GET['audit_status']) : '';
         $filter_search = isset($_GET['audit_search']) ? sanitize_text_field($_GET['audit_search']) : (isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '');
+        $filter_team = AccessControl::get_selected_team_id();
+
+        // Team filtering — build ticket_id subquery
+        $team_join = '';
+        $team_where = '';
+        if ($filter_team > 0) {
+            $team_join = " INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae_team ON a.ticket_id = ae_team.ticket_id
+                           INNER JOIN {$wpdb->prefix}ais_team_members tm_team ON ae_team.agent_email = tm_team.agent_email";
+            $team_where = $wpdb->prepare(" AND tm_team.team_id = %d", $filter_team);
+        } elseif (AccessControl::is_lead()) {
+            $team_emails = AccessControl::get_team_agent_emails();
+            if (!empty($team_emails)) {
+                $escaped = implode(',', array_map(function ($e) use ($wpdb) {
+                    return $wpdb->prepare('%s', $e);
+                }, $team_emails));
+                $team_join = " INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae_team ON a.ticket_id = ae_team.ticket_id";
+                $team_where = " AND ae_team.agent_email IN ({$escaped})";
+            }
+        }
 
         // Count query
         $where = "WHERE 1=1";
@@ -58,18 +78,20 @@ class AllAudits {
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            $where";
+            {$team_join}
+            {$where}{$team_where}";
 
         $total = $params ? $wpdb->get_var($wpdb->prepare($count_sql, $params)) : $wpdb->get_var($count_sql);
         $total_pages = max(1, ceil($total / $this->per_page));
 
         // Data query
-        $data_sql = "SELECT a.* FROM {$wpdb->prefix}ais_audits a
+        $data_sql = "SELECT DISTINCT a.* FROM {$wpdb->prefix}ais_audits a
             INNER JOIN (
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            $where
+            {$team_join}
+            {$where}{$team_where}
             ORDER BY a.created_at DESC
             LIMIT %d OFFSET %d";
         $data_params = array_merge($params, [$this->per_page, $offset]);
@@ -96,6 +118,20 @@ class AllAudits {
                             <option value="failed" <?php selected($filter_status, 'failed'); ?>>Failed</option>
                         </select>
                     </div>
+                    <?php $all_teams = AccessControl::get_all_teams(); if (!empty($all_teams)): ?>
+                    <div class="audit-filter-group narrow">
+                        <label>Team</label>
+                        <select name="filter_team" class="ops-input" <?php echo AccessControl::is_lead() ? 'disabled' : ''; ?>>
+                            <option value="0">All teams</option>
+                            <?php foreach ($all_teams as $team): ?>
+                                <option value="<?php echo intval($team->id); ?>" <?php selected($filter_team, intval($team->id)); ?>><?php echo esc_html($team->name); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if (AccessControl::is_lead()): ?>
+                            <input type="hidden" name="filter_team" value="<?php echo $filter_team; ?>">
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="audit-filter-group" style="justify-content:flex-end;">
                         <label>&nbsp;</label>
                         <button type="submit" class="ops-btn primary">Filter</button>
@@ -138,6 +174,7 @@ class AllAudits {
                     $base_url = admin_url('admin.php?page=ai-ops&section=audits');
                     if ($filter_status) $base_url .= '&audit_status=' . urlencode($filter_status);
                     if ($filter_search) $base_url .= '&audit_search=' . urlencode($filter_search);
+                    if ($filter_team) $base_url .= '&filter_team=' . intval($filter_team);
 
                     if ($page > 1): ?>
                         <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;">&laquo; Prev</a>

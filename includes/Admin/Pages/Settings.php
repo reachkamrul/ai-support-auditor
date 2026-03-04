@@ -8,23 +8,25 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class Settings {
-    
+
     private $database;
-    
+
     public function __construct(DatabaseManager $database) {
         $this->database = $database;
     }
-    
+
     public function render() {
         global $wpdb;
-        
-        if(isset($_POST['save_shift_def'])) {
+        $is_read_only = AccessControl::is_read_only('shift-settings');
+
+        if(!$is_read_only && isset($_POST['save_shift_def'])) {
             $this->save_shift_definition($_POST);
         }
-        
-        if(isset($_GET['del_def'])) {
+
+        if(!$is_read_only && isset($_GET['del_def'])) {
             $shift_defs_table = $this->database->get_table('shift_definitions');
             $wpdb->delete($shift_defs_table, ['id'=>$_GET['del_def']]);
         }
@@ -239,12 +241,16 @@ class Settings {
                                 </div>
                             </td>
                             <td style="text-align:right;">
+                                <?php if (!$is_read_only): ?>
                                 <div class="shift-actions">
                             <button class='ops-btn secondary' onclick='editDef(<?php echo json_encode($d); ?>)'>Edit</button>
-                                    <a href='?page=ai-ops&tab=settings&del_def=<?php echo $d->id; ?>' 
-                                       class='ops-btn danger' 
-                                       onclick="return confirm('⚠️ Are you sure you want to delete this shift type? This will remove it from all assigned shifts.')">Delete</a>
+                                    <a href='?page=ai-ops&section=shift-settings&del_def=<?php echo $d->id; ?>'
+                                       class='ops-btn danger'
+                                       onclick="return confirm('Are you sure you want to delete this shift type? This will remove it from all assigned shifts.')">Delete</a>
                                 </div>
+                                <?php else: ?>
+                                <span style="color:var(--color-text-tertiary);font-size:12px;">View only</span>
+                                <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -253,6 +259,7 @@ class Settings {
             <?php endif; ?>
         </div>
         
+        <?php if (!$is_read_only): ?>
         <div class="ops-card">
             <div class="shift-form-header">
                 <h3 id="shift-form-title">Add New Shift Type</h3>
@@ -288,6 +295,8 @@ class Settings {
             </form>
         </div>
         
+        <?php endif; ?>
+
         <script>
         function editDef(d){ 
             document.getElementById('def_id').value = d.id; 

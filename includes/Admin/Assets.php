@@ -692,6 +692,18 @@ class Assets {
                 font-weight: 500;
             }
 
+            .ops-sidebar-team-badge {
+                display: block;
+                margin-top: 8px;
+                background: #334155;
+                color: #94a3b8;
+                font-size: 11px;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-weight: 500;
+                border: 1px solid #475569;
+            }
+
             .ops-sidebar-nav {
                 flex: 1;
                 padding: 12px 0;
@@ -857,8 +869,13 @@ class Assets {
                 padding-left: 0;
                 overflow-x: hidden;
             }
+            body.toplevel_page_ai-ops #wpcontent,
+            body.toplevel_page_ai-ops #wpbody,
             body.toplevel_page_ai-ops #wpbody-content {
-                overflow: visible;
+                overflow: visible !important;
+            }
+            body.toplevel_page_ai-ops #wpfooter {
+                display: none;
             }
             body.toplevel_page_ai-ops .wrap {
                 margin: 0;

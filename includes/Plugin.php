@@ -122,9 +122,31 @@ class Plugin {
             update_option('ai_audit_secret_token', wp_generate_password(32, true, true));
         }
 
+        // Register team lead role
+        $this->register_roles();
+
         // Schedule watchdog cron if not already scheduled
         if (!wp_next_scheduled('ais_watchdog_scan')) {
             wp_schedule_event(time(), 'every_fifteen_minutes', 'ais_watchdog_scan');
+        }
+    }
+
+    /**
+     * Register custom roles and capabilities
+     */
+    private function register_roles() {
+        // Create the support_lead role if it doesn't exist
+        if (!get_role('support_lead')) {
+            add_role('support_lead', 'Support Team Lead', [
+                'read' => true,
+                'view_team_audits' => true,
+            ]);
+        }
+
+        // Ensure administrators also have the capability
+        $admin_role = get_role('administrator');
+        if ($admin_role && !$admin_role->has_cap('view_team_audits')) {
+            $admin_role->add_cap('view_team_audits');
         }
     }
 

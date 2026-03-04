@@ -90,7 +90,7 @@ class Manager {
         add_menu_page(
             'Support Ops & AI Auditor',
             'Support Ops',
-            'manage_options',
+            'view_team_audits',
             'ai-ops',
             [$this, 'render_main_page'],
             $icon_url,
@@ -101,7 +101,7 @@ class Manager {
             'ai-ops',
             'Dashboard',
             'Dashboard',
-            'manage_options',
+            'view_team_audits',
             'ai-ops',
             [$this, 'render_main_page']
         );
@@ -155,15 +155,37 @@ class Manager {
         echo '<div class="ops-sidebar-header">';
         echo '<img src="' . esc_url($logo_url) . '" alt="Support Ops" class="ops-sidebar-logo">';
         echo '<span class="ops-sidebar-version">v' . SUPPORT_OPS_VERSION . '</span>';
+
+        // Show team badge for leads
+        if (AccessControl::is_lead()) {
+            $team_names = AccessControl::get_team_names();
+            if (!empty($team_names)) {
+                echo '<span class="ops-sidebar-team-badge">' . esc_html(implode(', ', $team_names)) . '</span>';
+            }
+        }
+
         echo '</div>';
 
         // Navigation
         echo '<nav class="ops-sidebar-nav">';
 
         foreach ($this->nav_sections as $section_label => $items) {
+            // Check if any items in this section are accessible
+            $visible_items = array_filter($items, function ($key) {
+                return AccessControl::can_access($key);
+            }, ARRAY_FILTER_USE_KEY);
+
+            if (empty($visible_items)) {
+                continue; // Skip entire section if no items are visible
+            }
+
             echo '<div class="ops-nav-section">' . esc_html($section_label) . '</div>';
 
             foreach ($items as $key => $item) {
+                if (!AccessControl::can_access($key)) {
+                    continue;
+                }
+
                 $active = ($key === $current_section) ? ' active' : '';
                 $url = admin_url('admin.php?page=ai-ops&section=' . $key);
 
@@ -192,6 +214,11 @@ class Manager {
      * Render the active section content
      */
     private function render_section($section) {
+        // Block access to restricted sections for leads
+        if (!AccessControl::can_access($section)) {
+            $section = 'dashboard';
+        }
+
         switch ($section) {
             case 'dashboard':
                 $this->render_page_header('Dashboard', 'Overview of your support operations');

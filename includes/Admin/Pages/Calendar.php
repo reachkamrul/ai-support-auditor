@@ -9,6 +9,7 @@ namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
 use SupportOps\Services\ShiftProcessor;
+use SupportOps\Admin\AccessControl;
 
 class Calendar {
     
@@ -31,23 +32,27 @@ class Calendar {
         $start = new \DateTime($now->format('Y-m-01'));
         $end = new \DateTime($now->format('Y-m-t'));
         
-        // Handle bulk shift generation
-        if (isset($_POST['generate_shifts'])) {
+        $is_read_only = AccessControl::is_read_only('calendar');
+
+        // Handle bulk shift generation (admin only)
+        if (!$is_read_only && isset($_POST['generate_shifts'])) {
             $this->shift_processor->process($_POST);
             echo '<div class="notice notice-success is-dismissible"><p>Schedule Updated.</p></div>';
         }
-        
+
         // Get shifts for the month
         $shifts_table = $this->database->get_table('agent_shifts');
         $agents_table = $this->database->get_table('agents');
         $shift_defs_table = $this->database->get_table('shift_definitions');
-        
+
+        // Team filtering for leads
+        $shift_team_filter = AccessControl::sql_agent_filter('s.agent_email');
         $raw = $wpdb->get_results($wpdb->prepare(
             "SELECT s.*, a.first_name, sd.color as current_shift_color
-             FROM {$shifts_table} s 
-             LEFT JOIN {$agents_table} a ON s.agent_email=a.email 
+             FROM {$shifts_table} s
+             LEFT JOIN {$agents_table} a ON s.agent_email=a.email
              LEFT JOIN {$shift_defs_table} sd ON s.shift_def_id=sd.id
-             WHERE s.shift_start BETWEEN %s AND %s 
+             WHERE s.shift_start BETWEEN %s AND %s{$shift_team_filter}
              ORDER BY s.shift_start ASC",
             $start->format('Y-m-d 00:00:00'),
             $end->format('Y-m-d 23:59:59')
@@ -60,9 +65,10 @@ class Calendar {
             $cal[$day][] = $s;
         }
         
-        // Get agents and shift definitions
+        // Get agents (team-filtered for leads)
+        $agent_team_filter = AccessControl::sql_agent_filter('email');
         $agents = $wpdb->get_results(
-            "SELECT * FROM {$agents_table} ORDER BY first_name ASC"
+            "SELECT * FROM {$agents_table} WHERE 1=1{$agent_team_filter} ORDER BY first_name ASC"
         );
         
         $shift_defs_table = $this->database->get_table('shift_definitions');
@@ -464,7 +470,9 @@ class Calendar {
                     <span class="calendar-month"><?php echo $start->format('F Y'); ?></span>
                     <a href="?page=ai-ops&tab=calendar&mo=<?php echo $mo+1; ?>" class="ops-btn secondary">»</a>
                 </div>
+                <?php if (!$is_read_only): ?>
                 <button class="ops-btn primary bulk-schedule-btn" onclick="jQuery('#bulk-gen').slideToggle()">+ Bulk Schedule</button>
+                <?php endif; ?>
             </div>
 
             <div id="bulk-gen">
@@ -538,6 +546,7 @@ class Calendar {
                 
                 <div id="modal-list"></div>
 
+                <?php if (!$is_read_only): ?>
                 <div class="day-modal-form">
                     <input type="hidden" id="edit-id">
                     <input type="hidden" id="active-date">
@@ -569,6 +578,7 @@ class Calendar {
                         <button class="ops-btn primary" onclick="saveShift()">Add Shift</button>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -651,6 +661,7 @@ class Calendar {
                 }
             };
             
+            var calReadOnly = <?php echo $is_read_only ? 'true' : 'false'; ?>;
             window.renderList = function(shifts) {
                 var h = '';
                 if (shifts.length > 0) {
@@ -658,7 +669,9 @@ class Calendar {
                         h += '<div class="shift-list-item">';
                         h += '<span class="shift-list-name">' + (s.first_name || 'User') + '</span>';
                         h += '<span class="shift-list-type">' + s.shift_type + '</span>';
-                        h += '<button class="shift-list-delete" onclick="delS(' + s.id + ')" title="Remove">&times;</button>';
+                        if (!calReadOnly) {
+                            h += '<button class="shift-list-delete" onclick="delS(' + s.id + ')" title="Remove">&times;</button>';
+                        }
                         h += '</div>';
                     });
                 } else {

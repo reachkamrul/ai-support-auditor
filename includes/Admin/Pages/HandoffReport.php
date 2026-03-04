@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class HandoffReport {
 
@@ -32,19 +33,22 @@ class HandoffReport {
         $days = intval($period) ?: 30;
         $since = date('Y-m-d', strtotime("-{$days} days"));
 
+        // Team filtering
+        $team_agent_filter = AccessControl::sql_agent_filter('he.agent_email');
+
         // KPI data
         $total_events = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE created_at >= %s", $since
+            "SELECT COUNT(*) FROM {$table} he WHERE created_at >= %s{$team_agent_filter}", $since
         ));
         $good_handoffs = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE handoff_score >= 0 AND created_at >= %s", $since
+            "SELECT COUNT(*) FROM {$table} he WHERE handoff_score >= 0 AND created_at >= %s{$team_agent_filter}", $since
         ));
         $failed_handoffs = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE handoff_score < 0 AND created_at >= %s", $since
+            "SELECT COUNT(*) FROM {$table} he WHERE handoff_score < 0 AND created_at >= %s{$team_agent_filter}", $since
         ));
         $compliance_rate = $total_events > 0 ? round(($good_handoffs / $total_events) * 100, 1) : 0;
         $avg_gap = $wpdb->get_var($wpdb->prepare(
-            "SELECT ROUND(AVG(gap_hours), 1) FROM {$table} WHERE gap_hours > 0 AND created_at >= %s", $since
+            "SELECT ROUND(AVG(gap_hours), 1) FROM {$table} he WHERE gap_hours > 0 AND created_at >= %s{$team_agent_filter}", $since
         )) ?: 0;
 
         // Agent breakdown
@@ -59,7 +63,7 @@ class HandoffReport {
                     ROUND(AVG(he.handoff_score), 1) as avg_score
              FROM {$table} he
              LEFT JOIN {$wpdb->prefix}ais_agents a ON he.agent_email = a.email
-             WHERE he.created_at >= %s
+             WHERE he.created_at >= %s{$team_agent_filter}
              GROUP BY he.agent_email
              ORDER BY compliance_rate ASC",
             $since
@@ -70,7 +74,7 @@ class HandoffReport {
             "SELECT he.*, a.first_name, a.last_name
              FROM {$table} he
              LEFT JOIN {$wpdb->prefix}ais_agents a ON he.agent_email = a.email
-             WHERE he.handoff_score < 0 AND he.created_at >= %s
+             WHERE he.handoff_score < 0 AND he.created_at >= %s{$team_agent_filter}
              ORDER BY he.created_at DESC LIMIT 10",
             $since
         ));

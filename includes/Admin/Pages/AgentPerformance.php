@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class AgentPerformance {
     
@@ -49,12 +50,16 @@ class AgentPerformance {
         ";
         
         $params = [$date_from, $date_to];
-        
+
+        // Team filtering
+        $team_agent_filter = AccessControl::sql_agent_filter('ae.agent_email');
+        $query .= $team_agent_filter;
+
         if ($selected_agent) {
             $query .= " AND ae.agent_email = %s";
             $params[] = $selected_agent;
         }
-        
+
         if ($score_min !== null) {
             $query .= " AND ae.overall_agent_score >= %d";
             $params[] = $score_min;
@@ -63,21 +68,23 @@ class AgentPerformance {
             $query .= " AND ae.overall_agent_score <= %d";
             $params[] = $score_max;
         }
-        
+
         $query .= " GROUP BY ae.agent_email, ae.agent_name ORDER BY avg_overall_score DESC";
-        
+
         $agents = $wpdb->get_results($wpdb->prepare($query, $params));
-        
+
         // Calculate rankings
         $rank = 1;
         foreach ($agents as $agent) {
             $agent->rank = $rank++;
         }
-        
-        // Get all agents for filter
+
+        // Get all agents for filter (team-scoped for leads)
+        $agent_list_filter = AccessControl::sql_agent_filter('agent_email');
         $all_agents = $wpdb->get_results("
-            SELECT DISTINCT agent_email, agent_name 
-            FROM {$wpdb->prefix}ais_agent_evaluations 
+            SELECT DISTINCT agent_email, agent_name
+            FROM {$wpdb->prefix}ais_agent_evaluations
+            WHERE 1=1 {$agent_list_filter}
             ORDER BY agent_name ASC
         ");
         
@@ -568,7 +575,16 @@ class AgentPerformance {
     
     public function render_detail($agent_email) {
         global $wpdb;
-        
+
+        // Team access check: leads can only view their team's agents
+        if (AccessControl::is_lead()) {
+            $team_emails = AccessControl::get_team_agent_emails();
+            if (!in_array($agent_email, $team_emails, true)) {
+                echo '<div class="ops-card"><div class="ops-empty-state"><div class="ops-empty-state-title">Access denied</div><div class="ops-empty-state-description">You can only view agents in your team.</div></div></div>';
+                return;
+            }
+        }
+
         $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : date('Y-m-d', strtotime('-30 days'));
         $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : date('Y-m-d');
         $active_tab = isset($_GET['detail_tab']) ? sanitize_text_field($_GET['detail_tab']) : 'overview';

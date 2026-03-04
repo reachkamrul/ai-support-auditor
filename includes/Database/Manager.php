@@ -75,6 +75,8 @@ class Manager {
             last_name varchar(100),
             email varchar(100) NOT NULL,
             title varchar(100) DEFAULT NULL,
+            role varchar(20) DEFAULT 'agent',
+            wp_user_id bigint(20) DEFAULT NULL,
             fluent_agent_id int(11) DEFAULT NULL,
             avatar_url varchar(500) DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
@@ -82,7 +84,8 @@ class Manager {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY email (email),
-            KEY fluent_id (fluent_agent_id)
+            KEY fluent_id (fluent_agent_id),
+            KEY wp_user (wp_user_id)
         ) $charset_collate;");
         
         // 4. Shift Definitions
@@ -346,6 +349,12 @@ class Manager {
         }
         if (!in_array('avatar_url', $cols)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN avatar_url varchar(500) DEFAULT NULL AFTER fluent_agent_id");
+        }
+        if (!in_array('role', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN role varchar(20) DEFAULT 'agent' AFTER title");
+        }
+        if (!in_array('wp_user_id', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN wp_user_id bigint(20) DEFAULT NULL AFTER role");
         }
         if (!in_array('last_synced', $cols)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN last_synced datetime DEFAULT NULL AFTER is_active");

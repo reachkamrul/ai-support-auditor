@@ -8,6 +8,7 @@
 namespace SupportOps\Admin\Pages;
 
 use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
 
 class FlaggedTickets {
 
@@ -32,6 +33,18 @@ class FlaggedTickets {
         $filter_status = isset($_GET['flag_status']) ? sanitize_text_field($_GET['flag_status']) : 'needs_review';
         $page_num      = max(1, intval($_GET['pg'] ?? 1));
 
+        // Team filtering
+        $team_join = '';
+        $team_where = '';
+        $team_emails = AccessControl::get_team_agent_emails();
+        if (!empty($team_emails)) {
+            $escaped = implode(',', array_map(function ($e) use ($wpdb) {
+                return $wpdb->prepare('%s', $e);
+            }, $team_emails));
+            $team_join = " INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae_team ON a.ticket_id = ae_team.ticket_id";
+            $team_where = " AND ae_team.agent_email IN ({$escaped})";
+        }
+
         // Build query
         $where = ['1=1'];
         $params = [];
@@ -47,11 +60,13 @@ class FlaggedTickets {
 
         $where_sql = implode(' AND ', $where);
 
-        $total = (int) $wpdb->get_var(
-            $params
-                ? $wpdb->prepare("SELECT COUNT(*) FROM {$table} f WHERE {$where_sql}", ...$params)
-                : "SELECT COUNT(*) FROM {$table} f WHERE {$where_sql}"
-        );
+        $count_sql = "SELECT COUNT(DISTINCT f.id) FROM {$table} f
+            LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+            {$team_join}
+            WHERE {$where_sql}{$team_where}";
+        $total = (int) ($params
+            ? $wpdb->get_var($wpdb->prepare($count_sql, ...$params))
+            : $wpdb->get_var($count_sql));
 
         $offset = ($page_num - 1) * $this->per_page;
         $total_pages = max(1, ceil($total / $this->per_page));
@@ -61,19 +76,30 @@ class FlaggedTickets {
         $all_params[] = $offset;
 
         $flags = $wpdb->get_results($wpdb->prepare(
-            "SELECT f.*, a.overall_score, a.overall_sentiment
+            "SELECT DISTINCT f.*, a.overall_score, a.overall_sentiment
              FROM {$table} f
              LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
-             WHERE {$where_sql}
+             {$team_join}
+             WHERE {$where_sql}{$team_where}
              ORDER BY FIELD(f.status, 'needs_review', 'reviewed', 'dismissed'), f.created_at DESC
              LIMIT %d OFFSET %d",
             ...$all_params
         ));
 
-        // Summary counts
-        $count_review  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='needs_review'");
-        $count_reviewed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='reviewed'");
-        $count_dismissed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='dismissed'");
+        // Summary counts (team-filtered)
+        if (!empty($team_emails)) {
+            $count_base = "SELECT COUNT(DISTINCT f.id) FROM {$table} f
+                LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+                {$team_join}
+                WHERE f.status = %s{$team_where}";
+            $count_review   = (int) $wpdb->get_var($wpdb->prepare($count_base, 'needs_review'));
+            $count_reviewed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'reviewed'));
+            $count_dismissed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'dismissed'));
+        } else {
+            $count_review  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='needs_review'");
+            $count_reviewed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='reviewed'");
+            $count_dismissed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='dismissed'");
+        }
 
         ?>
         <!-- Summary Stats -->
