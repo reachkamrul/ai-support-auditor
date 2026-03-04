@@ -42,7 +42,8 @@ class Manager {
             'settings' => new Pages\Settings($this->database),
             'analytics' => new Pages\Analytics($this->database),
             'system_message' => new Pages\SystemMessage($this->database),
-            'api_config' => new Pages\ApiConfig($this->database)
+            'api_config' => new Pages\ApiConfig($this->database),
+            'timing_settings' => new Pages\TimingSettings($this->database)
         ];
     }
     
@@ -130,6 +131,9 @@ class Manager {
             case 'settings':
                 $this->pages['settings']->render();
                 break;
+            case 'timing-penalties':
+                $this->pages['timing_settings']->render();
+                break;
             case 'system-message':
                 $this->pages['system_message']->render();
                 break;
@@ -162,6 +166,7 @@ class Manager {
         $tabs = [
             'calendar' => 'Shift Calendar',
             'settings' => 'Shift Settings',
+            'timing-penalties' => 'Timing Penalties',
             'audits' => 'AI Audits',
             'analytics' => 'Analytics',
             'agents' => 'Agents',

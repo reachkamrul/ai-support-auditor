@@ -12,6 +12,7 @@ use SupportOps\Services\ContributionSaver;
 use SupportOps\Services\EvaluationSaver;
 use SupportOps\Services\ProblemContextSaver;
 use SupportOps\Services\TopicStatsUpdater;
+use SupportOps\Admin\Pages\TimingSettings;
 
 class AuditEndpoint {
     
@@ -146,6 +147,27 @@ class AuditEndpoint {
 
                         // Post-process AI scores for accuracy
                         if (!empty($audit['agent_evaluations'])) {
+                            // --- Timing penalty settings ---
+                            $timing_settings = TimingSettings::get_settings();
+                            $timing_enabled = !empty($timing_settings['enabled']);
+                            $timing_tag_excluded = false;
+
+                            // Check tag exclusions if timing is enabled and exclusion tags are configured
+                            if ($timing_enabled && !empty($timing_settings['excluded_tag_ids'])) {
+                                $excluded_ids = array_map('intval', $timing_settings['excluded_tag_ids']);
+                                $placeholders = implode(',', array_fill(0, count($excluded_ids), '%d'));
+                                $tag_match = $wpdb->get_var($wpdb->prepare(
+                                    "SELECT COUNT(*) FROM {$wpdb->prefix}fs_tag_pivot
+                                     WHERE source_type = 'ticket_tag'
+                                     AND source_id = %d
+                                     AND tag_id IN ($placeholders)",
+                                    array_merge([$ticket_id], $excluded_ids)
+                                ));
+                                if (intval($tag_match) > 0) {
+                                    $timing_tag_excluded = true;
+                                }
+                            }
+
                             // Count Critical HR violations per agent from problem_contexts
                             $hr_violations_by_agent = [];
                             foreach ($audit['problem_contexts'] ?? [] as $pc) {
@@ -212,7 +234,13 @@ class AuditEndpoint {
                                 // Calculate our threshold-based penalty ceiling
                                 $threshold_penalty = $this->calculate_timing_penalty($max_on_shift_delay_hours);
 
-                                if (!$shift_data_exists) {
+                                if (!$timing_enabled) {
+                                    // Master toggle OFF → no timing penalties
+                                    $ev['timing_score'] = 0;
+                                } elseif ($timing_tag_excluded) {
+                                    // Ticket has an excluded tag → skip timing penalties
+                                    $ev['timing_score'] = 0;
+                                } elseif (!$shift_data_exists) {
                                     // Shift data missing → excuse timing entirely
                                     $ev['timing_score'] = 0;
                                 } else {
@@ -265,7 +293,12 @@ class AuditEndpoint {
                             }
                             unset($ev);
 
-                            // Store shift data notes in audit JSON for tracking
+                            // Store timing override notes in audit JSON for tracking
+                            if (!$timing_enabled) {
+                                $audit['audit_summary']['timing_override'] = 'disabled';
+                            } elseif ($timing_tag_excluded) {
+                                $audit['audit_summary']['timing_override'] = 'tag_excluded';
+                            }
                             if (!empty($shift_data_notes)) {
                                 $audit['audit_summary']['shift_data_notes'] = $shift_data_notes;
                             }
@@ -485,16 +518,20 @@ class AuditEndpoint {
     }
 
     /**
-     * Calculate timing penalty from delay duration using v2 thresholds.
-     * Returns 0 to -80 (never positive, never below -80 for single delay).
+     * Calculate timing penalty from delay duration using configurable rules.
+     * Reads rules from TimingSettings; falls back to defaults if not configured.
      */
     private function calculate_timing_penalty($delay_hours) {
-        if ($delay_hours <= 4) return 0;
-        if ($delay_hours <= 8) return -5;
-        if ($delay_hours <= 12) return -15;
-        if ($delay_hours <= 24) return -30;
-        if ($delay_hours <= 48) return -50;
-        return -80;
+        $settings = TimingSettings::get_settings();
+        $rules = $settings['delay_rules'];
+        // Rules are sorted by hours ascending
+        usort($rules, function($a, $b) { return $a['hours'] - $b['hours']; });
+        foreach ($rules as $rule) {
+            if ($delay_hours <= $rule['hours']) {
+                return intval($rule['penalty']);
+            }
+        }
+        return intval($settings['default_penalty']);
     }
 
     private function parse_audit_response($audit_response) {
