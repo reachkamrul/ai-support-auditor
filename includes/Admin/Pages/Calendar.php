@@ -410,11 +410,10 @@ class Calendar {
             }
 
             .day-modal-form-title {
-                font-size: 11px;
-                font-weight: 500;
-                color: var(--color-text-tertiary);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--color-text-secondary);
+                letter-spacing: 0;
                 margin-bottom: 14px;
             }
 
@@ -551,7 +550,7 @@ class Calendar {
                     <input type="hidden" id="edit-id">
                     <input type="hidden" id="active-date">
 
-                    <div class="day-modal-form-title">Add shift</div>
+                    <div class="day-modal-form-title">Add Shift</div>
                     <div class="day-modal-form-grid">
                         <div class="form-group">
                             <label>Agent <span>*</span></label>
@@ -628,7 +627,12 @@ class Calendar {
                 
                 var dateStr = curY + '-' + String(curM).padStart(2,'0') + '-' + String(d).padStart(2,'0');
                 $('#active-date').val(dateStr);
-                $('#modal-title').text(dateStr);
+                // Format date nicely for display
+                var dateObj = new Date(curY, curM - 1, d);
+                var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                var formatted = days[dateObj.getDay()] + ', ' + months[dateObj.getMonth()] + ' ' + d + ', ' + curY;
+                $('#modal-title').text(formatted);
                 
                 // Reset form
                 $('#modal-agent').val('').trigger('change');

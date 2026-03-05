@@ -114,8 +114,7 @@ class AgentPerformance {
                 font-size: 12px;
                 font-weight: 600;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0;
             }
             
             .agent-filters-form .ops-input {
@@ -773,8 +772,7 @@ class AgentPerformance {
                 font-size: 12px;
                 font-weight: 600;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0;
             }
             
             .agent-detail-filters-form .ops-input {
@@ -822,10 +820,9 @@ class AgentPerformance {
             }
             
             .agent-summary-label {
-                font-size: 11px;
+                font-size: 12px;
                 color: var(--color-text-secondary);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0;
                 margin-bottom: 12px;
                 font-weight: 600;
             }
