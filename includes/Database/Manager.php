@@ -26,7 +26,11 @@ class Manager {
         'teams',
         'team_members',
         'team_products',
-        'handoff_events'
+        'handoff_events',
+        'holidays',
+        'holiday_duty',
+        'agent_leaves',
+        'calendar_extras'
     ];
     
     /**
@@ -248,6 +252,67 @@ class Manager {
             KEY created_at (created_at)
         ) $charset_collate;");
 
+        // 15. Holidays
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_holidays (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            date_start date NOT NULL,
+            date_end date NOT NULL,
+            type varchar(20) DEFAULT 'government',
+            year int(4) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY year (year),
+            KEY date_start (date_start)
+        ) $charset_collate;");
+
+        // 16. Holiday Duty
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_holiday_duty (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            holiday_id bigint(20) NOT NULL,
+            date date NOT NULL,
+            agent_email varchar(100) NOT NULL,
+            shift_type varchar(50) NOT NULL,
+            comp_off_date date DEFAULT NULL,
+            comp_off_status varchar(20) DEFAULT 'pending',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY holiday_id (holiday_id),
+            KEY agent_email (agent_email),
+            KEY date (date)
+        ) $charset_collate;");
+
+        // 17. Agent Leaves
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_agent_leaves (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            agent_email varchar(100) NOT NULL,
+            date_start date NOT NULL,
+            date_end date NOT NULL,
+            leave_type varchar(30) NOT NULL,
+            reason text DEFAULT NULL,
+            status varchar(20) DEFAULT 'approved',
+            created_by varchar(255) DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY agent_email (agent_email),
+            KEY date_start (date_start),
+            KEY status (status)
+        ) $charset_collate;");
+
+        // 18. Calendar Extras
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_calendar_extras (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            date date NOT NULL,
+            agent_email varchar(100) NOT NULL,
+            shift_type varchar(50) NOT NULL,
+            action_type varchar(20) DEFAULT 'add',
+            note text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY date (date),
+            KEY agent_email (agent_email)
+        ) $charset_collate;");
+
         // Seed shift definitions
         $this->seed_shift_definitions();
         
@@ -455,6 +520,59 @@ class Manager {
                 KEY ticket_id (ticket_id),
                 KEY agent_email (agent_email),
                 KEY created_at (created_at)
+            ) $charset_collate;",
+            'ais_holidays' => "CREATE TABLE {$wpdb->prefix}ais_holidays (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                name varchar(255) NOT NULL,
+                date_start date NOT NULL,
+                date_end date NOT NULL,
+                type varchar(20) DEFAULT 'government',
+                year int(4) NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY year (year),
+                KEY date_start (date_start)
+            ) $charset_collate;",
+            'ais_holiday_duty' => "CREATE TABLE {$wpdb->prefix}ais_holiday_duty (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                holiday_id bigint(20) NOT NULL,
+                date date NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                shift_type varchar(50) NOT NULL,
+                comp_off_date date DEFAULT NULL,
+                comp_off_status varchar(20) DEFAULT 'pending',
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY holiday_id (holiday_id),
+                KEY agent_email (agent_email),
+                KEY date (date)
+            ) $charset_collate;",
+            'ais_agent_leaves' => "CREATE TABLE {$wpdb->prefix}ais_agent_leaves (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                agent_email varchar(100) NOT NULL,
+                date_start date NOT NULL,
+                date_end date NOT NULL,
+                leave_type varchar(30) NOT NULL,
+                reason text DEFAULT NULL,
+                status varchar(20) DEFAULT 'approved',
+                created_by varchar(255) DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY agent_email (agent_email),
+                KEY date_start (date_start),
+                KEY status (status)
+            ) $charset_collate;",
+            'ais_calendar_extras' => "CREATE TABLE {$wpdb->prefix}ais_calendar_extras (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                date date NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                shift_type varchar(50) NOT NULL,
+                action_type varchar(20) DEFAULT 'add',
+                note text DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY date (date),
+                KEY agent_email (agent_email)
             ) $charset_collate;",
         ];
 

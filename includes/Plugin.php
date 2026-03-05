@@ -104,7 +104,18 @@ class Plugin {
         add_action('wp_ajax_ai_audit_test_system_message', [$this->ajax, 'test_system_message']);
         add_action('wp_ajax_ai_audit_check_test_status', [$this->ajax, 'check_test_status']);
         add_action('wp_ajax_ai_watchdog_sync', [$this->ajax, 'force_watchdog_sync']);
-        
+
+        // Calendar AJAX handlers
+        add_action('wp_ajax_ai_ops_save_holiday', [$this->ajax, 'save_holiday']);
+        add_action('wp_ajax_ai_ops_delete_holiday', [$this->ajax, 'delete_holiday']);
+        add_action('wp_ajax_ai_ops_save_holiday_duty', [$this->ajax, 'save_holiday_duty']);
+        add_action('wp_ajax_ai_ops_save_leave', [$this->ajax, 'save_leave']);
+        add_action('wp_ajax_ai_ops_delete_leave', [$this->ajax, 'delete_leave']);
+        add_action('wp_ajax_ai_ops_save_extra', [$this->ajax, 'save_extra']);
+        add_action('wp_ajax_ai_ops_delete_extra', [$this->ajax, 'delete_extra']);
+        add_action('wp_ajax_ai_ops_get_day_details', [$this->ajax, 'get_day_details']);
+        add_action('admin_post_export_leave_csv', [$this->ajax, 'export_leave_csv']);
+
         // Admin post actions
         add_action('admin_post_export_agent_data', [$this->admin, 'export_agent_data']);
 
