@@ -1,516 +1,542 @@
 {
-    "nodes": [
-      {
-        "parameters": {
-          "rule": {
-            "interval": [
-              {
-                "field": "hours"
-              }
-            ]
-          }
-        },
-        "type": "n8n-nodes-base.scheduleTrigger",
-        "typeVersion": 1.3,
-        "position": [
-          0,
-          0
-        ],
-        "id": "ec3f8411-ace0-412b-8831-2961abb8d222",
-        "name": "Schedule Trigger"
-      },
-      {
-        "parameters": {
-          "url": "https://support.junior.ninja/wp-json/ai-audit/v1/get-pending",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          224,
-          0
-        ],
-        "id": "051cd070-94f9-4fc7-af46-f465ec9fcf16",
-        "name": "Get Pending Tickets",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
         }
       },
-      {
-        "parameters": {
-          "options": {}
-        },
-        "type": "n8n-nodes-base.splitInBatches",
-        "typeVersion": 3,
-        "position": [
-          432,
-          0
-        ],
-        "id": "310664a9-8a7a-4e4f-bc3f-ef7dd3fdc775",
-        "name": "Loop Over Items"
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ec3f8411-ace0-412b-8831-2961abb8d222",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/get-pending",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
       },
-      {
-        "parameters": {
-          "httpMethod": "POST",
-          "path": "force-audit",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2.1,
-        "position": [
-          224,
-          224
-        ],
-        "id": "4ebf2ece-4b25-42d8-8e67-2868375ff2d3",
-        "name": "Force Webhook",
-        "webhookId": "5e7e9a9c-4ffe-436d-819c-f6eb06b7a29d"
-      },
-      {
-        "parameters": {
-          "jsCode": "// Extract ID and Normalize Input\n// Also detect if this came from Force Webhook (single ticket mode)\nconst input = items[0].json.body || items[0].json;\nlet id = input.ticket_id;\nif(!id && input.raw_json && input.raw_json.ticket_id) id = input.raw_json.ticket_id;\nif(!id && typeof input.raw_json === 'string') { try { id = JSON.parse(input.raw_json).ticket_id; } catch(e){} }\n\n// Check if this came from Force Webhook (has body.ticket_id or force flag)\nconst isSingleTicket = !!(input.ticket_id || input.force);\n\nreturn { json: { target_id: id, is_single_ticket: isSingleTicket } };"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          640,
-          96
-        ],
-        "id": "a4869672-9df8-4d3a-9502-cbeede6fc4ba",
-        "name": "Extract ID"
-      },
-      {
-        "parameters": {
-          "url": "=https://support.junior.ninja/wp-json/fluent-support/v2/tickets/{{ $json.target_id }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpBasicAuth",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          832,
-          96
-        ],
-        "id": "e2ec348d-06ea-466a-8d82-6c3531dee389",
-        "name": "Fetch from Fluent",
-        "credentials": {
-          "httpBasicAuth": {
-            "id": "GaTtZ9Lrg66W1Pks",
-            "name": "Support Access"
-          }
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "051cd070-94f9-4fc7-af46-f465ec9fcf16",
+      "name": "Get Pending Tickets",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
         }
-      },
-      {
-        "parameters": {
-          "jsCode": "const ticket = items[0].json.ticket || {};\nconst responses = items[0].json.responses || [];\n\n// Build transcript\nlet transcript = `### TICKET ${ticket.id}\\nTITLE: ${ticket.title}\\nSTATUS: ${ticket.status}\\nCREATED: ${ticket.created_at || 'N/A'}\\n\\n`;\n\n// Track agent responses for shift checking\nconst agentChecks = [];\nlet previousCustomerMessageTime = ticket.created_at || null;\n\nresponses.forEach((r, idx) => {\n  const person = r.person || {};\n  // Use person_type to determine if agent/customer (type field is often null)\n  const personType = person.person_type || r.type || 'system';\n  const name = person.full_name || person.first_name || (person.last_name ? (person.first_name || '') + ' ' + person.last_name : '') || person.name || 'System';\n  const email = person.email || '';\n  const text = r.content ? r.content.replace(/<[^>]*>/g, '') : '';\n  const timestamp = r.created_at || r.created || r.timestamp || '';\n  \n  // Add to transcript with timestamp\n  transcript += `[${personType.toUpperCase()}] ${name}${email ? ' (' + email + ')' : ''} [${timestamp}]: ${text}\\n`;\n  \n  // Track agent responses for shift checking\n  if (personType === 'agent' && email && timestamp) {\n    agentChecks.push({\n      agent_email: email,\n      agent_name: name,\n      datetime: timestamp,\n      response_index: idx,\n      response_type: 'agent_response',\n      customer_message_time: previousCustomerMessageTime\n    });\n  }\n  \n  // Track customer messages (to calculate delay)\n  if (personType === 'customer' && timestamp) {\n    previousCustomerMessageTime = timestamp;\n  }\n  \n  // Track ticket assignments (system logs)\n  if ((personType === 'system' || !personType) && text && timestamp) {\n    // Check for assignment patterns\n    const assignedMatch = text.match(/assigned.*?to\\s+([^\\s<]+@[^\\s>]+)/i) || \n                         text.match(/assigned.*?to\\s+([A-Za-z\\s]+)/i);\n    if (assignedMatch && timestamp) {\n      const assignedAgent = assignedMatch[1].trim();\n      agentChecks.push({\n        agent_email: assignedAgent.includes('@') ? assignedAgent : null,\n        agent_name: assignedAgent,\n        datetime: timestamp,\n        response_index: idx,\n        response_type: 'ticket_assignment',\n        assignment_text: text\n      });\n    }\n  }\n});\n\nreturn { \n  json: { \n    ticket_id: ticket.id, \n    clean_transcript: transcript,\n    ticket_created_at: ticket.created_at,\n    agent_checks: agentChecks,\n    raw_responses: responses\n  } \n};"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1024,
-          96
-        ],
-        "id": "9cf06fac-d1ce-4eef-b934-f9083170c83c",
-        "name": "Build Transcript"
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://support.junior.ninja/wp-json/ai-audit/v1/check-shifts-batch",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ { checks: ($json.agent_checks || []).filter(c => c && c.agent_email && c.datetime).map(c => ({ agent_email: c.agent_email, datetime: c.datetime })) } }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          1216,
-          96
-        ],
-        "id": "shift-check-node-001",
-        "name": "Check Agent Shifts",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "// Get data from previous nodes\n// Note: This node receives data from both \"Get System Message\" and \"Check Agent Shifts\"\n// We need to identify which input is which\nconst inputItems = items || [];\n\nlet transcriptData = null;\nlet shiftResults = [];\nlet systemMessage = '';\n\n// Process all input items to find the right data\ninputItems.forEach(item => {\n  const json = item.json || {};\n  \n  // Check if this is from \"Get System Message\" (has system_message property)\n  if (json.system_message !== undefined) {\n    systemMessage = json.system_message || '';\n  }\n  \n  // Check if this is from \"Check Agent Shifts\" (has results array)\n  if (json.results !== undefined && Array.isArray(json.results)) {\n    shiftResults = json.results || [];\n  }\n  \n  // Check if this is from \"Build Transcript\" (has ticket_id and agent_checks)\n  if (json.ticket_id && json.agent_checks !== undefined) {\n    transcriptData = json;\n  }\n});\n\n// Fallback: if we don't have transcriptData from input, get it from node reference\nif (!transcriptData) {\n  try {\n    transcriptData = $('Build Transcript').item.json;\n  } catch(e) {\n    console.error('Could not get transcript data:', e);\n  }\n}\n\n// Fallback: if we don't have shiftResults, get from node reference\nif (shiftResults.length === 0) {\n  try {\n    const shiftData = $('Check Agent Shifts').item.json;\n    shiftResults = shiftData.results || [];\n  } catch(e) {\n    console.error('Could not get shift results:', e);\n  }\n}\n\n// Fallback: if we don't have systemMessage, get from node reference\nif (!systemMessage) {\n  try {\n    const sysMsgData = $('Get System Message').item.json;\n    systemMessage = sysMsgData.system_message || '';\n  } catch(e) {\n    console.error('Could not get system message:', e);\n  }\n}\n\nif (!transcriptData) {\n  throw new Error('Missing transcript data');\n}\n\n// Create a map for quick lookup: agent_email_datetime -> shift result\nconst shiftMap = {};\nshiftResults.forEach(result => {\n  const key = `${result.agent_email}_${result.datetime}`;\n  shiftMap[key] = result;\n});\n\n// Enrich agent_checks with shift data\nconst enrichedChecks = (transcriptData.agent_checks || []).map(check => {\n  if (!check.agent_email || !check.datetime) {\n    return { ...check, shift_check: null };\n  }\n  \n  const key = `${check.agent_email}_${check.datetime}`;\n  const shiftData = shiftMap[key] || null;\n  \n  return {\n    ...check,\n    shift_check: shiftData ? {\n      was_on_shift: shiftData.was_on_shift,\n      is_weekend: shiftData.is_weekend,\n      day_of_week: shiftData.day_of_week,\n      shift_type: shiftData.shift_info?.shift_type || null,\n      shift_start: shiftData.shift_info?.shift_start || null,\n      shift_end: shiftData.shift_info?.shift_end || null\n    } : null\n  };\n});\n\n// Build shift context summary for AI prompt\nlet shiftContextSummary = \"\\n### 📅 SHIFT CONTEXT FOR DELAY ANALYSIS\\n\";\nshiftContextSummary += \"Use this data to determine if response delays should be penalized:\\n\\n\";\n\nif (enrichedChecks.length > 0) {\n  enrichedChecks.forEach((check, idx) => {\n    if (check.shift_check && check.agent_email) {\n      const sc = check.shift_check;\n      shiftContextSummary += `\\n**${idx + 1}. Agent: ${check.agent_name || check.agent_email}**\\n`;\n      shiftContextSummary += `   - Action: ${check.response_type === 'agent_response' ? 'Response' : 'Ticket Assignment'}\\n`;\n      shiftContextSummary += `   - Time: ${check.datetime}\\n`;\n      shiftContextSummary += `   - Was On Shift: ${sc.was_on_shift ? '✅ YES' : '❌ NO'}\\n`;\n      shiftContextSummary += `   - Weekend: ${sc.is_weekend ? '✅ YES' : '❌ NO'}\\n`;\n      shiftContextSummary += `   - Day: ${sc.day_of_week}\\n`;\n      if (sc.shift_type) {\n        shiftContextSummary += `   - Shift Type: ${sc.shift_type}\\n`;\n      }\n      if (check.customer_message_time) {\n        shiftContextSummary += `   - Customer Message Time: ${check.customer_message_time}\\n`;\n      }\n    }\n  });\n} else {\n  shiftContextSummary += \"⚠️ No agent shift data available. Assume agents were ON SHIFT when evaluating delays.\\n\";\n}\n\n// Prepare system message by replacing placeholders\nlet preparedSystemMessage = systemMessage || '';\nif (preparedSystemMessage) {\n  // Replace transcript placeholder\n  if (transcriptData.clean_transcript) {\n    preparedSystemMessage = preparedSystemMessage.replace(/\\{\\{ \\$json\\.clean_transcript_json_safe \\}\\}/g, transcriptData.clean_transcript);\n  }\n  \n  // Replace shift context placeholder\n  preparedSystemMessage = preparedSystemMessage.replace(/\\{\\{ \\$json\\.shift_context \\}\\}/g, shiftContextSummary);\n}\n\nreturn {\n  json: {\n    ...transcriptData,\n    shift_context: shiftContextSummary,\n    enriched_agent_checks: enrichedChecks,\n    clean_transcript_json_safe: transcriptData.clean_transcript,\n    prepared_system_message: preparedSystemMessage\n  }\n};"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1408,
-          96
-        ],
-        "id": "enrich-shift-node-001",
-        "name": "Enrich with Shift Data"
-      },
-      {
-        "parameters": {
-          "url": "=https://support.junior.ninja/wp-json/ai-audit/v1/get-system-message?_t={{ Math.random() }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          1024,
-          224
-        ],
-        "id": "get-system-message-node-001",
-        "name": "Get System Message",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "promptType": "define",
-          "text": "={{ \"Ticket ID: \" + $json.ticket_id + \"\\n\\nTRANSCRIPT:\\n\" + $json.clean_transcript }}",
-          "hasOutputParser": true,
-          "messages": {
-            "messageValues": [
-              {
-                "message": "={{ $json.prepared_system_message }}"
-              }
-            ]
-          },
-          "batching": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.chainLlm",
-        "typeVersion": 1.7,
-        "position": [
-          1792,
-          96
-        ],
-        "id": "4691b1d8-72c0-4294-9c53-7ad400ce9c69",
-        "name": "Basic LLM Chain",
-        "retryOnFail": true,
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "schemaType": "manual",
-          "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"audit_summary\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"ticket_id\": { \"type\": \"string\" },\n        \"overall_sentiment\": { \"type\": \"string\", \"enum\": [\"Positive\", \"Mixed\", \"Negative\"] },\n        \"overall_score\": { \"type\": \"integer\", \"description\": \"Score between -200 and +100\" },\n        \"executive_summary\": { \"type\": \"string\", \"description\": \"High-level overview of the interaction.\" }\n      },\n      \"required\": [\"ticket_id\", \"overall_sentiment\", \"overall_score\", \"executive_summary\"]\n    },\n    \"agent_evaluations\": {\n      \"type\": \"array\",\n      \"description\": \"MANDATORY: Per-agent evaluation with separate timing, resolution, and communication scores\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"agent_email\": { \"type\": \"string\" },\n          \"agent_name\": { \"type\": \"string\" },\n          \"timing_score\": { \"type\": \"integer\", \"description\": \"Can be negative based on response delays\" },\n          \"resolution_score\": { \"type\": \"integer\", \"description\": \"Score INDEPENDENTLY of communication. Add +30 if resolved, +20 if actionable solution, +10 per additional issue, +10 resources, +10 escalated, +10 follow-up. Even rude agents get full credit if they solved the problem.\" },\n          \"communication_score\": { \"type\": \"integer\", \"minimum\": -60, \"maximum\": 30, \"description\": \"Strict checklist sum ONLY: +10(professional) +5(empathy) +10(resources) +5(praised) -10(unclear) -25(rude, PER INSTANCE). Example: 2 rude msgs = 10+5+5-10-25-25=-40. Range -60 to +30.\" },\n          \"overall_agent_score\": { \"type\": \"integer\", \"description\": \"Sum of timing + resolution + communication\" },\n          \"contribution_percentage\": { \"type\": \"integer\" },\n          \"reply_count\": { \"type\": \"integer\" },\n          \"shift_compliance\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"on_shift_responses\": { \"type\": \"integer\" },\n              \"off_shift_responses\": { \"type\": \"integer\" },\n              \"delays_while_on_shift\": { \"type\": \"integer\" },\n              \"delays_while_off_shift\": { \"type\": \"integer\" }\n            }\n          },\n          \"response_breakdown\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"response_number\": { \"type\": \"integer\" },\n                \"timestamp\": { \"type\": \"string\" },\n                \"time_since_previous\": { \"type\": \"string\" },\n                \"was_on_shift\": { \"type\": \"boolean\" },\n                \"quality_score\": { \"type\": \"integer\", \"enum\": [5, 0, -5], \"description\": \"Must be exactly 5 (helpful), 0 (neutral), or -5 (unhelpful)\" },\n                \"moved_toward_resolution\": { \"type\": \"boolean\" },\n                \"brief_note\": { \"type\": \"string\" }\n              }\n            }\n          },\n          \"key_achievements\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"areas_for_improvement\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"reasoning\": { \"type\": \"string\" }\n        },\n        \"required\": [\"agent_email\", \"agent_name\", \"timing_score\", \"resolution_score\", \"communication_score\", \"overall_agent_score\"]\n      }\n    },\n    \"agent_contributions\": {\n      \"type\": \"array\",\n      \"description\": \"Legacy format for backward compatibility\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"agent_email\": { \"type\": \"string\" },\n          \"percentage\": { \"type\": \"integer\" },\n          \"reply_count\": { \"type\": \"integer\" },\n          \"score\": { \"type\": \"integer\" }\n        }\n      }\n    },\n    \"problem_contexts\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"issue_description\": { \"type\": \"string\" },\n          \"category\": { \"type\": \"string\", \"enum\": [\"HR Violation\", \"Ticket Gaming / Metric Manipulation\", \"Technical Inaccuracy\", \"Process Failure\", \"Policy Violation\"], \"description\": \"Use HR Violation for ALL abusive/hostile/unprofessional language. Each instance of abuse must be a SEPARATE problem_context entry.\" },\n          \"severity\": { \"type\": \"string\", \"enum\": [\"Low\", \"Medium\", \"High\", \"Critical\"] },\n          \"handling_agents\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"agent_id\": { \"type\": \"string\" },\n                \"marking\": { \"type\": \"integer\", \"description\": \"Negative points, e.g., -10\" },\n                \"reasoning\": { \"type\": \"string\" }\n              }\n            }\n          }\n        },\n        \"required\": [\"issue_description\", \"category\", \"severity\", \"handling_agents\"]\n      }\n    },\n    \"ops_strategic\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"doc_update_required\": { \"type\": \"boolean\" },\n        \"faq_candidate\": { \"type\": \"boolean\" },\n        \"problem_categories\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Categorize the customer issue, e.g. Billing Issue, Technical Bug, Feature Request\" },\n        \"documentation_gaps\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Missing docs that could have prevented this ticket\" },\n        \"recommended_faq\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Customer-facing FAQ questions this ticket suggests\" }\n      }\n    }\n  },\n  \"required\": [\"audit_summary\", \"agent_evaluations\", \"problem_contexts\"]\n}"
-        },
-        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-        "typeVersion": 1.3,
-        "position": [
-          1792,
-          320
-        ],
-        "id": "6094c67d-4993-4f45-ae02-80230aae48c4",
-        "name": "Structured Output Parser"
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ { ticket_id: $node[\"Build Transcript\"].json.ticket_id, status: \"success\", score: $json.output.audit_summary.overall_score, audit_response: JSON.stringify($json.output) } }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          2176,
-          96
-        ],
-        "id": "c65a9dfd-4282-434c-90bf-9a54f74ba419",
-        "name": "Save Success",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "// Check if this is single ticket mode (from Force Webhook)\n// If so, don't loop back to Loop Over Items\nconst isSingleTicket = $node[\"Extract ID\"].json.is_single_ticket || false;\n\nif (isSingleTicket) {\n  // Single ticket mode: don't pass data back, just finish\n  return [];\n} else {\n  // Batch mode: pass data back to Loop Over Items\n  return items;\n}"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2400,
-          96
-        ],
-        "id": "check-single-ticket-node",
-        "name": "Check Single Ticket"
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ {\n    \"ticket_id\": $node[\"Build Transcript\"].json.ticket_id || $node[\"Extract ID\"].json.target_id,\n    \"status\": \"failed\",\n    \"error_message\": $json.error?.message || $json.message || \"AI Generation Error\"\n} }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          2176,
-          336
-        ],
-        "id": "2568129d-de95-4a15-b100-14c48a2a3737",
-        "name": "Save Error",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "options": {
-            "temperature": 1
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-        "typeVersion": 1,
-        "position": [
-          1600,
-          336
-        ],
-        "id": "0de75764-f74c-4711-b84a-650a62dbb010",
-        "name": "Google Gemini Chat Model",
-        "credentials": {
-          "googlePalmApi": {
-            "id": "BCuilPotYN3zNR4W",
-            "name": "Google Gemini(PaLM) Api account"
-          }
-        }
-      }
-    ],
-    "connections": {
-      "Schedule Trigger": {
-        "main": [
-          [
-            {
-              "node": "Get Pending Tickets",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Get Pending Tickets": {
-        "main": [
-          [
-            {
-              "node": "Loop Over Items",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Loop Over Items": {
-        "main": [
-          [],
-          [
-            {
-              "node": "Extract ID",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Force Webhook": {
-        "main": [
-          [
-            {
-              "node": "Extract ID",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Extract ID": {
-        "main": [
-          [
-            {
-              "node": "Fetch from Fluent",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Fetch from Fluent": {
-        "main": [
-          [
-            {
-              "node": "Build Transcript",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Build Transcript": {
-        "main": [
-          [
-            {
-              "node": "Get System Message",
-              "type": "main",
-              "index": 0
-            },
-            {
-              "node": "Check Agent Shifts",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Get System Message": {
-        "main": [
-          []
-        ]
-      },
-      "Check Agent Shifts": {
-        "main": [
-          [
-            {
-              "node": "Enrich with Shift Data",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Enrich with Shift Data": {
-        "main": [
-          [
-            {
-              "node": "Basic LLM Chain",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Basic LLM Chain": {
-        "main": [
-          [
-            {
-              "node": "Save Success",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Save Error",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Structured Output Parser": {
-        "ai_outputParser": [
-          [
-            {
-              "node": "Basic LLM Chain",
-              "type": "ai_outputParser",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Save Success": {
-        "main": [
-          [
-            {
-              "node": "Check Single Ticket",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Check Single Ticket": {
-        "main": [
-          [],
-          [
-            {
-              "node": "Loop Over Items",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Save Error": {
-        "main": [
-          [
-            {
-              "node": "Check Single Ticket",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Google Gemini Chat Model": {
-        "ai_languageModel": [
-          [
-            {
-              "node": "Basic LLM Chain",
-              "type": "ai_languageModel",
-              "index": 0
-            }
-          ]
-        ]
       }
     },
-    "pinData": {
-      "Schedule Trigger": [
-        {
-          "timestamp": "2025-12-24T17:00:04.012+06:00",
-          "Readable date": "December 24th 2025, 5:00:04 pm",
-          "Readable time": "5:00:04 pm",
-          "Day of week": "Wednesday",
-          "Year": "2025",
-          "Month": "December",
-          "Day of month": "24",
-          "Hour": "17",
-          "Minute": "00",
-          "Second": "04",
-          "Timezone": "Indian/Chagos (UTC+06:00)"
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        0
+      ],
+      "id": "310664a9-8a7a-4e4f-bc3f-ef7dd3fdc775",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "force-audit",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        224
+      ],
+      "id": "4ebf2ece-4b25-42d8-8e67-2868375ff2d3",
+      "name": "Force Webhook",
+      "webhookId": "5e7e9a9c-4ffe-436d-819c-f6eb06b7a29d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract ID and Normalize Input\n// Also detect if this came from Force Webhook (single ticket mode)\nconst input = items[0].json.body || items[0].json;\nlet id = input.ticket_id;\nif(!id && input.raw_json && input.raw_json.ticket_id) id = input.raw_json.ticket_id;\nif(!id && typeof input.raw_json === 'string') { try { id = JSON.parse(input.raw_json).ticket_id; } catch(e){} }\n\n// Check if this came from Force Webhook (has body.ticket_id or force flag)\nconst isSingleTicket = !!(input.ticket_id || input.force);\n\nreturn { json: { target_id: id, is_single_ticket: isSingleTicket } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        96
+      ],
+      "id": "a4869672-9df8-4d3a-9502-cbeede6fc4ba",
+      "name": "Extract ID"
+    },
+    {
+      "parameters": {
+        "url": "=https://support.junior.ninja/wp-json/fluent-support/v2/tickets/{{ $json.target_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        832,
+        96
+      ],
+      "id": "e2ec348d-06ea-466a-8d82-6c3531dee389",
+      "name": "Fetch from Fluent",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaTtZ9Lrg66W1Pks",
+          "name": "Support Access"
         }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ticket = items[0].json.ticket || {};\nconst responses = items[0].json.responses || [];\n\n// Build transcript\nlet transcript = `### TICKET ${ticket.id}\\nTITLE: ${ticket.title}\\nSTATUS: ${ticket.status}\\nCREATED: ${ticket.created_at || 'N/A'}\\n\\n`;\n\n// Track agent responses for shift checking\nconst agentChecks = [];\nlet previousCustomerMessageTime = ticket.created_at || null;\n\nresponses.forEach((r, idx) => {\n  const person = r.person || {};\n  // Use person_type to determine if agent/customer (type field is often null)\n  const personType = person.person_type || r.type || 'system';\n  const name = person.full_name || person.first_name || (person.last_name ? (person.first_name || '') + ' ' + person.last_name : '') || person.name || 'System';\n  const email = person.email || '';\n  const text = r.content ? r.content.replace(/<[^>]*>/g, '') : '';\n  const timestamp = r.created_at || r.created || r.timestamp || '';\n  \n  // Add to transcript with timestamp\n  transcript += `[${personType.toUpperCase()}] ${name}${email ? ' (' + email + ')' : ''} [${timestamp}]: ${text}\\n`;\n  \n  // Track agent responses for shift checking\n  if (personType === 'agent' && email && timestamp) {\n    agentChecks.push({\n      agent_email: email,\n      agent_name: name,\n      datetime: timestamp,\n      response_index: idx,\n      response_type: 'agent_response',\n      customer_message_time: previousCustomerMessageTime\n    });\n  }\n  \n  // Track customer messages (to calculate delay)\n  if (personType === 'customer' && timestamp) {\n    previousCustomerMessageTime = timestamp;\n  }\n  \n  // Track ticket assignments (system logs)\n  if ((personType === 'system' || !personType) && text && timestamp) {\n    // Check for assignment patterns\n    const assignedMatch = text.match(/assigned.*?to\\s+([^\\s<]+@[^\\s>]+)/i) || \n                         text.match(/assigned.*?to\\s+([A-Za-z\\s]+)/i);\n    if (assignedMatch && timestamp) {\n      const assignedAgent = assignedMatch[1].trim();\n      agentChecks.push({\n        agent_email: assignedAgent.includes('@') ? assignedAgent : null,\n        agent_name: assignedAgent,\n        datetime: timestamp,\n        response_index: idx,\n        response_type: 'ticket_assignment',\n        assignment_text: text\n      });\n    }\n  }\n});\n\nreturn { \n  json: { \n    ticket_id: ticket.id, \n    clean_transcript: transcript,\n    ticket_created_at: ticket.created_at,\n    agent_checks: agentChecks,\n    raw_responses: responses\n  } \n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        96
+      ],
+      "id": "9cf06fac-d1ce-4eef-b934-f9083170c83c",
+      "name": "Build Transcript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/check-shifts-batch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { checks: ($json.agent_checks || []).filter(c => c && c.agent_email && c.datetime).map(c => ({ agent_email: c.agent_email, datetime: c.datetime })) } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1216,
+        96
+      ],
+      "id": "shift-check-node-001",
+      "name": "Check Agent Shifts",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data from previous nodes\n// Note: This node receives data from both \"Get System Message\" and \"Check Agent Shifts\"\n// We need to identify which input is which\nconst inputItems = items || [];\n\nlet transcriptData = null;\nlet shiftResults = [];\nlet systemMessage = '';\n\n// Process all input items to find the right data\ninputItems.forEach(item => {\n  const json = item.json || {};\n  \n  // Check if this is from \"Get System Message\" (has system_message property)\n  if (json.system_message !== undefined) {\n    systemMessage = json.system_message || '';\n  }\n  \n  // Check if this is from \"Check Agent Shifts\" (has results array)\n  if (json.results !== undefined && Array.isArray(json.results)) {\n    shiftResults = json.results || [];\n  }\n  \n  // Check if this is from \"Build Transcript\" (has ticket_id and agent_checks)\n  if (json.ticket_id && json.agent_checks !== undefined) {\n    transcriptData = json;\n  }\n});\n\n// Fallback: if we don't have transcriptData from input, get it from node reference\nif (!transcriptData) {\n  try {\n    transcriptData = $('Build Transcript').item.json;\n  } catch(e) {\n    console.error('Could not get transcript data:', e);\n  }\n}\n\n// Fallback: if we don't have shiftResults, get from node reference\nif (shiftResults.length === 0) {\n  try {\n    const shiftData = $('Check Agent Shifts').item.json;\n    shiftResults = shiftData.results || [];\n  } catch(e) {\n    console.error('Could not get shift results:', e);\n  }\n}\n\n// Fallback: if we don't have systemMessage, get from node reference\nif (!systemMessage) {\n  try {\n    const sysMsgData = $('Get System Message').item.json;\n    systemMessage = sysMsgData.system_message || '';\n  } catch(e) {\n    console.error('Could not get system message:', e);\n  }\n}\n\nif (!transcriptData) {\n  throw new Error('Missing transcript data');\n}\n\n// Create a map for quick lookup: agent_email_datetime -> shift result\nconst shiftMap = {};\nshiftResults.forEach(result => {\n  const key = `${result.agent_email}_${result.datetime}`;\n  shiftMap[key] = result;\n});\n\n// Enrich agent_checks with shift data\nconst enrichedChecks = (transcriptData.agent_checks || []).map(check => {\n  if (!check.agent_email || !check.datetime) {\n    return { ...check, shift_check: null };\n  }\n  \n  const key = `${check.agent_email}_${check.datetime}`;\n  const shiftData = shiftMap[key] || null;\n  \n  return {\n    ...check,\n    shift_check: shiftData ? {\n      was_on_shift: shiftData.was_on_shift,\n      is_weekend: shiftData.is_weekend,\n      day_of_week: shiftData.day_of_week,\n      shift_type: shiftData.shift_info?.shift_type || null,\n      shift_start: shiftData.shift_info?.shift_start || null,\n      shift_end: shiftData.shift_info?.shift_end || null\n    } : null\n  };\n});\n\n// Build shift context summary for AI prompt\nlet shiftContextSummary = \"\\n### 📅 SHIFT CONTEXT FOR DELAY ANALYSIS\\n\";\nshiftContextSummary += \"Use this data to determine if response delays should be penalized:\\n\\n\";\n\nif (enrichedChecks.length > 0) {\n  enrichedChecks.forEach((check, idx) => {\n    if (check.shift_check && check.agent_email) {\n      const sc = check.shift_check;\n      shiftContextSummary += `\\n**${idx + 1}. Agent: ${check.agent_name || check.agent_email}**\\n`;\n      shiftContextSummary += `   - Action: ${check.response_type === 'agent_response' ? 'Response' : 'Ticket Assignment'}\\n`;\n      shiftContextSummary += `   - Time: ${check.datetime}\\n`;\n      shiftContextSummary += `   - Was On Shift: ${sc.was_on_shift ? '✅ YES' : '❌ NO'}\\n`;\n      shiftContextSummary += `   - Weekend: ${sc.is_weekend ? '✅ YES' : '❌ NO'}\\n`;\n      shiftContextSummary += `   - Day: ${sc.day_of_week}\\n`;\n      if (sc.shift_type) {\n        shiftContextSummary += `   - Shift Type: ${sc.shift_type}\\n`;\n      }\n      if (check.customer_message_time) {\n        shiftContextSummary += `   - Customer Message Time: ${check.customer_message_time}\\n`;\n      }\n    }\n  });\n} else {\n  shiftContextSummary += \"⚠️ No agent shift data available. Assume agents were ON SHIFT when evaluating delays.\\n\";\n}\n\n// Prepare system message by replacing placeholders\nlet preparedSystemMessage = systemMessage || '';\nif (preparedSystemMessage) {\n  // Replace transcript placeholder\n  if (transcriptData.clean_transcript) {\n    preparedSystemMessage = preparedSystemMessage.replace(/\\{\\{ \\$json\\.clean_transcript_json_safe \\}\\}/g, transcriptData.clean_transcript);\n  }\n  \n  // Replace shift context placeholder\n  preparedSystemMessage = preparedSystemMessage.replace(/\\{\\{ \\$json\\.shift_context \\}\\}/g, shiftContextSummary);\n}\n\nreturn {\n  json: {\n    ...transcriptData,\n    shift_context: shiftContextSummary,\n    enriched_agent_checks: enrichedChecks,\n    clean_transcript_json_safe: transcriptData.clean_transcript,\n    prepared_system_message: preparedSystemMessage\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        96
+      ],
+      "id": "enrich-shift-node-001",
+      "name": "Enrich with Shift Data"
+    },
+    {
+      "parameters": {
+        "url": "=https://support.junior.ninja/wp-json/ai-audit/v1/get-system-message?_t={{ Math.random() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1024,
+        224
+      ],
+      "id": "get-system-message-node-001",
+      "name": "Get System Message",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \"Ticket ID: \" + $json.ticket_id + \"\\n\\nTRANSCRIPT:\\n\" + $json.clean_transcript }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $json.prepared_system_message }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1792,
+        96
+      ],
+      "id": "4691b1d8-72c0-4294-9c53-7ad400ce9c69",
+      "name": "Basic LLM Chain",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"audit_summary\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"ticket_id\": { \"type\": \"string\" },\n        \"overall_sentiment\": { \"type\": \"string\", \"enum\": [\"Positive\", \"Mixed\", \"Negative\"] },\n        \"overall_score\": { \"type\": \"integer\", \"description\": \"Score between -200 and +100\" },\n        \"executive_summary\": { \"type\": \"string\", \"description\": \"High-level overview of the interaction.\" }\n      },\n      \"required\": [\"ticket_id\", \"overall_sentiment\", \"overall_score\", \"executive_summary\"]\n    },\n    \"agent_evaluations\": {\n      \"type\": \"array\",\n      \"description\": \"MANDATORY: Per-agent evaluation with separate timing, resolution, and communication scores\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"agent_email\": { \"type\": \"string\" },\n          \"agent_name\": { \"type\": \"string\" },\n          \"timing_score\": { \"type\": \"integer\", \"description\": \"Can be negative based on response delays\" },\n          \"resolution_score\": { \"type\": \"integer\", \"description\": \"Score INDEPENDENTLY of communication. Add +30 if resolved, +20 if actionable solution, +10 per additional issue, +10 resources, +10 escalated, +10 follow-up. Even rude agents get full credit if they solved the problem.\" },\n          \"communication_score\": { \"type\": \"integer\", \"minimum\": -60, \"maximum\": 30, \"description\": \"Strict checklist sum ONLY: +10(professional) +5(empathy) +10(resources) +5(praised) -10(unclear) -25(rude, PER INSTANCE). Example: 2 rude msgs = 10+5+5-10-25-25=-40. Range -60 to +30.\" },\n          \"overall_agent_score\": { \"type\": \"integer\", \"description\": \"Sum of timing + resolution + communication\" },\n          \"contribution_percentage\": { \"type\": \"integer\" },\n          \"reply_count\": { \"type\": \"integer\" },\n          \"shift_compliance\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"on_shift_responses\": { \"type\": \"integer\" },\n              \"off_shift_responses\": { \"type\": \"integer\" },\n              \"delays_while_on_shift\": { \"type\": \"integer\" },\n              \"delays_while_off_shift\": { \"type\": \"integer\" }\n            }\n          },\n          \"response_breakdown\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"response_number\": { \"type\": \"integer\" },\n                \"timestamp\": { \"type\": \"string\" },\n                \"time_since_previous\": { \"type\": \"string\" },\n                \"was_on_shift\": { \"type\": \"boolean\" },\n                \"quality_score\": { \"type\": \"integer\", \"enum\": [5, 0, -5], \"description\": \"Must be exactly 5 (helpful), 0 (neutral), or -5 (unhelpful)\" },\n                \"moved_toward_resolution\": { \"type\": \"boolean\" },\n                \"brief_note\": { \"type\": \"string\" }\n              }\n            }\n          },\n          \"key_achievements\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"areas_for_improvement\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"reasoning\": { \"type\": \"string\" }\n        },\n        \"required\": [\"agent_email\", \"agent_name\", \"timing_score\", \"resolution_score\", \"communication_score\", \"overall_agent_score\"]\n      }\n    },\n    \"agent_contributions\": {\n      \"type\": \"array\",\n      \"description\": \"Legacy format for backward compatibility\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"agent_email\": { \"type\": \"string\" },\n          \"percentage\": { \"type\": \"integer\" },\n          \"reply_count\": { \"type\": \"integer\" },\n          \"score\": { \"type\": \"integer\" }\n        }\n      }\n    },\n    \"problem_contexts\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"issue_description\": { \"type\": \"string\" },\n          \"category\": { \"type\": \"string\", \"enum\": [\"HR Violation\", \"Ticket Gaming / Metric Manipulation\", \"Technical Inaccuracy\", \"Process Failure\", \"Policy Violation\"], \"description\": \"Use HR Violation for ALL abusive/hostile/unprofessional language. Each instance of abuse must be a SEPARATE problem_context entry.\" },\n          \"severity\": { \"type\": \"string\", \"enum\": [\"Low\", \"Medium\", \"High\", \"Critical\"] },\n          \"handling_agents\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"agent_id\": { \"type\": \"string\" },\n                \"marking\": { \"type\": \"integer\", \"description\": \"Negative points, e.g., -10\" },\n                \"reasoning\": { \"type\": \"string\" }\n              }\n            }\n          }\n        },\n        \"required\": [\"issue_description\", \"category\", \"severity\", \"handling_agents\"]\n      }\n    },\n    \"ops_strategic\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"doc_update_required\": { \"type\": \"boolean\" },\n        \"faq_candidate\": { \"type\": \"boolean\" },\n        \"problem_categories\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Categorize the customer issue, e.g. Billing Issue, Technical Bug, Feature Request\" },\n        \"documentation_gaps\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Missing docs that could have prevented this ticket\" },\n        \"recommended_faq\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"description\": \"Customer-facing FAQ questions this ticket suggests\" }\n      }\n    }\n  },\n  \"required\": [\"audit_summary\", \"agent_evaluations\", \"problem_contexts\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1792,
+        320
+      ],
+      "id": "6094c67d-4993-4f45-ae02-80230aae48c4",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ticket_id: $node[\"Build Transcript\"].json.ticket_id, status: \"success\", score: $json.output.audit_summary.overall_score, audit_response: JSON.stringify($json.output) } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2176,
+        96
+      ],
+      "id": "c65a9dfd-4282-434c-90bf-9a54f74ba419",
+      "name": "Save Success",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if this is single ticket mode (from Force Webhook)\n// If so, don't loop back to Loop Over Items\nconst isSingleTicket = $node[\"Extract ID\"].json.is_single_ticket || false;\n\nif (isSingleTicket) {\n  // Single ticket mode: don't pass data back, just finish\n  return [];\n} else {\n  // Batch mode: pass data back to Loop Over Items\n  return items;\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        96
+      ],
+      "id": "check-single-ticket-node",
+      "name": "Check Single Ticket"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n    \"ticket_id\": $node[\"Build Transcript\"].json.ticket_id || $node[\"Extract ID\"].json.target_id,\n    \"status\": \"failed\",\n    \"error_message\": $json.error?.message || $json.message || \"AI Generation Error\"\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2176,
+        336
+      ],
+      "id": "2568129d-de95-4a15-b100-14c48a2a3737",
+      "name": "Save Error",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        336
+      ],
+      "id": "0de75764-f74c-4711-b84a-650a62dbb010",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BCuilPotYN3zNR4W",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "meta": {
-      "templateCredsSetupCompleted": true,
-      "instanceId": "91be72ebc320d0aa3df648ac65f6dd8332afea167d26770898b00970c75e8a44"
+    "Get Pending Tickets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Force Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch from Fluent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch from Fluent": {
+      "main": [
+        [
+          {
+            "node": "Build Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Transcript": {
+      "main": [
+        [
+          {
+            "node": "Get System Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Agent Shifts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Agent Shifts": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Shift Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Shift Data": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get System Message": {
+      "main": [
+        []
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Save Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Success": {
+      "main": [
+        [
+          {
+            "node": "Check Single Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Single Ticket": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Error": {
+      "main": [
+        [
+          {
+            "node": "Check Single Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     }
+  },
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "timestamp": "2025-12-30T00:00:23.011+06:00",
+        "Readable date": "December 30th 2025, 12:00:23 am",
+        "Readable time": "12:00:23 am",
+        "Day of week": "Tuesday",
+        "Year": "2025",
+        "Month": "December",
+        "Day of month": "30",
+        "Hour": "00",
+        "Minute": "00",
+        "Second": "23",
+        "Timezone": "Indian/Chagos (UTC+06:00)"
+      }
+    ],
+    "Force Webhook": [
+      {
+        "headers": {
+          "connection": "upgrade",
+          "host": "team.junior.ninja",
+          "x-real-ip": "172.69.166.102",
+          "x-forwarded-for": "134.185.87.83, 172.69.166.102",
+          "x-forwarded-proto": "https",
+          "content-length": "18",
+          "user-agent": "curl/8.5.0",
+          "accept-encoding": "gzip, br",
+          "content-type": "application/json",
+          "accept": "*/*",
+          "cf-ray": "9d6de1f1d9ab2af5-SIN",
+          "cdn-loop": "cloudflare; loops=1",
+          "cf-connecting-ip": "134.185.87.83",
+          "cf-ipcountry": "SG",
+          "cf-visitor": "{\"scheme\":\"https\"}"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "ticket_id": 115
+        },
+        "webhookUrl": "http://team.junior.ninja/webhook/force-audit",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "instanceId": "91be72ebc320d0aa3df648ac65f6dd8332afea167d26770898b00970c75e8a44"
   }
-
+}

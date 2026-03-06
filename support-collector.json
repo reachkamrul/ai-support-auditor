@@ -1,128 +1,120 @@
 {
-    "name": "Support (Collector)",
-    "nodes": [
-      {
-        "parameters": {
-          "httpMethod": "POST",
-          "path": "6d2250a7-1f9f-4c0b-b002-9ae1a95b2437",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2.1,
-        "position": [
-          448,
-          -128
-        ],
-        "id": "d654c97d-25b5-43d3-b90c-33b1227c5c30",
-        "name": "Webhook",
-        "webhookId": "e507b5bb-647f-4390-a74e-773d2dd55fdb"
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "6d2250a7-1f9f-4c0b-b002-9ae1a95b2437",
+        "options": {}
       },
-      {
-        "parameters": {
-          "url": "=https://support.junior.ninja/wp-json/fluent-support/v2/tickets/{{ $json.body.ticket.id }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpBasicAuth",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          672,
-          -128
-        ],
-        "id": "a3a2f297-6b0e-4a59-8159-241cc837e5e4",
-        "name": "Get Ticket Details",
-        "credentials": {
-          "httpBasicAuth": {
-            "id": "GaTtZ9Lrg66W1Pks",
-            "name": "Support Access"
-          }
-        }
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "d654c97d-25b5-43d3-b90c-33b1227c5c30",
+      "name": "Webhook",
+      "webhookId": "e507b5bb-647f-4390-a74e-773d2dd55fdb"
+    },
+    {
+      "parameters": {
+        "url": "=https://support.junior.ninja/wp-json/fluent-support/v2/tickets/{{ $json.body.ticket.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
       },
-      {
-        "parameters": {
-          "jsCode": "const ticket = items[0].json.ticket;\nconst responses = items[0].json.responses;\n\n// Generate transcript\nlet transcript = \"\";\nresponses.forEach(res => {\n    const personType = res.person.person_type;\n    const name = res.person.full_name || res.person.email;\n    const content = res.content.replace(/<[^>]*>?/gm, ''); \n    transcript += `[${res.created_at}] ${personType.toUpperCase()} (${name}): ${content}\\n\\n`;\n});\n\nreturn {\n    ticket_id: ticket.id,\n    transcript: transcript,\n    created_at: ticket.created_at\n};"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          896,
-          -128
-        ],
-        "id": "f91b03cd-7fdd-4cdd-b32f-5733e6051686",
-        "name": "Format Transcript"
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ { ticket_id: $json.ticket_id, status: \"pending\", raw_json: JSON.stringify($json) } }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
-        "position": [
-          1120,
-          -128
-        ],
-        "id": "407a4295-beca-4828-b17d-7f4dbcfe2739",
-        "name": "Save to Queue",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "QuPjMThaSg2wOQyZ",
-            "name": "Header Auth account"
-          }
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "a3a2f297-6b0e-4a59-8159-241cc837e5e4",
+      "name": "Get Ticket Details",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaTtZ9Lrg66W1Pks",
+          "name": "Support Access"
         }
       }
-    ],
-    "pinData": {},
-    "connections": {
-      "Webhook": {
-        "main": [
-          [
-            {
-              "node": "Get Ticket Details",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ticket = items[0].json.ticket;\nconst responses = items[0].json.responses;\n\n// Generate transcript\nlet transcript = \"\";\nresponses.forEach(res => {\n    const personType = res.person.person_type;\n    const name = res.person.full_name || res.person.email;\n    const content = res.content.replace(/<[^>]*>?/gm, ''); \n    transcript += `[${res.created_at}] ${personType.toUpperCase()} (${name}): ${content}\\n\\n`;\n});\n\nreturn {\n    ticket_id: ticket.id,\n    transcript: transcript,\n    created_at: ticket.created_at\n};"
       },
-      "Get Ticket Details": {
-        "main": [
-          [
-            {
-              "node": "Format Transcript",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -128
+      ],
+      "id": "f91b03cd-7fdd-4cdd-b32f-5733e6051686",
+      "name": "Format Transcript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ticket_id: $json.ticket_id, status: \"pending\", raw_json: JSON.stringify($json) } }}",
+        "options": {}
       },
-      "Format Transcript": {
-        "main": [
-          [
-            {
-              "node": "Save to Queue",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        -128
+      ],
+      "id": "407a4295-beca-4828-b17d-7f4dbcfe2739",
+      "name": "Save to Queue",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QuPjMThaSg2wOQyZ",
+          "name": "Header Auth account"
+        }
       }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Ticket Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "active": true,
-    "settings": {
-      "executionOrder": "v1"
+    "Get Ticket Details": {
+      "main": [
+        [
+          {
+            "node": "Format Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "versionId": "417df1eb-7301-4a10-8fea-738bf84e1f5c",
-    "meta": {
-      "instanceId": "91be72ebc320d0aa3df648ac65f6dd8332afea167d26770898b00970c75e8a44"
-    },
-    "id": "61rS88KYSH0p0CuJ",
-    "tags": []
+    "Format Transcript": {
+      "main": [
+        [
+          {
+            "node": "Save to Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "91be72ebc320d0aa3df648ac65f6dd8332afea167d26770898b00970c75e8a44"
   }
+}
