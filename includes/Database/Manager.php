@@ -179,17 +179,24 @@ class Manager {
             KEY category (category)
         ) $charset_collate;");
         
-        // 9. Doc Central Meta
+        // 9. Doc Central Meta (Knowledge Base)
         dbDelta("CREATE TABLE {$wpdb->prefix}ais_doc_central_meta (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             product_name varchar(100),
             doc_url varchar(500),
+            doc_title varchar(255) DEFAULT NULL,
+            category varchar(100) DEFAULT NULL,
+            tags text DEFAULT NULL,
+            added_by varchar(255) DEFAULT NULL,
             pinecone_namespace varchar(100),
             last_scraped datetime,
             chunk_count int(11),
             status varchar(20) DEFAULT 'active',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY doc_url (doc_url)
+            UNIQUE KEY doc_url (doc_url),
+            KEY product_name (product_name),
+            KEY category (category)
         ) $charset_collate;");
         
         // 10. Flagged Tickets
@@ -379,6 +386,9 @@ class Manager {
         // Auto-migrate ais_agent_evaluations table
         $this->migrate_evaluations_table();
 
+        // Auto-migrate ais_doc_central_meta table
+        $this->migrate_doc_central_meta();
+
         // Auto-create new tables if missing (flagged_tickets, teams, etc.)
         $this->ensure_new_tables();
         
@@ -498,6 +508,36 @@ class Manager {
         $col3 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'handoff_score'");
         if (empty($col3)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN handoff_score int(4) DEFAULT NULL AFTER communication_score");
+        }
+    }
+
+    /**
+     * Migrate doc_central_meta table — add KB columns
+     */
+    private function migrate_doc_central_meta() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_doc_central_meta';
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+            return;
+        }
+
+        $cols = $wpdb->get_col("SHOW COLUMNS FROM $table");
+
+        if (!in_array('doc_title', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN doc_title varchar(255) DEFAULT NULL AFTER doc_url");
+        }
+        if (!in_array('category', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER doc_title");
+        }
+        if (!in_array('tags', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN tags text DEFAULT NULL AFTER category");
+        }
+        if (!in_array('added_by', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN added_by varchar(255) DEFAULT NULL AFTER tags");
+        }
+        if (!in_array('created_at', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP");
         }
     }
 

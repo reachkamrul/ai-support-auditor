@@ -40,6 +40,7 @@ class Manager {
             'test' => new Handlers\TestHandler($this->database),
             'calendar' => new Handlers\CalendarHandler($this->database),
             'review' => new Handlers\AuditReviewHandler($this->database),
+            'kb' => new Handlers\KnowledgeBaseHandler($this->database),
         ];
     }
     
@@ -102,6 +103,17 @@ class Manager {
     public function save_audit_review() { $this->handlers['review']->save_review(); }
     public function get_audit_review() { $this->handlers['review']->get_review(); }
     public function save_score_override() { $this->handlers['review']->save_override(); }
+
+    // ── Knowledge Base handlers ──
+
+    public function kb_save_doc() { $this->handlers['kb']->save_doc(); }
+    public function kb_delete_doc() { $this->handlers['kb']->delete_doc(); }
+    public function kb_update_doc_status() { $this->handlers['kb']->update_doc_status(); }
+    public function kb_get_docs() { $this->handlers['kb']->get_docs(); }
+    public function kb_import_sitemap() { $this->handlers['kb']->import_sitemap(); }
+    public function kb_sync_sitemap() { $this->handlers['kb']->sync_sitemap(); }
+    public function kb_save_sitemap_url() { $this->handlers['kb']->save_sitemap_url(); }
+    public function kb_remove_sitemap() { $this->handlers['kb']->remove_sitemap(); }
 
     /**
      * Force watchdog sync

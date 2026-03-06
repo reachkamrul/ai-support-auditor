@@ -17,6 +17,7 @@ class AccessControl {
     private static $admin_only_sections = [
         'timing-penalties',
         'system-message',
+        'knowledge-base',
         'api-config',
     ];
 

@@ -37,6 +37,7 @@ class Manager {
         'SETTINGS' => [
             'timing-penalties' => ['label' => 'Timing Penalties', 'icon' => 'sliders'],
             'system-message'   => ['label' => 'System Message',   'icon' => 'message-square'],
+            'knowledge-base'   => ['label' => 'Knowledge Base',   'icon' => 'book'],
             'api-config'       => ['label' => 'API Config',       'icon' => 'key'],
         ],
     ];
@@ -77,6 +78,7 @@ class Manager {
             'flagged_tickets'  => new Pages\FlaggedTickets($this->database),
             'teams'            => new Pages\Teams($this->database),
             'handoff_report'   => new Pages\HandoffReport($this->database),
+            'knowledge_base'   => new Pages\KnowledgeBase($this->database),
         ];
     }
 
@@ -286,6 +288,11 @@ class Manager {
                 $this->pages['system_message']->render();
                 break;
 
+            case 'knowledge-base':
+                $this->render_page_header('Knowledge Base', 'Register documentation URLs and analyze coverage gaps');
+                $this->pages['knowledge_base']->render();
+                break;
+
             case 'api-config':
                 $this->render_page_header('API Config', 'Security tokens and endpoint reference');
                 $this->pages['api_config']->render();
@@ -354,6 +361,7 @@ class Manager {
             'trending-up' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
             'sliders' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
             'message-square' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+            'book' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
             'key' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
             'repeat' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
         ];

@@ -121,6 +121,16 @@ class Plugin {
         add_action('wp_ajax_ai_audit_get_review', [$this->ajax, 'get_audit_review']);
         add_action('wp_ajax_ai_audit_save_override', [$this->ajax, 'save_score_override']);
 
+        // Knowledge Base AJAX handlers
+        add_action('wp_ajax_ai_kb_save_doc', [$this->ajax, 'kb_save_doc']);
+        add_action('wp_ajax_ai_kb_delete_doc', [$this->ajax, 'kb_delete_doc']);
+        add_action('wp_ajax_ai_kb_update_doc_status', [$this->ajax, 'kb_update_doc_status']);
+        add_action('wp_ajax_ai_kb_get_docs', [$this->ajax, 'kb_get_docs']);
+        add_action('wp_ajax_ai_kb_import_sitemap', [$this->ajax, 'kb_import_sitemap']);
+        add_action('wp_ajax_ai_kb_sync_sitemap', [$this->ajax, 'kb_sync_sitemap']);
+        add_action('wp_ajax_ai_kb_save_sitemap_url', [$this->ajax, 'kb_save_sitemap_url']);
+        add_action('wp_ajax_ai_kb_remove_sitemap', [$this->ajax, 'kb_remove_sitemap']);
+
         // Admin post actions
         add_action('admin_post_export_agent_data', [$this->admin, 'export_agent_data']);
 

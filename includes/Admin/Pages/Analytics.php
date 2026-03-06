@@ -452,6 +452,7 @@ class Analytics {
     }
     
     private function render_doc_gaps($doc_gaps) {
+        $doc_index = $this->get_doc_search_index();
         ?>
         <div class="ops-card" style="margin-bottom:24px;">
             <div class="analytics-card-header">
@@ -468,14 +469,17 @@ class Analytics {
                         <tr>
                             <th>Gap Description</th>
                             <th width="100">Frequency</th>
+                            <th width="90">Doc?</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $shown = 0; foreach ($doc_gaps as $gap => $count): ?>
                             <?php if ($shown++ >= 15) break; ?>
+                            <?php $has_doc = $this->check_doc_match($gap, $doc_index); ?>
                             <tr>
                                 <td style="color:var(--color-text-primary);"><?php echo esc_html($gap); ?></td>
                                 <td><span class="status-badge <?php echo $count >= 5 ? 'failed' : ($count >= 3 ? '' : 'success'); ?>"><?php echo $count; ?>x</span></td>
+                                <td><?php echo $has_doc ? '<span style="color:var(--color-success);font-weight:600;font-size:12px;" title="' . esc_attr($has_doc) . '">Exists</span>' : '<span style="color:var(--color-error);font-size:12px;">Missing</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -486,6 +490,7 @@ class Analytics {
     }
     
     private function render_faq_recommendations($faq_topics) {
+        $doc_index = $this->get_doc_search_index();
         ?>
         <div class="ops-card">
             <div class="analytics-card-header">
@@ -502,14 +507,17 @@ class Analytics {
                         <tr>
                             <th>FAQ Topic</th>
                             <th width="100">Frequency</th>
+                            <th width="90">Doc?</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $shown = 0; foreach ($faq_topics as $faq => $count): ?>
                             <?php if ($shown++ >= 15) break; ?>
+                            <?php $has_doc = $this->check_doc_match($faq, $doc_index); ?>
                             <tr>
                                 <td style="color:var(--color-text-primary);"><?php echo esc_html($faq); ?></td>
                                 <td><span class="status-badge <?php echo $count >= 5 ? 'failed' : ($count >= 3 ? '' : 'success'); ?>"><?php echo $count; ?>x</span></td>
+                                <td><?php echo $has_doc ? '<span style="color:var(--color-success);font-weight:600;font-size:12px;" title="' . esc_attr($has_doc) . '">Exists</span>' : '<span style="color:var(--color-error);font-size:12px;">Missing</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -517,5 +525,50 @@ class Analytics {
             <?php endif; ?>
         </div>
         <?php
+    }
+
+    /**
+     * Get doc search index from ais_doc_central_meta
+     */
+    private function get_doc_search_index() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_doc_central_meta';
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            return [];
+        }
+
+        $docs = $wpdb->get_results("SELECT doc_title, category, tags, product_name, status FROM {$table} WHERE status != 'archived'");
+        $index = [];
+        foreach ($docs as $doc) {
+            $index[] = [
+                'searchable' => strtolower(($doc->doc_title ?: '') . ' ' . ($doc->category ?: '') . ' ' . ($doc->tags ?: '') . ' ' . ($doc->product_name ?: '')),
+                'title' => $doc->doc_title ?: $doc->product_name,
+            ];
+        }
+        return $index;
+    }
+
+    /**
+     * Check if a topic/gap text has a matching doc
+     * Returns doc title if matched, false otherwise
+     */
+    private function check_doc_match($text, $doc_index) {
+        if (empty($doc_index)) return false;
+
+        $tokens = array_filter(preg_split('/[\s_\-\/,]+/', strtolower($text)));
+
+        foreach ($doc_index as $di) {
+            $match_count = 0;
+            foreach ($tokens as $token) {
+                if (strlen($token) >= 3 && strpos($di['searchable'], $token) !== false) {
+                    $match_count++;
+                }
+            }
+            $threshold = count($tokens) <= 2 ? 1 : 2;
+            if ($match_count >= $threshold) {
+                return $di['title'];
+            }
+        }
+        return false;
     }
 }
