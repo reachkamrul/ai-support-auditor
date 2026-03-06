@@ -30,7 +30,9 @@ class Manager {
         'holidays',
         'holiday_duty',
         'agent_leaves',
-        'calendar_extras'
+        'calendar_extras',
+        'audit_reviews',
+        'score_overrides'
     ];
     
     /**
@@ -81,6 +83,7 @@ class Manager {
             title varchar(100) DEFAULT NULL,
             role varchar(20) DEFAULT 'agent',
             wp_user_id bigint(20) DEFAULT NULL,
+            can_override tinyint(1) DEFAULT 0,
             fluent_agent_id int(11) DEFAULT NULL,
             avatar_url varchar(500) DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
@@ -313,6 +316,42 @@ class Manager {
             KEY agent_email (agent_email)
         ) $charset_collate;");
 
+        // 19. Audit Reviews
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_audit_reviews (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            audit_id bigint(20) NOT NULL,
+            ticket_id varchar(50) NOT NULL,
+            reviewer_email varchar(255) NOT NULL,
+            review_status varchar(20) NOT NULL,
+            summary_agree tinyint(1) DEFAULT 1,
+            evaluations_review longtext DEFAULT NULL,
+            problems_review longtext DEFAULT NULL,
+            general_notes text DEFAULT NULL,
+            reviewed_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY audit_id (audit_id),
+            KEY ticket_id (ticket_id),
+            KEY reviewer_email (reviewer_email)
+        ) $charset_collate;");
+
+        // 20. Score Overrides
+        dbDelta("CREATE TABLE {$wpdb->prefix}ais_score_overrides (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            audit_id bigint(20) NOT NULL,
+            ticket_id varchar(50) NOT NULL,
+            agent_email varchar(100) NOT NULL,
+            field_name varchar(50) NOT NULL,
+            old_value int(4) NOT NULL,
+            new_value int(4) NOT NULL,
+            override_by varchar(255) NOT NULL,
+            reason text DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY audit_id (audit_id),
+            KEY ticket_id (ticket_id),
+            KEY agent_email (agent_email)
+        ) $charset_collate;");
+
         // Seed shift definitions
         $this->seed_shift_definitions();
         
@@ -426,6 +465,9 @@ class Manager {
         }
         if (!in_array('created_at', $cols)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP AFTER last_synced");
+        }
+        if (!in_array('can_override', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN can_override tinyint(1) DEFAULT 0 AFTER wp_user_id");
         }
     }
     
@@ -572,6 +614,38 @@ class Manager {
                 created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 PRIMARY KEY  (id),
                 KEY date (date),
+                KEY agent_email (agent_email)
+            ) $charset_collate;",
+            'ais_audit_reviews' => "CREATE TABLE {$wpdb->prefix}ais_audit_reviews (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                audit_id bigint(20) NOT NULL,
+                ticket_id varchar(50) NOT NULL,
+                reviewer_email varchar(255) NOT NULL,
+                review_status varchar(20) NOT NULL,
+                summary_agree tinyint(1) DEFAULT 1,
+                evaluations_review longtext DEFAULT NULL,
+                problems_review longtext DEFAULT NULL,
+                general_notes text DEFAULT NULL,
+                reviewed_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY audit_id (audit_id),
+                KEY ticket_id (ticket_id),
+                KEY reviewer_email (reviewer_email)
+            ) $charset_collate;",
+            'ais_score_overrides' => "CREATE TABLE {$wpdb->prefix}ais_score_overrides (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                audit_id bigint(20) NOT NULL,
+                ticket_id varchar(50) NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                field_name varchar(50) NOT NULL,
+                old_value int(4) NOT NULL,
+                new_value int(4) NOT NULL,
+                override_by varchar(255) NOT NULL,
+                reason text DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY audit_id (audit_id),
+                KEY ticket_id (ticket_id),
                 KEY agent_email (agent_email)
             ) $charset_collate;",
         ];

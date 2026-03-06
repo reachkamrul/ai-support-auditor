@@ -41,6 +41,7 @@ class AllAudits {
         $filter_status = isset($_GET['audit_status']) ? sanitize_text_field($_GET['audit_status']) : '';
         $filter_search = isset($_GET['audit_search']) ? sanitize_text_field($_GET['audit_search']) : (isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '');
         $filter_team = AccessControl::get_selected_team_id();
+        $filter_review = isset($_GET['review_status']) ? sanitize_text_field($_GET['review_status']) : '';
 
         // Team filtering — build ticket_id subquery
         $team_join = '';
@@ -73,25 +74,37 @@ class AllAudits {
             $params[] = '%' . $wpdb->esc_like($filter_search) . '%';
         }
 
+        // Review filter
+        $review_join = " LEFT JOIN {$wpdb->prefix}ais_audit_reviews ar ON a.id = ar.audit_id";
+        $review_where = '';
+        if ($filter_review === 'reviewed') {
+            $review_where = " AND ar.id IS NOT NULL";
+        } elseif ($filter_review === 'unreviewed') {
+            $review_where = " AND ar.id IS NULL";
+        }
+
         $count_sql = "SELECT COUNT(DISTINCT a.ticket_id) FROM {$wpdb->prefix}ais_audits a
             INNER JOIN (
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            {$team_join}
-            {$where}{$team_where}";
+            {$team_join}{$review_join}
+            {$where}{$team_where}{$review_where}";
 
         $total = $params ? $wpdb->get_var($wpdb->prepare($count_sql, $params)) : $wpdb->get_var($count_sql);
         $total_pages = max(1, ceil($total / $this->per_page));
 
-        // Data query
-        $data_sql = "SELECT DISTINCT a.* FROM {$wpdb->prefix}ais_audits a
+        // Data query — include review data
+        $data_sql = "SELECT DISTINCT a.*, ar.reviewer_email, ar.review_status as reviewed_status,
+                        ar.reviewed_at, ar_agent.first_name as reviewer_name
+                     FROM {$wpdb->prefix}ais_audits a
             INNER JOIN (
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            {$team_join}
-            {$where}{$team_where}
+            {$team_join}{$review_join}
+            LEFT JOIN {$wpdb->prefix}ais_agents ar_agent ON ar.reviewer_email = ar_agent.email
+            {$where}{$team_where}{$review_where}
             ORDER BY a.created_at DESC
             LIMIT %d OFFSET %d";
         $data_params = array_merge($params, [$this->per_page, $offset]);
@@ -116,6 +129,14 @@ class AllAudits {
                             <option value="pending" <?php selected($filter_status, 'pending'); ?>>Pending</option>
                             <option value="success" <?php selected($filter_status, 'success'); ?>>Success</option>
                             <option value="failed" <?php selected($filter_status, 'failed'); ?>>Failed</option>
+                        </select>
+                    </div>
+                    <div class="audit-filter-group narrow">
+                        <label>Reviewed</label>
+                        <select name="review_status" class="ops-input">
+                            <option value="">All</option>
+                            <option value="unreviewed" <?php selected($filter_review, 'unreviewed'); ?>>Unreviewed</option>
+                            <option value="reviewed" <?php selected($filter_review, 'reviewed'); ?>>Reviewed</option>
                         </select>
                     </div>
                     <?php $all_teams = AccessControl::get_all_teams(); if (!empty($all_teams)): ?>
@@ -146,6 +167,7 @@ class AllAudits {
                         <th width="80">ID</th>
                         <th width="100">Status</th>
                         <th width="80">Score</th>
+                        <th width="110">Reviewed</th>
                         <th>Summary</th>
                         <th width="180" style="text-align:right">Actions</th>
                     </tr>
@@ -153,7 +175,7 @@ class AllAudits {
                 <tbody id="audit-rows">
                     <?php if (empty($results)): ?>
                         <tr>
-                            <td colspan="5" class="empty-audits">
+                            <td colspan="6" class="empty-audits">
                                 <p class="empty-audits-text">No audits found. Audits will appear here once tickets are processed.</p>
                             </td>
                         </tr>
@@ -175,6 +197,7 @@ class AllAudits {
                     if ($filter_status) $base_url .= '&audit_status=' . urlencode($filter_status);
                     if ($filter_search) $base_url .= '&audit_search=' . urlencode($filter_search);
                     if ($filter_team) $base_url .= '&filter_team=' . intval($filter_team);
+                    if ($filter_review) $base_url .= '&review_status=' . urlencode($filter_review);
 
                     if ($page > 1): ?>
                         <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;">&laquo; Prev</a>
@@ -361,6 +384,91 @@ class AllAudits {
                 font-size: 12px; white-space: pre-wrap; word-wrap: break-word;
                 max-height: calc(90vh - 80px); overflow-y: auto; color: var(--color-text-primary); line-height: 1.6;
             }
+
+            /* Review badge in table */
+            .review-badge {
+                display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
+                font-size: 11px; font-weight: 600;
+            }
+            .review-badge.reviewed {
+                background: var(--color-success-bg); color: #065f46;
+            }
+
+            /* Review panel in modal */
+            .ar-review-panel {
+                margin-top: 24px; padding: 20px; background: var(--color-bg);
+                border: 2px solid var(--color-primary); border-radius: var(--radius-md);
+            }
+            .ar-review-panel-title {
+                font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 16px;
+                display: flex; align-items: center; gap: 8px;
+            }
+            .ar-review-section {
+                margin-bottom: 16px; padding: 12px; background: var(--color-bg-subtle);
+                border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+            }
+            .ar-review-section-label {
+                font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 8px;
+            }
+            .ar-review-btns {
+                display: flex; gap: 8px; margin-bottom: 8px;
+            }
+            .ar-review-btns .rbtn {
+                padding: 4px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+                cursor: pointer; border: 1px solid var(--color-border); background: var(--color-bg);
+                color: var(--color-text-secondary); transition: all 0.15s;
+            }
+            .ar-review-btns .rbtn.active-agree {
+                background: var(--color-success-bg); border-color: var(--color-success); color: #065f46;
+            }
+            .ar-review-btns .rbtn.active-disagree {
+                background: var(--color-error-bg); border-color: var(--color-error); color: #991b1b;
+            }
+            .ar-review-btns .rbtn:hover { opacity: 0.8; }
+            .ar-review-note {
+                width: 100%; padding: 8px 10px; font-size: 12px; border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-text-primary);
+                resize: vertical; min-height: 36px; font-family: inherit;
+            }
+            .ar-review-submit-row {
+                display: flex; gap: 12px; align-items: center; margin-top: 16px;
+            }
+            .ar-review-saved {
+                font-size: 12px; color: var(--color-success); font-weight: 600; display: none;
+            }
+
+            /* Score override panel */
+            .ar-override-panel {
+                margin-top: 10px; padding: 12px; background: #fffbeb; border: 1px solid #f59e0b;
+                border-radius: var(--radius-sm);
+            }
+            .ar-override-title {
+                font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 10px;
+            }
+            .ar-override-row {
+                display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+            }
+            .ar-override-row label {
+                font-size: 12px; font-weight: 500; min-width: 120px; color: var(--color-text-secondary);
+            }
+            .ar-override-row input[type="number"] {
+                width: 70px; padding: 4px 8px; font-size: 13px; border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm); text-align: center;
+            }
+            .ar-override-row .old-val {
+                font-size: 11px; color: var(--color-text-tertiary);
+            }
+            .ar-override-reason {
+                width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm); margin-top: 4px; font-family: inherit;
+            }
+            .ar-override-trail {
+                margin-top: 10px; font-size: 11px; color: var(--color-text-tertiary);
+            }
+            .ar-override-trail-item {
+                padding: 4px 0; border-bottom: 1px solid var(--color-border);
+            }
+            .ar-override-trail-item:last-child { border-bottom: none; }
         </style>
         <?php
     }
@@ -408,24 +516,42 @@ class AllAudits {
             $sentiment_badge = " <span class='status-badge {$badge_class}' style='font-size:9px;padding:2px 6px;min-width:auto;'>" . esc_html($row->overall_sentiment) . "</span>";
         }
 
+        // Review badge
+        $review_badge = '<span style="color:var(--color-text-tertiary);font-size:12px;">—</span>';
+        if (!empty($row->reviewer_name)) {
+            $review_badge = '<span class="review-badge reviewed" title="' . esc_attr($row->reviewed_status) . '">' . esc_html($row->reviewer_name) . '</span>';
+        } elseif (!empty($row->reviewer_email)) {
+            $short = explode('@', $row->reviewer_email)[0];
+            $review_badge = '<span class="review-badge reviewed">' . esc_html($short) . '</span>';
+        }
+
+        $audit_id = intval($row->id);
+
         echo "<tr id='row-{$row->ticket_id}'>
             <td style='font-weight:600;color:var(--color-text-primary);'>#{$row->ticket_id}</td>
             <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span></td>
             <td style='text-align:center;'><span class='col-score {$score_class}'>{$score_display}</span>{$sentiment_badge}</td>
+            <td style='text-align:center;'>{$review_badge}</td>
             <td class='col-summary'>" . esc_html(substr($sum, 0, 100)) . "...<textarea id='json-{$row->ticket_id}' class='json-storage' style='display:none'>" . esc_textarea($j) . "</textarea></td>
             <td style='text-align:right;padding-right:16px;'>
-                <button class='ops-btn secondary btn-view' data-id='{$row->ticket_id}'>View</button>
+                <button class='ops-btn secondary btn-view' data-id='{$row->ticket_id}' data-audit-id='{$audit_id}'>View</button>
                 <button class='ops-btn primary btn-force' data-id='{$row->ticket_id}'>Re-Audit</button>
             </td>
         </tr>";
     }
 
     private function render_scripts() {
+        $can_override = AccessControl::can_override_scores() ? 'true' : 'false';
+        $is_lead_or_admin = (AccessControl::is_admin() || AccessControl::is_lead()) ? 'true' : 'false';
         ?>
         <script>
         jQuery(document).ready(function($){
             window.auditDataStore = window.auditDataStore || {};
             var showingJson = false;
+            var canOverride = <?php echo $can_override; ?>;
+            var canReview = <?php echo $is_lead_or_admin; ?>;
+            var currentAuditId = 0;
+            var currentTicketId = '';
 
             // ---- Score color helper (matches PHP logic) ----
             function scoreClass(s) {
@@ -518,6 +644,70 @@ class AllAudits {
                     h += '</div>';
                 }
 
+                // Lead Review Panel
+                if (canReview && currentAuditId) {
+                    h += '<div class="ar-review-panel" id="review-panel">';
+                    h += '<div class="ar-review-panel-title">Lead Review</div>';
+
+                    // Summary agree/disagree
+                    h += '<div class="ar-review-section">';
+                    h += '<div class="ar-review-section-label">Executive Summary</div>';
+                    h += '<div class="ar-review-btns" data-field="summary">';
+                    h += '<span class="rbtn" data-val="1" onclick="toggleReviewBtn(this,\'summary\')">Agree</span>';
+                    h += '<span class="rbtn" data-val="0" onclick="toggleReviewBtn(this,\'summary\')">Disagree</span>';
+                    h += '</div>';
+                    h += '</div>';
+
+                    // Per-agent evaluations review
+                    if (evals.length > 0) {
+                        h += '<div class="ar-review-section">';
+                        h += '<div class="ar-review-section-label">Agent Evaluations</div>';
+                        h += '<div class="ar-review-btns" data-field="evaluations">';
+                        h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'evaluations\')">Agree</span>';
+                        h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'evaluations\')">Partially Agree</span>';
+                        h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'evaluations\')">Disagree</span>';
+                        h += '</div>';
+                        h += '<textarea class="ar-review-note" id="review-evals-note" placeholder="Notes on evaluations..."></textarea>';
+                        h += '</div>';
+                    }
+
+                    // Problems review
+                    var problems = data.problem_contexts || [];
+                    if (problems.length > 0) {
+                        h += '<div class="ar-review-section">';
+                        h += '<div class="ar-review-section-label">Problems Found</div>';
+                        h += '<div class="ar-review-btns" data-field="problems">';
+                        h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'problems\')">Agree</span>';
+                        h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'problems\')">Partially Agree</span>';
+                        h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'problems\')">Disagree</span>';
+                        h += '</div>';
+                        h += '<textarea class="ar-review-note" id="review-probs-note" placeholder="Notes on problems..."></textarea>';
+                        h += '</div>';
+                    }
+
+                    // General notes
+                    h += '<div class="ar-review-section">';
+                    h += '<div class="ar-review-section-label">General Notes</div>';
+                    h += '<textarea class="ar-review-note" id="review-general-notes" placeholder="Overall notes about this audit..." style="min-height:60px;"></textarea>';
+                    h += '</div>';
+
+                    // Overall status
+                    h += '<div class="ar-review-section">';
+                    h += '<div class="ar-review-section-label">Overall Review Status</div>';
+                    h += '<div class="ar-review-btns" data-field="overall">';
+                    h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'overall\')">Agree</span>';
+                    h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'overall\')">Partially Agree</span>';
+                    h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'overall\')">Disagree</span>';
+                    h += '</div>';
+                    h += '</div>';
+
+                    h += '<div class="ar-review-submit-row">';
+                    h += '<button class="ops-btn primary" onclick="saveReview()" id="btn-save-review">Submit Review</button>';
+                    h += '<span class="ar-review-saved" id="review-saved-msg">Review saved!</span>';
+                    h += '</div>';
+                    h += '</div>';
+                }
+
                 return h;
             }
 
@@ -566,6 +756,33 @@ class AllAudits {
                 // Reasoning
                 if (ev.reasoning) {
                     h += '<div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary);font-style:italic;">' + escHtml(ev.reasoning) + '</div>';
+                }
+
+                // Score override panel (admin/can_override only)
+                if (canOverride && currentAuditId && ev.agent_email) {
+                    var email = ev.agent_email;
+                    var safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
+                    h += '<div class="ar-override-panel" id="override-' + safeEmail + '">';
+                    h += '<div class="ar-override-title">Override Scores</div>';
+
+                    var fields = [
+                        {name: 'timing_score', label: 'Timing', val: parseInt(ev.timing_score || 0)},
+                        {name: 'resolution_score', label: 'Resolution', val: parseInt(ev.resolution_score || 0)},
+                        {name: 'communication_score', label: 'Communication', val: parseInt(ev.communication_score || 0)}
+                    ];
+                    fields.forEach(function(f) {
+                        h += '<div class="ar-override-row">';
+                        h += '<label>' + f.label + ':</label>';
+                        h += '<input type="number" id="ov-' + safeEmail + '-' + f.name + '" value="' + f.val + '" min="-200" max="100">';
+                        h += '<span class="old-val">(AI: ' + f.val + ')</span>';
+                        h += '<button class="ops-btn secondary" style="height:26px;font-size:11px;padding:0 10px;" onclick="saveOverride(\'' + escHtml(email) + '\',\'' + f.name + '\',\'' + safeEmail + '\',' + f.val + ')">Save</button>';
+                        h += '</div>';
+                    });
+                    h += '<input type="text" class="ar-override-reason" id="ov-reason-' + safeEmail + '" placeholder="Reason for override...">';
+
+                    // Override trail placeholder — filled by fetchReviewData
+                    h += '<div class="ar-override-trail" id="ov-trail-' + safeEmail + '"></div>';
+                    h += '</div>';
                 }
 
                 h += '</div>';
@@ -652,6 +869,9 @@ class AllAudits {
                 $('#btn-toggle-json').text('Raw JSON');
 
                 var ticketId = $(this).data('id');
+                currentAuditId = $(this).data('audit-id') || 0;
+                currentTicketId = ticketId;
+
                 var txt = window.auditDataStore[ticketId] || $(this).closest('tr').find('.json-storage').val() || $('#json-'+ticketId).val();
 
                 if(!txt || txt === '' || txt === 'null') {
@@ -660,9 +880,15 @@ class AllAudits {
                     try {
                         var parsed = JSON.parse(txt);
                         window._currentAuditJson = txt;
+                        window._currentAuditParsed = parsed;
                         var html = buildParsedView(parsed, ticketId);
                         $('#modal-body').attr('class', 'modal-body-parsed').html(html);
                         $('#modal-title').text('Audit Report — Ticket #' + ticketId);
+
+                        // Load existing review data
+                        if (canReview && currentAuditId) {
+                            fetchReviewData(currentAuditId);
+                        }
                     } catch(e) {
                         $('#modal-body').attr('class', 'modal-body-parsed json-viewer').text(txt);
                     }
@@ -690,10 +916,209 @@ class AllAudits {
             function closeAuditModal() {
                 $('#audit-modal').fadeOut();
                 document.body.classList.remove('modal-open');
+                currentAuditId = 0;
+                currentTicketId = '';
             }
             $('.close-modal').click(closeAuditModal);
             $('#audit-modal').click(function(e){ if($(e.target).is('#audit-modal')) closeAuditModal(); });
             $(document).keyup(function(e) { if (e.key === "Escape") closeAuditModal(); });
+
+            // ---- Review Functions ----
+            window.toggleReviewBtn = function(el, field) {
+                var $btns = $(el).closest('.ar-review-btns');
+                $btns.find('.rbtn').removeClass('active-agree active-disagree');
+                var val = $(el).data('val');
+                if (val === 1 || val === 'agree') {
+                    $(el).addClass('active-agree');
+                } else {
+                    $(el).addClass('active-disagree');
+                }
+            };
+
+            // Fetch existing review data for this audit
+            function fetchReviewData(auditId) {
+                $.post(ajaxurl, {action: 'ai_audit_get_review', audit_id: auditId}, function(res) {
+                    if (!res.success) return;
+                    var data = res.data;
+
+                    // Populate review form if review exists
+                    if (data.review) {
+                        var r = data.review;
+
+                        // Summary agree
+                        var sumVal = parseInt(r.summary_agree);
+                        var $sumBtns = $('[data-field="summary"] .rbtn');
+                        $sumBtns.each(function() {
+                            if (parseInt($(this).data('val')) === sumVal) {
+                                $(this).addClass(sumVal === 1 ? 'active-agree' : 'active-disagree');
+                            }
+                        });
+
+                        // Evaluations review
+                        if (r.evaluations_review) {
+                            var $evalBtns = $('[data-field="evaluations"] .rbtn');
+                            $evalBtns.each(function() {
+                                if ($(this).data('val') === r.evaluations_review) {
+                                    $(this).addClass(r.evaluations_review === 'agree' ? 'active-agree' : 'active-disagree');
+                                }
+                            });
+                        }
+                        $('#review-evals-note').val(r.evaluations_review || '');
+
+                        // Problems review
+                        if (r.problems_review) {
+                            var $probBtns = $('[data-field="problems"] .rbtn');
+                            $probBtns.each(function() {
+                                if ($(this).data('val') === r.problems_review) {
+                                    $(this).addClass(r.problems_review === 'agree' ? 'active-agree' : 'active-disagree');
+                                }
+                            });
+                        }
+                        $('#review-probs-note').val(r.problems_review || '');
+
+                        // Overall status
+                        if (r.review_status) {
+                            var $ovBtns = $('[data-field="overall"] .rbtn');
+                            $ovBtns.each(function() {
+                                if ($(this).data('val') === r.review_status) {
+                                    $(this).addClass(r.review_status === 'agree' ? 'active-agree' : 'active-disagree');
+                                }
+                            });
+                        }
+
+                        // General notes
+                        $('#review-general-notes').val(r.general_notes || '');
+
+                        // Show reviewer info
+                        var reviewerName = r.first_name || r.reviewer_email;
+                        var reviewedAt = r.reviewed_at || '';
+                        $('.ar-review-panel-title').html('Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">Last reviewed by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span>');
+                    }
+
+                    // Populate override trails
+                    if (data.overrides && data.overrides.length > 0) {
+                        var trailsByAgent = {};
+                        data.overrides.forEach(function(o) {
+                            var safeEmail = o.agent_email.replace(/[^a-zA-Z0-9]/g, '_');
+                            if (!trailsByAgent[safeEmail]) trailsByAgent[safeEmail] = [];
+                            trailsByAgent[safeEmail].push(o);
+                        });
+
+                        Object.keys(trailsByAgent).forEach(function(safeEmail) {
+                            var $trail = $('#ov-trail-' + safeEmail);
+                            if ($trail.length === 0) return;
+
+                            var trailHtml = '<div style="margin-top:6px;font-size:11px;font-weight:600;color:var(--color-text-secondary);">Override History:</div>';
+                            trailsByAgent[safeEmail].forEach(function(o) {
+                                var byName = o.override_by_name || o.override_by;
+                                trailHtml += '<div class="ar-override-trail-item">';
+                                trailHtml += escHtml(o.created_at) + ' — ' + escHtml(byName) + ' changed ' + escHtml(o.field_name) + ': ' + o.old_value + ' → ' + o.new_value;
+                                if (o.reason) trailHtml += '<br><span style="color:var(--color-text-secondary);margin-left:12px;">"' + escHtml(o.reason) + '"</span>';
+                                trailHtml += '</div>';
+                            });
+                            $trail.html(trailHtml);
+                        });
+                    }
+                });
+            }
+
+            // Save a lead review
+            window.saveReview = function() {
+                var $btn = $('#btn-save-review');
+                $btn.prop('disabled', true).text('Saving...');
+
+                // Gather review data
+                var summaryAgree = 1;
+                var $sumActive = $('[data-field="summary"] .rbtn.active-agree, [data-field="summary"] .rbtn.active-disagree');
+                if ($sumActive.length) summaryAgree = parseInt($sumActive.data('val'));
+
+                var evalsReview = '';
+                var $evalActive = $('[data-field="evaluations"] .rbtn.active-agree, [data-field="evaluations"] .rbtn.active-disagree');
+                if ($evalActive.length) evalsReview = $evalActive.data('val');
+
+                var probsReview = '';
+                var $probActive = $('[data-field="problems"] .rbtn.active-agree, [data-field="problems"] .rbtn.active-disagree');
+                if ($probActive.length) probsReview = $probActive.data('val');
+
+                var overallStatus = 'agree';
+                var $ovActive = $('[data-field="overall"] .rbtn.active-agree, [data-field="overall"] .rbtn.active-disagree');
+                if ($ovActive.length) overallStatus = $ovActive.data('val');
+
+                $.post(ajaxurl, {
+                    action: 'ai_audit_save_review',
+                    audit_id: currentAuditId,
+                    ticket_id: currentTicketId,
+                    review_status: overallStatus,
+                    summary_agree: summaryAgree,
+                    evaluations_review: evalsReview,
+                    problems_review: probsReview,
+                    general_notes: $('#review-general-notes').val()
+                }, function(res) {
+                    $btn.prop('disabled', false).text('Submit Review');
+                    if (res.success) {
+                        $('#review-saved-msg').fadeIn().delay(2000).fadeOut();
+                        // Update row badge
+                        var $row = $('#row-' + currentTicketId);
+                        $row.find('.review-badge, td:nth-child(4) span').first()
+                            .attr('class', 'review-badge reviewed')
+                            .text('You');
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown error'));
+                    }
+                });
+            };
+
+            // Save a score override
+            window.saveOverride = function(agentEmail, fieldName, safeEmail, oldVal) {
+                var $input = $('#ov-' + safeEmail + '-' + fieldName);
+                var newVal = parseInt($input.val());
+                var reason = $('#ov-reason-' + safeEmail).val();
+
+                if (newVal === oldVal) {
+                    alert('Value unchanged');
+                    return;
+                }
+
+                if (!reason) {
+                    alert('Please provide a reason for the override');
+                    return;
+                }
+
+                $.post(ajaxurl, {
+                    action: 'ai_audit_save_override',
+                    audit_id: currentAuditId,
+                    ticket_id: currentTicketId,
+                    agent_email: agentEmail,
+                    field_name: fieldName,
+                    new_value: newVal,
+                    reason: reason
+                }, function(res) {
+                    if (res.success) {
+                        var d = res.data;
+                        // Update old-val display
+                        $input.siblings('.old-val').text('(was: ' + oldVal + ' → ' + newVal + ')');
+
+                        // Update the score in the row
+                        var $row = $('#row-' + currentTicketId);
+                        if (d.new_audit_score !== undefined) {
+                            var sc = parseInt(d.new_audit_score);
+                            $row.find('.col-score').attr('class', 'col-score ' + scoreClass(sc)).text(sc);
+                        }
+
+                        // Add to trail
+                        var $trail = $('#ov-trail-' + safeEmail);
+                        var trailItem = '<div class="ar-override-trail-item">Just now — You changed ' + escHtml(fieldName) + ': ' + oldVal + ' → ' + newVal + '<br><span style="color:var(--color-text-secondary);margin-left:12px;">"' + escHtml(reason) + '"</span></div>';
+                        $trail.prepend(trailItem);
+
+                        // Clear reason
+                        $('#ov-reason-' + safeEmail).val('');
+
+                        alert('Score overridden successfully');
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown error'));
+                    }
+                });
+            };
         });
         </script>
         <?php

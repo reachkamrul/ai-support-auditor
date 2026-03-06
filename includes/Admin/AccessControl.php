@@ -234,6 +234,27 @@ class AccessControl {
     }
 
     /**
+     * Can the current user override audit scores?
+     * True for admins + agents with can_override=1
+     */
+    public static function can_override_scores() {
+        if (self::is_admin()) {
+            return true;
+        }
+
+        $ctx = self::get_context();
+        if (!$ctx['agent_email']) {
+            return false;
+        }
+
+        global $wpdb;
+        return (bool) $wpdb->get_var($wpdb->prepare(
+            "SELECT can_override FROM {$wpdb->prefix}ais_agents WHERE email = %s",
+            $ctx['agent_email']
+        ));
+    }
+
+    /**
      * Reset cache (useful for testing)
      */
     public static function reset() {

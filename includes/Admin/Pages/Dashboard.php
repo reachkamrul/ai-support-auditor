@@ -89,6 +89,25 @@ class Dashboard {
             }
         }
 
+        // Review progress (last 7 days)
+        $seven_ago = date('Y-m-d', strtotime('-7 days'));
+        $review_table = $wpdb->prefix . 'ais_audit_reviews';
+        $review_table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$review_table}'");
+        $total_audits_week = 0;
+        $reviewed_week = 0;
+        if ($review_table_exists) {
+            $total_audits_week = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s{$ticket_filter}", $seven_ago
+            ));
+            $reviewed_week = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(DISTINCT ar.audit_id) FROM {$review_table} ar
+                 INNER JOIN {$wpdb->prefix}ais_audits a ON ar.audit_id = a.id
+                 WHERE a.status='success' AND DATE(a.created_at) >= %s{$ticket_filter}", $seven_ago
+            ));
+        }
+        $unreviewed_week = max(0, $total_audits_week - $reviewed_week);
+        $review_pct = $total_audits_week > 0 ? round(($reviewed_week / $total_audits_week) * 100) : 0;
+
         // Watchdog snapshot (orphaned tickets + queue balance)
         $watchdog = \SupportOps\Services\TicketWatchdog::get_snapshot();
 
@@ -143,6 +162,20 @@ class Dashboard {
                     <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" style="font-size:12px;">View all &rarr;</a>
                 <?php else: ?>
                     <div class="stat-change positive">All clear</div>
+                <?php endif; ?>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reviews this week</div>
+                <div class="stat-value"><?php echo $reviewed_week; ?><span style="font-size:14px;font-weight:400;color:var(--color-text-tertiary);"> / <?php echo $total_audits_week; ?></span></div>
+                <?php if ($total_audits_week > 0): ?>
+                    <div style="margin-top:6px;">
+                        <div style="background:var(--color-border);border-radius:4px;height:6px;overflow:hidden;">
+                            <div style="width:<?php echo $review_pct; ?>%;height:100%;border-radius:4px;background:<?php echo $review_pct >= 80 ? 'var(--color-success)' : ($review_pct >= 50 ? 'var(--color-warning)' : 'var(--color-error)'); ?>;"></div>
+                        </div>
+                        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px;"><?php echo $review_pct; ?>% reviewed<?php if ($unreviewed_week > 0): ?> &middot; <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&review_status=unreviewed'); ?>" style="font-size:11px;"><?php echo $unreviewed_week; ?> pending</a><?php endif; ?></div>
+                    </div>
+                <?php else: ?>
+                    <div class="stat-change">No audits this week</div>
                 <?php endif; ?>
             </div>
         </div>

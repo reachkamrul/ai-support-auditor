@@ -1,0 +1,204 @@
+<?php
+/**
+ * Audit Review AJAX Handler — Lead reviews + score overrides
+ *
+ * @package SupportOps\AJAX\Handlers
+ */
+
+namespace SupportOps\AJAX\Handlers;
+
+use SupportOps\Database\Manager as DatabaseManager;
+use SupportOps\Admin\AccessControl;
+
+class AuditReviewHandler {
+
+    private $database;
+
+    public function __construct(DatabaseManager $database) {
+        $this->database = $database;
+    }
+
+    /**
+     * Save a lead's review of an audit
+     */
+    public function save_review() {
+        if (!current_user_can('view_team_audits')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        global $wpdb;
+
+        $audit_id      = intval($_POST['audit_id'] ?? 0);
+        $ticket_id     = sanitize_text_field($_POST['ticket_id'] ?? '');
+        $review_status = sanitize_text_field($_POST['review_status'] ?? 'agree');
+        $summary_agree = intval($_POST['summary_agree'] ?? 1);
+        $evals_review  = sanitize_text_field($_POST['evaluations_review'] ?? '');
+        $probs_review  = sanitize_text_field($_POST['problems_review'] ?? '');
+        $general_notes = sanitize_textarea_field($_POST['general_notes'] ?? '');
+
+        if (!$audit_id || !$ticket_id) {
+            wp_send_json_error('Audit ID and ticket ID are required');
+        }
+
+        $current_user = wp_get_current_user();
+        $reviewer_email = $current_user->user_email;
+
+        $table = $this->database->get_table('audit_reviews');
+
+        // Check if review already exists for this audit by this reviewer
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$table} WHERE audit_id = %d AND reviewer_email = %s",
+            $audit_id, $reviewer_email
+        ));
+
+        $data = [
+            'audit_id'           => $audit_id,
+            'ticket_id'          => $ticket_id,
+            'reviewer_email'     => $reviewer_email,
+            'review_status'      => $review_status,
+            'summary_agree'      => $summary_agree,
+            'evaluations_review' => $evals_review,
+            'problems_review'    => $probs_review,
+            'general_notes'      => $general_notes,
+            'reviewed_at'        => current_time('mysql'),
+        ];
+
+        if ($existing) {
+            $wpdb->update($table, $data, ['id' => $existing]);
+        } else {
+            $wpdb->insert($table, $data);
+        }
+
+        wp_send_json_success(['message' => 'Review saved']);
+    }
+
+    /**
+     * Get review data for an audit
+     */
+    public function get_review() {
+        if (!current_user_can('view_team_audits')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        global $wpdb;
+
+        $audit_id = intval($_POST['audit_id'] ?? 0);
+        if (!$audit_id) {
+            wp_send_json_error('Audit ID required');
+        }
+
+        $table = $this->database->get_table('audit_reviews');
+
+        $review = $wpdb->get_row($wpdb->prepare(
+            "SELECT r.*, a.first_name, a.last_name
+             FROM {$table} r
+             LEFT JOIN {$this->database->get_table('agents')} a ON r.reviewer_email = a.email
+             WHERE r.audit_id = %d
+             ORDER BY r.reviewed_at DESC
+             LIMIT 1",
+            $audit_id
+        ));
+
+        // Get score overrides for this audit
+        $overrides = $wpdb->get_results($wpdb->prepare(
+            "SELECT o.*, a.first_name as override_by_name
+             FROM {$this->database->get_table('score_overrides')} o
+             LEFT JOIN {$this->database->get_table('agents')} a ON o.override_by = a.email
+             WHERE o.audit_id = %d
+             ORDER BY o.created_at DESC",
+            $audit_id
+        ));
+
+        wp_send_json_success([
+            'review'    => $review,
+            'overrides' => $overrides,
+        ]);
+    }
+
+    /**
+     * Override a score (admin or can_override agents only)
+     */
+    public function save_override() {
+        if (!AccessControl::can_override_scores()) {
+            wp_send_json_error('You do not have permission to override scores');
+        }
+
+        global $wpdb;
+
+        $audit_id    = intval($_POST['audit_id'] ?? 0);
+        $ticket_id   = sanitize_text_field($_POST['ticket_id'] ?? '');
+        $agent_email = sanitize_email($_POST['agent_email'] ?? '');
+        $field_name  = sanitize_text_field($_POST['field_name'] ?? '');
+        $new_value   = intval($_POST['new_value'] ?? 0);
+        $reason      = sanitize_textarea_field($_POST['reason'] ?? '');
+
+        $allowed_fields = ['timing_score', 'resolution_score', 'communication_score'];
+        if (!$audit_id || !$ticket_id || !$agent_email || !in_array($field_name, $allowed_fields)) {
+            wp_send_json_error('Invalid parameters');
+        }
+
+        $eval_table = $this->database->get_table('agent_evaluations');
+        $override_table = $this->database->get_table('score_overrides');
+        $audit_table = $this->database->get_table('audits');
+
+        // Get current value from evaluations
+        $eval = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, timing_score, resolution_score, communication_score
+             FROM {$eval_table}
+             WHERE ticket_id = %s AND agent_email = %s
+             ORDER BY id DESC LIMIT 1",
+            $ticket_id, $agent_email
+        ));
+
+        if (!$eval) {
+            wp_send_json_error('Agent evaluation not found');
+        }
+
+        $old_value = intval($eval->$field_name);
+
+        if ($old_value === $new_value) {
+            wp_send_json_error('Value unchanged');
+        }
+
+        $current_user = wp_get_current_user();
+        $override_by = $current_user->user_email;
+
+        // 1. Log the override
+        $wpdb->insert($override_table, [
+            'audit_id'    => $audit_id,
+            'ticket_id'   => $ticket_id,
+            'agent_email' => $agent_email,
+            'field_name'  => $field_name,
+            'old_value'   => $old_value,
+            'new_value'   => $new_value,
+            'override_by' => $override_by,
+            'reason'      => $reason,
+        ]);
+
+        // 2. Update the evaluation
+        $wpdb->update($eval_table, [$field_name => $new_value], ['id' => $eval->id]);
+
+        // 3. Recalculate overall_agent_score
+        $timing      = $field_name === 'timing_score' ? $new_value : intval($eval->timing_score);
+        $resolution  = $field_name === 'resolution_score' ? $new_value : intval($eval->resolution_score);
+        $communication = $field_name === 'communication_score' ? $new_value : intval($eval->communication_score);
+        $overall_agent = $timing + $resolution + $communication;
+
+        $wpdb->update($eval_table, ['overall_agent_score' => $overall_agent], ['id' => $eval->id]);
+
+        // 4. Recalculate audit overall_score (average of all agent scores for this ticket)
+        $avg_score = $wpdb->get_var($wpdb->prepare(
+            "SELECT ROUND(AVG(overall_agent_score)) FROM {$eval_table} WHERE ticket_id = %s",
+            $ticket_id
+        ));
+        $wpdb->update($audit_table, ['overall_score' => intval($avg_score)], ['ticket_id' => $ticket_id, 'id' => $audit_id]);
+
+        wp_send_json_success([
+            'message'             => 'Score overridden',
+            'new_overall_agent'   => $overall_agent,
+            'new_audit_score'     => intval($avg_score),
+            'old_value'           => $old_value,
+            'new_value'           => $new_value,
+        ]);
+    }
+}

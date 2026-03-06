@@ -116,6 +116,11 @@ class Plugin {
         add_action('wp_ajax_ai_ops_get_day_details', [$this->ajax, 'get_day_details']);
         add_action('admin_post_export_leave_csv', [$this->ajax, 'export_leave_csv']);
 
+        // Audit Review AJAX handlers
+        add_action('wp_ajax_ai_audit_save_review', [$this->ajax, 'save_audit_review']);
+        add_action('wp_ajax_ai_audit_get_review', [$this->ajax, 'get_audit_review']);
+        add_action('wp_ajax_ai_audit_save_override', [$this->ajax, 'save_score_override']);
+
         // Admin post actions
         add_action('admin_post_export_agent_data', [$this->admin, 'export_agent_data']);
 

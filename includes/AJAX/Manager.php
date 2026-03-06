@@ -38,7 +38,8 @@ class Manager {
             'audit' => new Handlers\AuditHandler($this->database),
             'shift' => new Handlers\ShiftHandler($this->database),
             'test' => new Handlers\TestHandler($this->database),
-            'calendar' => new Handlers\CalendarHandler($this->database)
+            'calendar' => new Handlers\CalendarHandler($this->database),
+            'review' => new Handlers\AuditReviewHandler($this->database),
         ];
     }
     
@@ -95,6 +96,12 @@ class Manager {
     public function delete_extra() { $this->handlers['calendar']->delete_extra(); }
     public function get_day_details() { $this->handlers['calendar']->get_day_details(); }
     public function export_leave_csv() { $this->handlers['calendar']->export_leave_csv(); }
+
+    // ── Audit Review handlers ──
+
+    public function save_audit_review() { $this->handlers['review']->save_review(); }
+    public function get_audit_review() { $this->handlers['review']->get_review(); }
+    public function save_score_override() { $this->handlers['review']->save_override(); }
 
     /**
      * Force watchdog sync
