@@ -419,10 +419,10 @@ class AuditEndpoint {
                 }
             }
             
-            // Update latest pending audit
+            // Update latest pending/processing audit
             $pending_audit = $wpdb->get_row($wpdb->prepare(
-                "SELECT id FROM {$wpdb->prefix}ais_audits 
-                 WHERE ticket_id = %d AND status = 'pending' 
+                "SELECT id, processing_started_at FROM {$wpdb->prefix}ais_audits
+                 WHERE ticket_id = %d AND status IN ('pending', 'processing')
                  ORDER BY created_at DESC LIMIT 1",
                 $ticket_id
             ));
@@ -446,6 +446,16 @@ class AuditEndpoint {
                 }
                 
                 $audit_id = $pending_audit->id;
+
+                // Track processing duration
+                if (!empty($pending_audit->processing_started_at)) {
+                    $duration = time() - strtotime($pending_audit->processing_started_at);
+                    $wpdb->update(
+                        $wpdb->prefix . 'ais_audits',
+                        ['processing_duration_seconds' => max(0, $duration)],
+                        ['id' => $pending_audit->id]
+                    );
+                }
             } else {
                 if ($status === 'pending') {
                     $result = $wpdb->insert(
@@ -537,30 +547,57 @@ class AuditEndpoint {
     
     public function get_pending($request) {
         global $wpdb;
+        $table = $wpdb->prefix . 'ais_audits';
 
-        $limit = intval($request->get_param('limit') ?: 10);
+        $limit = intval($request->get_param('limit') ?: 1);
+
+        // Stale recovery: reset processing audits older than 10 minutes
+        $wpdb->query(
+            "UPDATE {$table}
+             SET status = 'pending', processing_started_at = NULL
+             WHERE status = 'processing'
+             AND processing_started_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
+        );
 
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT a.ticket_id, a.status, a.created_at, a.audit_type, a.audit_version, a.last_response_count
-             FROM {$wpdb->prefix}ais_audits a
+            "SELECT a.id, a.ticket_id, a.status, a.created_at, a.audit_type, a.audit_version, a.last_response_count
+             FROM {$table} a
              INNER JOIN (
                  SELECT ticket_id, MAX(id) as max_id
-                 FROM {$wpdb->prefix}ais_audits
+                 FROM {$table}
                  WHERE status = 'pending'
                     OR (status = 'failed' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE))
                  GROUP BY ticket_id
              ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
              ORDER BY
-                CASE WHEN a.status = 'pending' THEN 0 ELSE 1 END,
+                CASE
+                    WHEN a.status = 'pending' AND a.audit_type = 'final' THEN 0
+                    WHEN a.status = 'pending' AND a.audit_type = 'incremental' THEN 1
+                    WHEN a.status = 'pending' AND a.audit_type = 'full' THEN 2
+                    WHEN a.status = 'failed' THEN 3
+                    ELSE 4
+                END,
                 a.created_at ASC
              LIMIT %d",
             $limit
         ));
 
+        // Atomically mark selected rows as processing
+        if (!empty($results)) {
+            $ids = array_map(function($r) { return intval($r->id); }, $results);
+            $id_list = implode(',', $ids);
+            $wpdb->query(
+                "UPDATE {$table}
+                 SET status = 'processing', processing_started_at = NOW()
+                 WHERE id IN ({$id_list}) AND status IN ('pending', 'failed')"
+            );
+        }
+
         $pending = [];
         foreach ($results as $r) {
             $item = [
                 'ticket_id'  => $r->ticket_id,
+                'audit_id'   => $r->id,
                 'retry'      => ($r->status === 'failed'),
                 'audit_type' => $r->audit_type ?: 'full',
             ];
@@ -637,6 +674,55 @@ class AuditEndpoint {
         ];
     }
     
+    /**
+     * Get queue statistics for the admin queue page
+     */
+    public function get_queue_stats($request) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audits';
+
+        $pending_count = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$table} WHERE status = 'pending'"
+        );
+
+        $processing = $wpdb->get_row(
+            "SELECT ticket_id, audit_type, processing_started_at
+             FROM {$table} WHERE status = 'processing'
+             ORDER BY processing_started_at ASC LIMIT 1"
+        );
+
+        $avg_duration = (float) $wpdb->get_var(
+            "SELECT AVG(processing_duration_seconds) FROM {$table}
+             WHERE processing_duration_seconds IS NOT NULL
+             AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+        );
+
+        $completed_today = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$table}
+             WHERE status = 'success' AND DATE(created_at) = CURDATE()"
+        );
+
+        $failed_last_hour = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$table}
+             WHERE status = 'failed' AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)"
+        );
+
+        return [
+            'pending_count'          => $pending_count,
+            'processing'             => $processing ? [
+                'ticket_id'       => $processing->ticket_id,
+                'audit_type'      => $processing->audit_type,
+                'started_at'      => $processing->processing_started_at,
+                'elapsed_seconds' => time() - strtotime($processing->processing_started_at),
+            ] : null,
+            'avg_processing_seconds' => round($avg_duration),
+            'estimated_wait_minutes' => $pending_count > 0 && $avg_duration > 0
+                ? round(($pending_count * $avg_duration) / 60, 1) : 0,
+            'completed_today'        => $completed_today,
+            'failed_last_hour'       => $failed_last_hour,
+        ];
+    }
+
     /**
      * Merge incremental audit data with existing successful audit
      *

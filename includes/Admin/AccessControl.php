@@ -20,6 +20,7 @@ class AccessControl {
         'knowledge-base',
         'live-audit',
         'api-config',
+        'audit-queue',
     ];
 
     /**

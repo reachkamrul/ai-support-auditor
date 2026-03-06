@@ -74,6 +74,12 @@ class Manager {
             'callback' => [$this->endpoints['audit'], 'get_ticket_with_responses'],
             'permission_callback' => [$this->token_verifier, 'verify']
         ]);
+
+        register_rest_route($namespace, '/queue-stats', [
+            'methods' => 'GET',
+            'callback' => [$this->endpoints['audit'], 'get_queue_stats'],
+            'permission_callback' => [$this->token_verifier, 'verify']
+        ]);
         
         // Shift endpoints
         register_rest_route($namespace, '/get-shift-context', [

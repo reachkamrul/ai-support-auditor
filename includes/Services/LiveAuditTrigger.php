@@ -69,6 +69,7 @@ class LiveAuditTrigger {
         }
 
         $audit_type = $this->queue_audit($ticket_id, $response_count);
+        $this->notify_n8n_processor();
         return ['queued' => true, 'audit_type' => $audit_type];
     }
 
@@ -129,6 +130,24 @@ class LiveAuditTrigger {
             'last_response_count' => $response_count,
             'created_at'          => current_time('mysql'),
         ]);
+
+        $this->notify_n8n_processor();
+    }
+
+    /**
+     * Ping N8N force-audit webhook to trigger immediate processing.
+     * Non-blocking — fires and forgets so the API response isn't delayed.
+     */
+    private function notify_n8n_processor() {
+        $n8n_url = get_option('ai_audit_n8n_url', 'https://team.junior.ninja');
+        $webhook_url = rtrim($n8n_url, '/') . '/webhook/force-audit';
+
+        wp_remote_post($webhook_url, [
+            'timeout'  => 2,
+            'blocking' => false,
+            'headers'  => ['Content-Type' => 'application/json'],
+            'body'     => wp_json_encode(['trigger' => 'queue_notify']),
+        ]);
     }
 
     /**
@@ -178,7 +197,7 @@ class LiveAuditTrigger {
         global $wpdb;
         $table = $wpdb->prefix . 'ais_audits';
         return (bool) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table} WHERE ticket_id = %s AND status = 'pending' LIMIT 1",
+            "SELECT COUNT(*) FROM {$table} WHERE ticket_id = %s AND status IN ('pending', 'processing') LIMIT 1",
             $ticket_id
         ));
     }

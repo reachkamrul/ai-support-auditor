@@ -57,6 +57,8 @@ class Manager {
             last_response_count int DEFAULT 0,
             audit_version int DEFAULT 1,
             audit_type varchar(20) DEFAULT 'full',
+            processing_started_at datetime DEFAULT NULL,
+            processing_duration_seconds int DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY ticket_id (ticket_id),
@@ -456,6 +458,16 @@ class Manager {
         $col_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'audit_type'");
         if (empty($col_at)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN audit_type varchar(20) DEFAULT 'full'");
+        }
+
+        // Add queue management columns
+        $col_psa = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'processing_started_at'");
+        if (empty($col_psa)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN processing_started_at datetime DEFAULT NULL");
+        }
+        $col_pds = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'processing_duration_seconds'");
+        if (empty($col_pds)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN processing_duration_seconds int DEFAULT NULL");
         }
     }
     

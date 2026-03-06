@@ -30,6 +30,7 @@ class Manager {
             'handoffs'         => ['label' => 'Handoff Report',   'icon' => 'repeat'],
         ],
         'AUDITS' => [
+            'audit-queue'      => ['label' => 'Audit Queue',      'icon' => 'loader', 'badge' => 'queue'],
             'audits'           => ['label' => 'All Audits',       'icon' => 'clipboard'],
             'agent-reports'    => ['label' => 'Agent Reports',    'icon' => 'bar-chart'],
             'analytics'        => ['label' => 'Analytics',        'icon' => 'trending-up'],
@@ -81,6 +82,7 @@ class Manager {
             'handoff_report'   => new Pages\HandoffReport($this->database),
             'knowledge_base'   => new Pages\KnowledgeBase($this->database),
             'live_audit'       => new Pages\LiveAuditSettings($this->database),
+            'audit_queue'      => new Pages\AuditQueue($this->database),
         ];
     }
 
@@ -152,6 +154,7 @@ class Manager {
     private function render_sidebar($current_section) {
         $logo_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/logo.svg?v=' . SUPPORT_OPS_VERSION;
         $flagged_count = $this->get_flagged_count();
+        $queue_count = $this->get_queue_count();
 
         echo '<aside class="ops-sidebar">';
 
@@ -197,9 +200,11 @@ class Manager {
                 echo '<span class="ops-nav-icon">' . $this->get_icon($item['icon']) . '</span>';
                 echo '<span>' . esc_html($item['label']) . '</span>';
 
-                // Badge for flagged tickets
-                if (!empty($item['badge']) && $flagged_count > 0) {
+                // Badge counts
+                if ($key === 'flagged' && $flagged_count > 0) {
                     echo '<span class="ops-nav-badge">' . intval($flagged_count) . '</span>';
+                } elseif ($key === 'audit-queue' && $queue_count > 0) {
+                    echo '<span class="ops-nav-badge">' . intval($queue_count) . '</span>';
                 }
 
                 echo '</a>';
@@ -257,6 +262,11 @@ class Manager {
             case 'handoffs':
                 $this->render_page_header('Handoff Report', 'Track agent shift-end handoff compliance');
                 $this->pages['handoff_report']->render();
+                break;
+
+            case 'audit-queue':
+                $this->render_page_header('Audit Queue', 'Monitor and manage the AI processing pipeline');
+                $this->pages['audit_queue']->render();
                 break;
 
             case 'audits':
@@ -352,6 +362,12 @@ class Manager {
         return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'needs_review'");
     }
 
+    private function get_queue_count() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audits';
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status IN ('pending', 'processing')");
+    }
+
     /**
      * SVG icons for sidebar navigation
      */
@@ -372,6 +388,7 @@ class Manager {
             'key' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
             'repeat' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
             'zap' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+            'loader' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>',
         ];
 
         return $icons[$name] ?? '';
