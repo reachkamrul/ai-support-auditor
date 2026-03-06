@@ -473,13 +473,36 @@ class AllAudits {
         <?php
     }
 
+    private function get_pending_message($row) {
+        $now = current_time('timestamp');
+        $audit_type = $row->audit_type ?? 'full';
+        $is_live = in_array($audit_type, ['incremental', 'final'], true)
+            || ($audit_type === 'full' && !empty($row->last_response_count));
+
+        if ($is_live) {
+            // Live audit: N8N batch runs every 5 minutes
+            $created = strtotime($row->created_at);
+            // Next 5-min boundary after created_at
+            $interval = 5 * 60;
+            $next_run = $created + $interval;
+            while ($next_run < $now) {
+                $next_run += $interval;
+            }
+            $next_time = date('H:i', $next_run);
+            $type_label = $audit_type === 'incremental' ? 'Incremental' : ($audit_type === 'final' ? 'Final' : 'Live');
+            return sprintf('%s audit — next batch at %s (every 5 min)', $type_label, $next_time);
+        }
+
+        // Regular batch: runs hourly
+        $next_hour = (date('G', $now) + 1) % 24;
+        return sprintf("Scheduled for %02d:00 (hourly batch)", $next_hour);
+    }
+
     private function render_row($row) {
         $j = !empty($row->audit_response) ? $row->audit_response : $row->raw_json;
 
         if (empty($j) || $j === 'null') {
-            $now = current_time('timestamp');
-            $next_hour = (date('G', $now) + 1) % 24;
-            $j = json_encode(['status' => 'pending', 'message' => sprintf("Scheduled for %02d:00 (hourly batch)", $next_hour)]);
+            $j = json_encode(['status' => 'pending', 'message' => $this->get_pending_message($row)]);
         }
 
         $d = json_decode($j, true);
@@ -487,8 +510,7 @@ class AllAudits {
         if ($row->status == 'failed') {
             $sum = $row->error_message ?: 'Audit failed';
         } elseif ($row->status == 'pending') {
-            $next_hour = (date('G', current_time('timestamp')) + 1) % 24;
-            $sum = sprintf("Scheduled for %02d:00 (hourly batch)", $next_hour);
+            $sum = $this->get_pending_message($row);
         } elseif (!empty($d['audit_summary']['executive_summary'])) {
             $sum = $d['audit_summary']['executive_summary'];
         } elseif (!empty($d['summary'])) {

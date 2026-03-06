@@ -58,8 +58,13 @@ class LiveAuditTrigger {
         }
         // 'every_reply' → always proceed
 
-        // Throttle: don't re-queue if recent audit pending or just completed
-        if ($this->is_throttled($ticket_id, $settings['min_interval_minutes'])) {
+        // Throttle: prevent duplicate/excessive queuing
+        // For 'every_reply': only block if there's already a pending audit (avoid duplicates)
+        // For other modes: also block if a successful audit completed recently
+        if ($this->has_pending_audit($ticket_id)) {
+            return ['queued' => false, 'reason' => 'pending_audit_exists'];
+        }
+        if ($settings['trigger_mode'] !== 'every_reply' && $this->has_recent_success($ticket_id, $settings['min_interval_minutes'])) {
             return ['queued' => false, 'reason' => 'throttled'];
         }
 
@@ -167,21 +172,24 @@ class LiveAuditTrigger {
     }
 
     /**
-     * Check if ticket is throttled (has pending audit or was audited recently)
+     * Check if ticket already has a pending audit queued
      */
-    private function is_throttled($ticket_id, $min_minutes) {
+    private function has_pending_audit($ticket_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'ais_audits';
-
-        $has_pending = $wpdb->get_var($wpdb->prepare(
+        return (bool) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table} WHERE ticket_id = %s AND status = 'pending' LIMIT 1",
             $ticket_id
         ));
-        if ($has_pending) {
-            return true;
-        }
+    }
 
-        $recent = $wpdb->get_var($wpdb->prepare(
+    /**
+     * Check if ticket had a successful audit within the throttle window
+     */
+    private function has_recent_success($ticket_id, $min_minutes) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audits';
+        return (bool) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table}
              WHERE ticket_id = %s
              AND status = 'success'
@@ -189,7 +197,5 @@ class LiveAuditTrigger {
              LIMIT 1",
             $ticket_id, $min_minutes
         ));
-
-        return (bool) $recent;
     }
 }
