@@ -330,6 +330,33 @@ class AuditEndpoint {
                             $update_data['audit_response'] = json_encode($audit, JSON_UNESCAPED_UNICODE);
                         }
 
+                        // Detect audit type from pending record
+                        $pending_record = $wpdb->get_row($wpdb->prepare(
+                            "SELECT audit_type, last_response_count FROM {$wpdb->prefix}ais_audits
+                             WHERE ticket_id = %d AND status = 'pending'
+                             ORDER BY id DESC LIMIT 1",
+                            $ticket_id
+                        ));
+                        $audit_type = $pending_record->audit_type ?? 'full';
+
+                        // For incremental audits, merge with existing data
+                        if ($audit_type === 'incremental') {
+                            $audit = $this->merge_incremental_audit($wpdb, $ticket_id, $audit);
+                            $update_data['audit_response'] = json_encode($audit, JSON_UNESCAPED_UNICODE);
+                        }
+
+                        // Recalculate overall score after merge
+                        if ($audit_type === 'incremental' && !empty($audit['agent_evaluations'])) {
+                            $total_agent_score = 0;
+                            $agent_count = count($audit['agent_evaluations']);
+                            foreach ($audit['agent_evaluations'] as $ev) {
+                                $total_agent_score += ($ev['timing_score'] ?? 0) + ($ev['resolution_score'] ?? 0) + ($ev['communication_score'] ?? 0);
+                            }
+                            $ai_score = $agent_count > 0 ? round($total_agent_score / $agent_count) : 0;
+                            $ai_score = max(-200, min(100, $ai_score));
+                            $update_data['overall_score'] = $ai_score;
+                        }
+
                         $savers = [
                             'contributions' => [$this->contribution_saver, 'save', [$ticket_id, $audit]],
                             'evaluations'   => [$this->evaluation_saver, 'save', [$ticket_id, $audit]],
@@ -510,34 +537,202 @@ class AuditEndpoint {
     
     public function get_pending($request) {
         global $wpdb;
-        
+
         $limit = intval($request->get_param('limit') ?: 10);
-        
+
         $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT a.ticket_id, a.status, a.created_at
+            "SELECT a.ticket_id, a.status, a.created_at, a.audit_type, a.audit_version, a.last_response_count
              FROM {$wpdb->prefix}ais_audits a
              INNER JOIN (
                  SELECT ticket_id, MAX(id) as max_id
                  FROM {$wpdb->prefix}ais_audits
-                 WHERE status = 'pending' 
+                 WHERE status = 'pending'
                     OR (status = 'failed' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE))
                  GROUP BY ticket_id
              ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-             ORDER BY 
+             ORDER BY
                 CASE WHEN a.status = 'pending' THEN 0 ELSE 1 END,
-                a.created_at ASC 
+                a.created_at ASC
              LIMIT %d",
             $limit
         ));
-        
-        return array_map(function($r) { 
-            return [
-                'ticket_id' => $r->ticket_id, 
-                'retry' => ($r->status === 'failed')
-            ]; 
-        }, $results);
+
+        $pending = [];
+        foreach ($results as $r) {
+            $item = [
+                'ticket_id'  => $r->ticket_id,
+                'retry'      => ($r->status === 'failed'),
+                'audit_type' => $r->audit_type ?: 'full',
+            ];
+
+            // For incremental audits, include previous audit context
+            if ($r->audit_type === 'incremental') {
+                $prev = $this->get_previous_audit_context($wpdb, $r->ticket_id);
+                if ($prev) {
+                    $item['last_response_count'] = intval($prev['audited_response_count']);
+                    $item['previous_context'] = $prev;
+                } else {
+                    // No previous audit found — upgrade to full audit
+                    $item['audit_type'] = 'full';
+                }
+            }
+
+            $pending[] = $item;
+        }
+
+        return $pending;
+    }
+
+    /**
+     * Build compact previous audit context for incremental audits
+     */
+    private function get_previous_audit_context($wpdb, $ticket_id) {
+        // Get latest successful audit
+        $prev_audit = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, overall_score, overall_sentiment, audit_response, last_response_count
+             FROM {$wpdb->prefix}ais_audits
+             WHERE ticket_id = %s AND status = 'success'
+             ORDER BY id DESC LIMIT 1",
+            $ticket_id
+        ));
+
+        if (!$prev_audit || empty($prev_audit->audit_response)) {
+            return null;
+        }
+
+        $audit = json_decode($prev_audit->audit_response, true);
+        if (!$audit) {
+            return null;
+        }
+
+        // Build compact summary
+        $agent_scores = [];
+        if (!empty($audit['agent_evaluations'])) {
+            foreach ($audit['agent_evaluations'] as $ev) {
+                $email = $ev['agent_email'] ?? '';
+                if ($email) {
+                    $agent_scores[$email] = [
+                        'timing' => $ev['timing_score'] ?? 0,
+                        'resolution' => $ev['resolution_score'] ?? 0,
+                        'communication' => $ev['communication_score'] ?? 0,
+                    ];
+                }
+            }
+        }
+
+        $problems = [];
+        if (!empty($audit['problem_contexts'])) {
+            foreach ($audit['problem_contexts'] as $pc) {
+                $problems[] = ($pc['issue_description'] ?? '') . ' (' . ($pc['severity'] ?? '') . ')';
+            }
+        }
+
+        return [
+            'overall_score'          => intval($prev_audit->overall_score),
+            'overall_sentiment'      => $prev_audit->overall_sentiment ?: 'Mixed',
+            'executive_summary'      => $audit['audit_summary']['executive_summary'] ?? '',
+            'agent_scores'           => $agent_scores,
+            'problems_found'         => $problems,
+            'audited_response_count' => intval($prev_audit->last_response_count),
+        ];
     }
     
+    /**
+     * Merge incremental audit data with existing successful audit
+     *
+     * Agent evaluations: weighted merge (30% old + 70% new) for existing agents, add new agents
+     * Problem contexts: keep existing + append new (deduplicate by issue_description)
+     * Contributions: replace with new values
+     * Summary: use new audit's summary
+     */
+    private function merge_incremental_audit($wpdb, $ticket_id, $new_audit) {
+        $prev_audit = $wpdb->get_row($wpdb->prepare(
+            "SELECT audit_response FROM {$wpdb->prefix}ais_audits
+             WHERE ticket_id = %d AND status = 'success'
+             ORDER BY id DESC LIMIT 1",
+            $ticket_id
+        ));
+
+        if (!$prev_audit || empty($prev_audit->audit_response)) {
+            return $new_audit;
+        }
+
+        $old = json_decode($prev_audit->audit_response, true);
+        if (!$old) {
+            return $new_audit;
+        }
+
+        // Merge agent evaluations
+        if (!empty($new_audit['agent_evaluations'])) {
+            $old_evals = [];
+            foreach (($old['agent_evaluations'] ?? []) as $ev) {
+                $old_evals[$ev['agent_email'] ?? ''] = $ev;
+            }
+
+            $merged_evals = [];
+            $seen_emails = [];
+
+            foreach ($new_audit['agent_evaluations'] as $new_ev) {
+                $email = $new_ev['agent_email'] ?? '';
+                $seen_emails[$email] = true;
+
+                if (isset($old_evals[$email])) {
+                    // Weighted merge: 30% old + 70% new
+                    $old_ev = $old_evals[$email];
+                    $new_ev['timing_score'] = round(0.3 * ($old_ev['timing_score'] ?? 0) + 0.7 * ($new_ev['timing_score'] ?? 0));
+                    $new_ev['resolution_score'] = round(0.3 * ($old_ev['resolution_score'] ?? 0) + 0.7 * ($new_ev['resolution_score'] ?? 0));
+                    $new_ev['communication_score'] = round(0.3 * ($old_ev['communication_score'] ?? 0) + 0.7 * ($new_ev['communication_score'] ?? 0));
+                    $new_ev['overall_agent_score'] = $new_ev['timing_score'] + $new_ev['resolution_score'] + $new_ev['communication_score'];
+
+                    // Merge reply counts
+                    $new_ev['reply_count'] = max($new_ev['reply_count'] ?? 0, $old_ev['reply_count'] ?? 0);
+
+                    // Merge achievements and improvements (deduplicate)
+                    $old_achievements = $old_ev['key_achievements'] ?? [];
+                    $new_achievements = $new_ev['key_achievements'] ?? [];
+                    $new_ev['key_achievements'] = array_values(array_unique(array_merge($old_achievements, $new_achievements)));
+
+                    $old_improvements = $old_ev['areas_for_improvement'] ?? [];
+                    $new_improvements = $new_ev['areas_for_improvement'] ?? [];
+                    $new_ev['areas_for_improvement'] = array_values(array_unique(array_merge($old_improvements, $new_improvements)));
+
+                    // Merge response breakdowns
+                    $old_breakdown = $old_ev['response_breakdown'] ?? [];
+                    $new_breakdown = $new_ev['response_breakdown'] ?? [];
+                    $new_ev['response_breakdown'] = array_merge($old_breakdown, $new_breakdown);
+                }
+
+                $merged_evals[] = $new_ev;
+            }
+
+            // Add old agents not in new audit (they still contributed)
+            foreach ($old_evals as $email => $old_ev) {
+                if (!isset($seen_emails[$email])) {
+                    $merged_evals[] = $old_ev;
+                }
+            }
+
+            $new_audit['agent_evaluations'] = $merged_evals;
+        }
+
+        // Merge problem contexts (deduplicate by issue_description)
+        if (!empty($old['problem_contexts'])) {
+            $existing_issues = [];
+            foreach (($new_audit['problem_contexts'] ?? []) as $pc) {
+                $existing_issues[strtolower($pc['issue_description'] ?? '')] = true;
+            }
+
+            foreach ($old['problem_contexts'] as $old_pc) {
+                $key = strtolower($old_pc['issue_description'] ?? '');
+                if (!isset($existing_issues[$key])) {
+                    $new_audit['problem_contexts'][] = $old_pc;
+                }
+            }
+        }
+
+        return $new_audit;
+    }
+
     /**
      * Parse delay duration string to hours.
      * Handles formats: "6h 26m 32s", "2 hours", "1 day 3h", "0 hours", "3 days", etc.

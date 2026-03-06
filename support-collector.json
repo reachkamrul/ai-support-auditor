@@ -18,58 +18,36 @@
     },
     {
       "parameters": {
-        "url": "=https://support.junior.ninja/wp-json/fluent-support/v2/tickets/{{ $json.body.ticket.id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBasicAuth",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        672,
-        -128
-      ],
-      "id": "a3a2f297-6b0e-4a59-8159-241cc837e5e4",
-      "name": "Get Ticket Details",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "GaTtZ9Lrg66W1Pks",
-          "name": "Support Access"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const ticket = items[0].json.ticket;\nconst responses = items[0].json.responses;\n\n// Generate transcript\nlet transcript = \"\";\nresponses.forEach(res => {\n    const personType = res.person.person_type;\n    const name = res.person.full_name || res.person.email;\n    const content = res.content.replace(/<[^>]*>?/gm, ''); \n    transcript += `[${res.created_at}] ${personType.toUpperCase()} (${name}): ${content}\\n\\n`;\n});\n\nreturn {\n    ticket_id: ticket.id,\n    transcript: transcript,\n    created_at: ticket.created_at\n};"
+        "jsCode": "// Parse FluentSupport webhook payload\n// FluentSupport sends ticket data on agent response or ticket close events\nconst body = items[0].json.body || items[0].json;\nconst ticket = body.ticket || body;\n\n// Extract ticket ID\nconst ticketId = ticket.id || ticket.ticket_id || body.ticket_id;\nif (!ticketId) {\n  throw new Error('No ticket_id found in webhook payload');\n}\n\n// Get response count from ticket data\nconst responseCount = parseInt(ticket.response_count || ticket.responses_count || 0);\n\n// Detect event type from webhook payload\n// FluentSupport may send: status changes, new responses, etc.\nlet eventType = 'agent_response';\nconst status = (ticket.status || '').toLowerCase();\nconst eventField = body.event || body.action || body.type || '';\n\nif (status === 'closed' || eventField.includes('closed') || eventField.includes('close')) {\n  eventType = 'ticket_closed';\n}\n\nreturn {\n  json: {\n    ticket_id: parseInt(ticketId),\n    response_count: responseCount,\n    event_type: eventType\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        896,
+        672,
         -128
       ],
-      "id": "f91b03cd-7fdd-4cdd-b32f-5733e6051686",
-      "name": "Format Transcript"
+      "id": "parse-event-node",
+      "name": "Parse Event"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/save-result",
+        "url": "https://support.junior.ninja/wp-json/ai-audit/v1/queue-live-audit",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { ticket_id: $json.ticket_id, status: \"pending\", raw_json: JSON.stringify($json) } }}",
+        "jsonBody": "={{ { ticket_id: $json.ticket_id, response_count: $json.response_count, event_type: $json.event_type } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1120,
+        896,
         -128
       ],
-      "id": "407a4295-beca-4828-b17d-7f4dbcfe2739",
-      "name": "Save to Queue",
+      "id": "queue-audit-node",
+      "name": "Queue Live Audit",
       "credentials": {
         "httpHeaderAuth": {
           "id": "QuPjMThaSg2wOQyZ",
@@ -83,29 +61,18 @@
       "main": [
         [
           {
-            "node": "Get Ticket Details",
+            "node": "Parse Event",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Ticket Details": {
+    "Parse Event": {
       "main": [
         [
           {
-            "node": "Format Transcript",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Transcript": {
-      "main": [
-        [
-          {
-            "node": "Save to Queue",
+            "node": "Queue Live Audit",
             "type": "main",
             "index": 0
           }

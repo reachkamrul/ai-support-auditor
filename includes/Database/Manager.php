@@ -54,6 +54,9 @@ class Manager {
             error_message text DEFAULT NULL,
             raw_json longtext DEFAULT NULL,
             audit_response longtext DEFAULT NULL,
+            last_response_count int DEFAULT 0,
+            audit_version int DEFAULT 1,
+            audit_type varchar(20) DEFAULT 'full',
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY ticket_id (ticket_id),
@@ -439,6 +442,20 @@ class Manager {
         if (!empty($unique_indexes)) {
             $wpdb->query("ALTER TABLE $table DROP INDEX ticket_id");
             $wpdb->query("ALTER TABLE $table ADD INDEX ticket_id (ticket_id)");
+        }
+
+        // Add live audit columns
+        $col_lrc = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'last_response_count'");
+        if (empty($col_lrc)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN last_response_count int DEFAULT 0");
+        }
+        $col_av = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'audit_version'");
+        if (empty($col_av)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN audit_version int DEFAULT 1");
+        }
+        $col_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'audit_type'");
+        if (empty($col_at)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN audit_type varchar(20) DEFAULT 'full'");
         }
     }
     

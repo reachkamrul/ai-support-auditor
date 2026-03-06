@@ -116,6 +116,56 @@ class Manager {
     public function kb_remove_sitemap() { $this->handlers['kb']->remove_sitemap(); }
 
     /**
+     * Test N8N webhook connection
+     */
+    public function test_n8n_webhook() {
+        check_ajax_referer('ai_ops_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $n8n_url = get_option('ai_audit_n8n_url', 'https://team.junior.ninja');
+        $webhook_path = '/webhook/6d2250a7-1f9f-4c0b-b002-9ae1a95b2437';
+        $webhook_url = rtrim($n8n_url, '/') . $webhook_path;
+
+        $response = wp_remote_post($webhook_url, [
+            'timeout' => 10,
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => wp_json_encode([
+                'ticket' => [
+                    'id' => 0,
+                    'response_count' => 0,
+                    'status' => 'test',
+                ],
+                'event' => 'connection_test',
+            ]),
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error([
+                'message' => $response->get_error_message(),
+            ]);
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+
+        if ($code >= 200 && $code < 300) {
+            wp_send_json_success([
+                'http_code' => $code,
+                'message' => 'N8N webhook is reachable and responding.',
+            ]);
+        } else {
+            wp_send_json_error([
+                'http_code' => $code,
+                'message' => 'N8N responded with HTTP ' . $code,
+                'body' => substr($body, 0, 200),
+            ]);
+        }
+    }
+
+    /**
      * Force watchdog sync
      */
     public function force_watchdog_sync() {

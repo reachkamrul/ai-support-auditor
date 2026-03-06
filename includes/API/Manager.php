@@ -45,7 +45,8 @@ class Manager {
             'audit' => new Endpoints\AuditEndpoint($this->database),
             'shift' => new Endpoints\ShiftEndpoint($this->database),
             'agent' => new Endpoints\AgentEndpoint($this->database),
-            'system_message' => new Endpoints\SystemMessageEndpoint($this->database)
+            'system_message' => new Endpoints\SystemMessageEndpoint($this->database),
+            'live_audit' => new Endpoints\LiveAuditEndpoint()
         ];
     }
     
@@ -111,7 +112,14 @@ class Manager {
             'callback' => [$this->endpoints['system_message'], 'test_message'],
             'permission_callback' => [$this->token_verifier, 'verify']
         ]);
-        
+
+        // Live audit endpoint (called by N8N when FluentSupport fires webhook)
+        register_rest_route($namespace, '/queue-live-audit', [
+            'methods' => 'POST',
+            'callback' => [$this->endpoints['live_audit'], 'queue'],
+            'permission_callback' => [$this->token_verifier, 'verify']
+        ]);
+
         // Agent endpoints (admin only)
         register_rest_route($namespace, '/agents', [
             'methods' => 'GET',

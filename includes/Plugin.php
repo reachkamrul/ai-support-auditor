@@ -48,7 +48,7 @@ class Plugin {
      * Ticket watchdog
      */
     private $watchdog;
-    
+
     /**
      * Get singleton instance
      */
@@ -104,6 +104,7 @@ class Plugin {
         add_action('wp_ajax_ai_audit_test_system_message', [$this->ajax, 'test_system_message']);
         add_action('wp_ajax_ai_audit_check_test_status', [$this->ajax, 'check_test_status']);
         add_action('wp_ajax_ai_watchdog_sync', [$this->ajax, 'force_watchdog_sync']);
+        add_action('wp_ajax_ai_audit_test_webhook', [$this->ajax, 'test_n8n_webhook']);
 
         // Calendar AJAX handlers
         add_action('wp_ajax_ai_ops_save_holiday', [$this->ajax, 'save_holiday']);
@@ -137,6 +138,7 @@ class Plugin {
         // Ticket Watchdog cron
         add_action('ais_watchdog_scan', [$this->watchdog, 'scan']);
         add_filter('cron_schedules', [$this, 'add_cron_schedules']);
+
     }
     
     /**

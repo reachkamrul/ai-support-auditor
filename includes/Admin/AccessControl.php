@@ -18,6 +18,7 @@ class AccessControl {
         'timing-penalties',
         'system-message',
         'knowledge-base',
+        'live-audit',
         'api-config',
     ];
 
