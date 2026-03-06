@@ -564,14 +564,16 @@ class AllAudits {
 
     private function render_scripts() {
         $can_override = AccessControl::can_override_scores() ? 'true' : 'false';
-        $is_lead_or_admin = (AccessControl::is_admin() || AccessControl::is_lead()) ? 'true' : 'false';
+        $is_lead = AccessControl::is_lead() ? 'true' : 'false';
+        $is_admin = AccessControl::is_admin() ? 'true' : 'false';
         ?>
         <script>
         jQuery(document).ready(function($){
             window.auditDataStore = window.auditDataStore || {};
             var showingJson = false;
             var canOverride = <?php echo $can_override; ?>;
-            var canReview = <?php echo $is_lead_or_admin; ?>;
+            var canReview = <?php echo $is_lead; ?>;
+            var isAdmin = <?php echo $is_admin; ?>;
             var currentAuditId = 0;
             var currentTicketId = '';
 
@@ -728,6 +730,11 @@ class AllAudits {
                     h += '<span class="ar-review-saved" id="review-saved-msg">Review saved!</span>';
                     h += '</div>';
                     h += '</div>';
+                }
+
+                // Admin: read-only review summary (loaded via AJAX)
+                if (isAdmin && !canReview && currentAuditId) {
+                    h += '<div id="admin-review-summary" style="display:none;"></div>';
                 }
 
                 return h;
@@ -908,7 +915,7 @@ class AllAudits {
                         $('#modal-title').text('Audit Report — Ticket #' + ticketId);
 
                         // Load existing review data
-                        if (canReview && currentAuditId) {
+                        if ((canReview || isAdmin) && currentAuditId) {
                             fetchReviewData(currentAuditId);
                         }
                     } catch(e) {
@@ -1014,7 +1021,22 @@ class AllAudits {
                         // Show reviewer info
                         var reviewerName = r.first_name || r.reviewer_email;
                         var reviewedAt = r.reviewed_at || '';
-                        $('.ar-review-panel-title').html('Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">Last reviewed by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span>');
+                        if (canReview) {
+                            $('.ar-review-panel-title').html('Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">Last reviewed by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span>');
+                        }
+
+                        // Admin: show read-only review summary
+                        if (isAdmin && !canReview) {
+                            renderAdminReviewSummary(r);
+                        }
+                    } else if (isAdmin && !canReview) {
+                        // No review yet — show "not reviewed" for admins
+                        $('#admin-review-summary').html(
+                            '<div class="ar-review-panel" style="border-color:var(--color-border);opacity:0.7;">' +
+                            '<div class="ar-review-panel-title" style="color:var(--color-text-tertiary);">Lead Review</div>' +
+                            '<div style="padding:12px 0;color:var(--color-text-tertiary);font-size:13px;">Not yet reviewed by a team lead.</div>' +
+                            '</div>'
+                        ).show();
                     }
 
                     // Populate override trails
@@ -1042,6 +1064,56 @@ class AllAudits {
                         });
                     }
                 });
+            }
+
+            // Render read-only review summary for admins
+            function renderAdminReviewSummary(r) {
+                var reviewerName = r.first_name || r.reviewer_email || 'Unknown';
+                var reviewedAt = r.reviewed_at || '';
+
+                function statusBadge(val) {
+                    if (!val) return '<span style="color:var(--color-text-tertiary);">—</span>';
+                    var colors = {
+                        'agree': {bg: '#dcfce7', color: '#16a34a', label: 'Agree'},
+                        '1': {bg: '#dcfce7', color: '#16a34a', label: 'Agree'},
+                        'partial': {bg: '#fef3c7', color: '#d97706', label: 'Partially Agree'},
+                        'disagree': {bg: '#fee2e2', color: '#dc2626', label: 'Disagree'},
+                        '0': {bg: '#fee2e2', color: '#dc2626', label: 'Disagree'}
+                    };
+                    var c = colors[String(val)] || colors['agree'];
+                    return '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:' + c.bg + ';color:' + c.color + ';">' + c.label + '</span>';
+                }
+
+                var h = '<div class="ar-review-panel" style="border-color:var(--color-success, #16a34a);">';
+                h += '<div class="ar-review-panel-title" style="color:var(--color-success, #16a34a);">Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span></div>';
+
+                // Overall verdict
+                h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">';
+                h += '<span style="font-size:12px;color:var(--color-text-secondary);font-weight:600;">Overall Verdict:</span>';
+                h += statusBadge(r.review_status);
+                h += '</div>';
+
+                // Summary row
+                h += '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px;">';
+                h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Executive Summary</span><br>' + statusBadge(r.summary_agree) + '</div>';
+                if (r.evaluations_review) {
+                    h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Agent Evaluations</span><br>' + statusBadge(r.evaluations_review) + '</div>';
+                }
+                if (r.problems_review) {
+                    h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Problems Found</span><br>' + statusBadge(r.problems_review) + '</div>';
+                }
+                h += '</div>';
+
+                // General notes
+                if (r.general_notes) {
+                    h += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-secondary);">';
+                    h += '<div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);margin-bottom:4px;">Notes</div>';
+                    h += escHtml(r.general_notes);
+                    h += '</div>';
+                }
+
+                h += '</div>';
+                $('#admin-review-summary').html(h).show();
             }
 
             // Save a lead review

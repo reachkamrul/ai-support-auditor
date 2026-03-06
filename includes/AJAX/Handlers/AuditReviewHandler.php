@@ -76,7 +76,7 @@ class AuditReviewHandler {
      * Get review data for an audit
      */
     public function get_review() {
-        if (!current_user_can('view_team_audits')) {
+        if (!current_user_can('view_team_audits') && !current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
         }
 
