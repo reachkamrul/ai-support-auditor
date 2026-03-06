@@ -394,6 +394,9 @@ class Manager {
         // Auto-migrate ais_doc_central_meta table
         $this->migrate_doc_central_meta();
 
+        // Auto-migrate ais_audit_reviews table
+        $this->migrate_audit_reviews_table();
+
         // Auto-create new tables if missing (flagged_tickets, teams, etc.)
         $this->ensure_new_tables();
         
@@ -571,6 +574,27 @@ class Manager {
     }
 
     /**
+     * Migrate audit_reviews table — add notes columns
+     */
+    private function migrate_audit_reviews_table() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audit_reviews';
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+            return;
+        }
+
+        $cols = $wpdb->get_col("SHOW COLUMNS FROM $table");
+
+        if (!in_array('evaluations_notes', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN evaluations_notes text DEFAULT NULL AFTER evaluations_review");
+        }
+        if (!in_array('problems_notes', $cols)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN problems_notes text DEFAULT NULL AFTER problems_review");
+        }
+    }
+
+    /**
      * Ensure new tables exist (for upgrades from older versions)
      */
     private function ensure_new_tables() {
@@ -716,6 +740,26 @@ class Manager {
                 KEY audit_id (audit_id),
                 KEY ticket_id (ticket_id),
                 KEY agent_email (agent_email)
+            ) $charset_collate;",
+            'ais_override_requests' => "CREATE TABLE {$wpdb->prefix}ais_override_requests (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                audit_id bigint(20) NOT NULL,
+                ticket_id varchar(50) NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                field_name varchar(50) NOT NULL,
+                current_value int(4) NOT NULL,
+                suggested_value int(4) NOT NULL,
+                requested_by varchar(255) NOT NULL,
+                request_notes text DEFAULT NULL,
+                status varchar(20) DEFAULT 'pending' NOT NULL,
+                resolved_by varchar(255) DEFAULT NULL,
+                resolution_notes text DEFAULT NULL,
+                resolved_at datetime DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY audit_id (audit_id),
+                KEY agent_email (agent_email),
+                KEY status (status)
             ) $charset_collate;",
         ];
 

@@ -103,6 +103,9 @@ class Manager {
     public function save_audit_review() { $this->handlers['review']->save_review(); }
     public function get_audit_review() { $this->handlers['review']->get_review(); }
     public function save_score_override() { $this->handlers['review']->save_override(); }
+    public function request_override() { $this->handlers['review']->request_override(); }
+    public function resolve_override_request() { $this->handlers['review']->resolve_override_request(); }
+    public function get_override_requests() { $this->handlers['review']->get_override_requests(); }
 
     // ── Knowledge Base handlers ──
 

@@ -121,6 +121,9 @@ class Plugin {
         add_action('wp_ajax_ai_audit_save_review', [$this->ajax, 'save_audit_review']);
         add_action('wp_ajax_ai_audit_get_review', [$this->ajax, 'get_audit_review']);
         add_action('wp_ajax_ai_audit_save_override', [$this->ajax, 'save_score_override']);
+        add_action('wp_ajax_ai_audit_request_override', [$this->ajax, 'request_override']);
+        add_action('wp_ajax_ai_audit_resolve_override_request', [$this->ajax, 'resolve_override_request']);
+        add_action('wp_ajax_ai_audit_get_override_requests', [$this->ajax, 'get_override_requests']);
 
         // Knowledge Base AJAX handlers
         add_action('wp_ajax_ai_kb_save_doc', [$this->ajax, 'kb_save_doc']);

@@ -155,6 +155,7 @@ class Manager {
         $logo_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/logo.svg?v=' . SUPPORT_OPS_VERSION;
         $flagged_count = $this->get_flagged_count();
         $queue_count = $this->get_queue_count();
+        $pending_requests_count = AccessControl::is_admin() ? $this->get_pending_requests_count() : 0;
 
         echo '<aside class="ops-sidebar">';
 
@@ -201,8 +202,11 @@ class Manager {
                 echo '<span>' . esc_html($item['label']) . '</span>';
 
                 // Badge counts
-                if ($key === 'flagged' && $flagged_count > 0) {
-                    echo '<span class="ops-nav-badge">' . intval($flagged_count) . '</span>';
+                if ($key === 'flagged') {
+                    $total_flagged = $flagged_count + $pending_requests_count;
+                    if ($total_flagged > 0) {
+                        echo '<span class="ops-nav-badge">' . intval($total_flagged) . '</span>';
+                    }
                 } elseif ($key === 'audit-queue' && $queue_count > 0) {
                     echo '<span class="ops-nav-badge">' . intval($queue_count) . '</span>';
                 }
@@ -366,6 +370,16 @@ class Manager {
         global $wpdb;
         $table = $wpdb->prefix . 'ais_audits';
         return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status IN ('pending', 'processing')");
+    }
+
+    private function get_pending_requests_count() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_override_requests';
+        $exists = $wpdb->get_var("SHOW TABLES LIKE '{$table}'");
+        if (!$exists) {
+            return 0;
+        }
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending'");
     }
 
     /**

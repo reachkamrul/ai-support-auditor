@@ -227,6 +227,7 @@ class AllAudits {
                 <div class="audit-modal-header">
                     <h2 id="modal-title">Audit Details</h2>
                     <div style="display:flex;gap:8px;align-items:center;">
+                        <a id="btn-view-ticket" href="#" target="_blank" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;text-decoration:none;display:none;">View Ticket &nearr;</a>
                         <button id="btn-toggle-json" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;">Raw JSON</button>
                         <span class="close-modal">&times;</span>
                     </div>
@@ -469,6 +470,35 @@ class AllAudits {
                 padding: 4px 0; border-bottom: 1px solid var(--color-border);
             }
             .ar-override-trail-item:last-child { border-bottom: none; }
+
+            /* Lead request panel */
+            .ar-request-panel {
+                margin-top: 10px; padding: 12px; background: #eff6ff; border: 1px solid #3b82f6;
+                border-radius: var(--radius-sm);
+            }
+            .ar-request-panel .ar-override-title {
+                color: #1e40af;
+            }
+
+            /* Shift compliance stats */
+            .ar-shift-stat {
+                display: flex; flex-direction: column; align-items: center;
+                padding: 6px 14px; background: var(--color-bg-subtle); border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm); min-width: 80px;
+            }
+            .ar-shift-stat-val { font-size: 16px; font-weight: 700; color: var(--color-text-primary); }
+            .ar-shift-stat-label { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+            /* Shift data notes */
+            .ar-shift-note {
+                font-size: 12px; color: var(--color-text-secondary); padding: 6px 12px;
+                background: #fffbeb; border: 1px solid #fcd34d; border-radius: var(--radius-sm);
+            }
+
+            /* Response timeline toggle */
+            .ar-section-toggle { cursor: pointer; user-select: none; }
+            .ar-toggle-arrow { font-size: 10px; color: var(--color-text-tertiary); display: inline-block; transition: transform 0.2s; }
+            .ar-toggle-arrow.open { transform: rotate(180deg); }
         </style>
         <?php
     }
@@ -476,26 +506,21 @@ class AllAudits {
     private function get_pending_message($row) {
         $now = current_time('timestamp');
         $audit_type = $row->audit_type ?? 'full';
-        $is_live = in_array($audit_type, ['incremental', 'final'], true)
-            || ($audit_type === 'full' && !empty($row->last_response_count));
+        $created = strtotime($row->created_at);
 
-        if ($is_live) {
-            // Live audit: N8N batch runs every 5 minutes
-            $created = strtotime($row->created_at);
-            // Next 5-min boundary after created_at
-            $interval = 5 * 60;
-            $next_run = $created + $interval;
-            while ($next_run < $now) {
-                $next_run += $interval;
-            }
-            $next_time = date('H:i', $next_run);
-            $type_label = $audit_type === 'incremental' ? 'Incremental' : ($audit_type === 'final' ? 'Final' : 'Live');
-            return sprintf('%s audit — next batch at %s (every 5 min)', $type_label, $next_time);
+        // N8N batch runs every 5 minutes for all audit types
+        $interval = 5 * 60;
+        $next_run = $created + $interval;
+        while ($next_run < $now) {
+            $next_run += $interval;
         }
+        $next_time = date('H:i', $next_run);
 
-        // Regular batch: runs hourly
-        $next_hour = (date('G', $now) + 1) % 24;
-        return sprintf("Scheduled for %02d:00 (hourly batch)", $next_hour);
+        $type_label = 'Full';
+        if ($audit_type === 'incremental') $type_label = 'Incremental';
+        elseif ($audit_type === 'final') $type_label = 'Final';
+
+        return sprintf('In queue — %s audit, next run ~%s', $type_label, $next_time);
     }
 
     private function render_row($row) {
@@ -604,6 +629,17 @@ class AllAudits {
                     h += '<div class="ar-summary-text">' + escHtml(a.executive_summary) + '</div></div>';
                 }
 
+                // Shift data notes
+                var shiftNotes = (a.shift_data_notes || data.audit_summary && data.audit_summary.shift_data_notes) || [];
+                if (shiftNotes.length > 0) {
+                    h += '<div class="ar-section"><div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                    shiftNotes.forEach(function(sn) {
+                        var icon = sn.status === 'no_shift_data' ? '&#9888;' : '&#9989;';
+                        h += '<div class="ar-shift-note">' + icon + ' <strong>' + escHtml(sn.agent_name || sn.agent || '') + ':</strong> ' + escHtml(sn.note || '') + '</div>';
+                    });
+                    h += '</div></div>';
+                }
+
                 // Agent evaluations
                 var evals = data.agent_evaluations || [];
                 if (evals.length > 0) {
@@ -635,11 +671,25 @@ class AllAudits {
                 if (problems.length > 0) {
                     h += '<div class="ar-section"><div class="ar-section-title">Problems Found (' + problems.length + ')</div>';
                     h += '<table class="ar-mini-table"><thead><tr><th>Issue</th><th>Category</th><th>Severity</th></tr></thead><tbody>';
-                    problems.forEach(function(p) {
+                    problems.forEach(function(p, idx) {
                         var sev = (p.severity || 'low').toLowerCase();
-                        h += '<tr><td>' + escHtml(p.issue_description || '') + '</td>';
+                        var agents = p.handling_agents || [];
+                        var hasDetails = agents.length > 0;
+                        h += '<tr' + (hasDetails ? ' style="cursor:pointer;" onclick="jQuery(\'#prob-detail-' + idx + '\').slideToggle(200)" title="Click for details"' : '') + '>';
+                        h += '<td>' + escHtml(p.issue_description || '') + (hasDetails ? ' <span style="color:var(--color-text-tertiary);font-size:11px;">&#9660;</span>' : '') + '</td>';
                         h += '<td>' + escHtml(p.category || '') + '</td>';
                         h += '<td><span class="ar-badge ' + sev + '">' + escHtml(p.severity || '') + '</span></td></tr>';
+                        if (hasDetails) {
+                            h += '<tr id="prob-detail-' + idx + '" style="display:none;"><td colspan="3" style="padding:8px 12px;background:var(--color-bg-subtle);font-size:12px;">';
+                            agents.forEach(function(a) {
+                                h += '<div style="padding:6px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:6px;margin-bottom:6px;">';
+                                h += '<strong>' + escHtml(a.agent_id || '') + '</strong>';
+                                if (a.marking !== undefined) h += ' <span style="margin-left:4px;" class="' + scoreClass(parseInt(a.marking)) + '">(marking: ' + a.marking + ')</span>';
+                                if (a.reasoning) h += '<div style="color:var(--color-text-secondary);font-style:italic;margin-top:4px;">' + escHtml(a.reasoning) + '</div>';
+                                h += '</div>';
+                            });
+                            h += '</td></tr>';
+                        }
                     });
                     h += '</tbody></table></div>';
                 }
@@ -668,72 +718,20 @@ class AllAudits {
                     h += '</div>';
                 }
 
-                // Lead Review Panel
+                // Lead: Review notes + Mark as Reviewed
                 if (canReview && currentAuditId) {
-                    h += '<div class="ar-review-panel" id="review-panel">';
-                    h += '<div class="ar-review-panel-title">Lead Review</div>';
-
-                    // Summary agree/disagree
-                    h += '<div class="ar-review-section">';
-                    h += '<div class="ar-review-section-label">Executive Summary</div>';
-                    h += '<div class="ar-review-btns" data-field="summary">';
-                    h += '<span class="rbtn" data-val="1" onclick="toggleReviewBtn(this,\'summary\')">Agree</span>';
-                    h += '<span class="rbtn" data-val="0" onclick="toggleReviewBtn(this,\'summary\')">Disagree</span>';
-                    h += '</div>';
-                    h += '</div>';
-
-                    // Per-agent evaluations review
-                    if (evals.length > 0) {
-                        h += '<div class="ar-review-section">';
-                        h += '<div class="ar-review-section-label">Agent Evaluations</div>';
-                        h += '<div class="ar-review-btns" data-field="evaluations">';
-                        h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'evaluations\')">Agree</span>';
-                        h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'evaluations\')">Partially Agree</span>';
-                        h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'evaluations\')">Disagree</span>';
-                        h += '</div>';
-                        h += '<textarea class="ar-review-note" id="review-evals-note" placeholder="Notes on evaluations..."></textarea>';
-                        h += '</div>';
-                    }
-
-                    // Problems review
-                    var problems = data.problem_contexts || [];
-                    if (problems.length > 0) {
-                        h += '<div class="ar-review-section">';
-                        h += '<div class="ar-review-section-label">Problems Found</div>';
-                        h += '<div class="ar-review-btns" data-field="problems">';
-                        h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'problems\')">Agree</span>';
-                        h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'problems\')">Partially Agree</span>';
-                        h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'problems\')">Disagree</span>';
-                        h += '</div>';
-                        h += '<textarea class="ar-review-note" id="review-probs-note" placeholder="Notes on problems..."></textarea>';
-                        h += '</div>';
-                    }
-
-                    // General notes
-                    h += '<div class="ar-review-section">';
-                    h += '<div class="ar-review-section-label">General Notes</div>';
-                    h += '<textarea class="ar-review-note" id="review-general-notes" placeholder="Overall notes about this audit..." style="min-height:60px;"></textarea>';
-                    h += '</div>';
-
-                    // Overall status
-                    h += '<div class="ar-review-section">';
-                    h += '<div class="ar-review-section-label">Overall Review Status</div>';
-                    h += '<div class="ar-review-btns" data-field="overall">';
-                    h += '<span class="rbtn" data-val="agree" onclick="toggleReviewBtn(this,\'overall\')">Agree</span>';
-                    h += '<span class="rbtn" data-val="partial" onclick="toggleReviewBtn(this,\'overall\')">Partially Agree</span>';
-                    h += '<span class="rbtn" data-val="disagree" onclick="toggleReviewBtn(this,\'overall\')">Disagree</span>';
-                    h += '</div>';
-                    h += '</div>';
-
-                    h += '<div class="ar-review-submit-row">';
-                    h += '<button class="ops-btn primary" onclick="saveReview()" id="btn-save-review">Submit Review</button>';
-                    h += '<span class="ar-review-saved" id="review-saved-msg">Review saved!</span>';
+                    h += '<div id="review-panel" style="margin-top:16px;">';
+                    h += '<textarea class="ar-review-note" id="review-general-notes" placeholder="Review notes (optional)..." style="min-height:60px;margin-bottom:10px;"></textarea>';
+                    h += '<div style="display:flex;align-items:center;gap:12px;">';
+                    h += '<button class="ops-btn primary" onclick="markAsReviewed()" id="btn-mark-reviewed" style="padding:8px 24px;">Mark as Reviewed</button>';
+                    h += '<span class="ar-review-saved" id="review-saved-msg" style="display:none;">Marked as reviewed!</span>';
+                    h += '<span id="reviewed-by-info" style="font-size:12px;color:var(--color-text-tertiary);"></span>';
                     h += '</div>';
                     h += '</div>';
                 }
 
                 // Admin: read-only review summary (loaded via AJAX)
-                if (isAdmin && !canReview && currentAuditId) {
+                if (isAdmin && currentAuditId) {
                     h += '<div id="admin-review-summary" style="display:none;"></div>';
                 }
 
@@ -787,6 +785,49 @@ class AllAudits {
                     h += '<div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary);font-style:italic;">' + escHtml(ev.reasoning) + '</div>';
                 }
 
+                // Shift Compliance summary
+                var sc = ev.shift_compliance;
+                if (sc) {
+                    h += '<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">';
+                    h += '<div class="ar-shift-stat"><span class="ar-shift-stat-val">' + (sc.on_shift_responses || 0) + '</span><span class="ar-shift-stat-label">On-shift replies</span></div>';
+                    h += '<div class="ar-shift-stat"><span class="ar-shift-stat-val">' + (sc.off_shift_responses || 0) + '</span><span class="ar-shift-stat-label">Off-shift replies</span></div>';
+                    h += '<div class="ar-shift-stat"><span class="ar-shift-stat-val ' + ((sc.delays_while_on_shift || 0) > 0 ? 'score-negative' : '') + '">' + (sc.delays_while_on_shift || 0) + '</span><span class="ar-shift-stat-label">On-shift delays</span></div>';
+                    h += '<div class="ar-shift-stat"><span class="ar-shift-stat-val">' + (sc.delays_while_off_shift || 0) + '</span><span class="ar-shift-stat-label">Off-shift delays</span></div>';
+                    h += '</div>';
+                }
+
+                // Response Breakdown (collapsible)
+                var rb = ev.response_breakdown || [];
+                if (rb.length > 0) {
+                    h += '<div style="margin-top:12px;">';
+                    h += '<div class="ar-section-toggle" onclick="jQuery(this).next().slideToggle(200);jQuery(this).find(\'.ar-toggle-arrow\').toggleClass(\'open\');">';
+                    h += '<strong style="font-size:11px;color:var(--color-text-secondary);cursor:pointer;">Response Timeline (' + rb.length + ')</strong>';
+                    h += ' <span class="ar-toggle-arrow">&#9660;</span></div>';
+                    h += '<div class="ar-response-timeline" style="display:none;margin-top:8px;">';
+                    h += '<table class="ar-mini-table" style="font-size:12px;"><thead><tr>';
+                    h += '<th>#</th><th>Time</th><th>Since Prev</th><th>Shift</th><th>Quality</th><th>Resolution</th><th>Note</th>';
+                    h += '</tr></thead><tbody>';
+                    rb.forEach(function(r) {
+                        var ts = r.timestamp || '';
+                        // Format timestamp to readable
+                        try { var d = new Date(ts); ts = d.toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); } catch(e) {}
+                        var qCls = r.quality_score > 0 ? 'score-good' : (r.quality_score < 0 ? 'score-negative' : '');
+                        var qPrefix = r.quality_score > 0 ? '+' : '';
+                        var shiftIcon = r.was_on_shift ? '<span style="color:var(--color-success);">On</span>' : '<span style="color:var(--color-text-tertiary);">Off</span>';
+                        var resIcon = r.moved_toward_resolution ? '<span style="color:var(--color-success);">Yes</span>' : '<span style="color:var(--color-text-tertiary);">No</span>';
+                        h += '<tr>';
+                        h += '<td style="font-weight:600;">' + (r.response_number || '') + '</td>';
+                        h += '<td style="white-space:nowrap;">' + ts + '</td>';
+                        h += '<td>' + escHtml(r.time_since_previous || '') + '</td>';
+                        h += '<td>' + shiftIcon + '</td>';
+                        h += '<td class="' + qCls + '" style="font-weight:600;">' + qPrefix + (r.quality_score || 0) + '</td>';
+                        h += '<td>' + resIcon + '</td>';
+                        h += '<td style="font-size:11px;color:var(--color-text-secondary);max-width:250px;">' + escHtml(r.brief_note || '') + '</td>';
+                        h += '</tr>';
+                    });
+                    h += '</tbody></table></div></div>';
+                }
+
                 // Score override panel (admin/can_override only)
                 if (canOverride && currentAuditId && ev.agent_email) {
                     var email = ev.agent_email;
@@ -811,6 +852,42 @@ class AllAudits {
 
                     // Override trail placeholder — filled by fetchReviewData
                     h += '<div class="ar-override-trail" id="ov-trail-' + safeEmail + '"></div>';
+
+                    // Pending override requests (admin view) — filled by fetchOverrideRequests
+                    h += '<div class="ar-pending-requests" id="pending-req-' + safeEmail + '"></div>';
+                    h += '</div>';
+                }
+
+                // Lead: Request Score Review (if lead but NOT canOverride)
+                if (canReview && !canOverride && currentAuditId && ev.agent_email) {
+                    var email = ev.agent_email;
+                    var safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
+                    h += '<div class="ar-request-panel" id="req-panel-' + safeEmail + '">';
+                    h += '<div class="ar-override-title" style="cursor:pointer;" onclick="toggleRequestForm(\'' + safeEmail + '\')">';
+                    h += 'Request Score Review <span style="font-size:11px;color:var(--color-text-tertiary);">&#9660;</span></div>';
+                    h += '<div class="ar-request-form" id="req-form-' + safeEmail + '" style="display:none;">';
+                    h += '<div class="ar-override-row"><label>Field:</label>';
+                    h += '<select id="req-field-' + safeEmail + '" class="ops-input" style="width:160px;height:28px;font-size:12px;" onchange="updateReqCurrentVal(\'' + safeEmail + '\',' + JSON.stringify({
+                        timing_score: parseInt(ev.timing_score || 0),
+                        resolution_score: parseInt(ev.resolution_score || 0),
+                        communication_score: parseInt(ev.communication_score || 0)
+                    }) + ')">';
+                    h += '<option value="timing_score">Timing (' + parseInt(ev.timing_score || 0) + ')</option>';
+                    h += '<option value="resolution_score">Resolution (' + parseInt(ev.resolution_score || 0) + ')</option>';
+                    h += '<option value="communication_score">Communication (' + parseInt(ev.communication_score || 0) + ')</option>';
+                    h += '</select></div>';
+                    h += '<div class="ar-override-row"><label>Suggest:</label>';
+                    h += '<input type="number" id="req-val-' + safeEmail + '" min="-200" max="100" placeholder="New score" style="width:80px;">';
+                    h += '</div>';
+                    h += '<div class="ar-override-row" style="flex-direction:column;align-items:stretch;">';
+                    h += '<textarea id="req-notes-' + safeEmail + '" class="ar-review-note" placeholder="Why should this score be changed?" style="min-height:50px;margin-top:4px;"></textarea>';
+                    h += '</div>';
+                    h += '<button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 12px;margin-top:8px;" onclick="submitOverrideRequest(\'' + escHtml(email) + '\',\'' + safeEmail + '\')">Submit Request</button>';
+                    h += '<span class="ar-req-msg" id="req-msg-' + safeEmail + '" style="display:none;margin-left:8px;font-size:11px;color:var(--color-success);">Submitted!</span>';
+                    h += '</div>';
+
+                    // Show existing requests by this lead — filled by fetchOverrideRequests
+                    h += '<div class="ar-my-requests" id="my-req-' + safeEmail + '"></div>';
                     h += '</div>';
                 }
 
@@ -913,10 +990,19 @@ class AllAudits {
                         var html = buildParsedView(parsed, ticketId);
                         $('#modal-body').attr('class', 'modal-body-parsed').html(html);
                         $('#modal-title').text('Audit Report — Ticket #' + ticketId);
+                        // Show View Ticket link
+                        if (ticketId) {
+                            $('#btn-view-ticket').attr('href', '<?php echo admin_url('admin.php?page=fluent-support#/tickets/'); ?>' + ticketId + '/view').show();
+                        }
 
                         // Load existing review data
                         if ((canReview || isAdmin) && currentAuditId) {
                             fetchReviewData(currentAuditId);
+                        }
+
+                        // Load override requests
+                        if ((canReview || canOverride) && currentAuditId) {
+                            fetchOverrideRequests(currentAuditId);
                         }
                     } catch(e) {
                         $('#modal-body').attr('class', 'modal-body-parsed json-viewer').text(txt);
@@ -947,22 +1033,13 @@ class AllAudits {
                 document.body.classList.remove('modal-open');
                 currentAuditId = 0;
                 currentTicketId = '';
+                $('#btn-view-ticket').hide();
             }
             $('.close-modal').click(closeAuditModal);
             $('#audit-modal').click(function(e){ if($(e.target).is('#audit-modal')) closeAuditModal(); });
             $(document).keyup(function(e) { if (e.key === "Escape") closeAuditModal(); });
 
             // ---- Review Functions ----
-            window.toggleReviewBtn = function(el, field) {
-                var $btns = $(el).closest('.ar-review-btns');
-                $btns.find('.rbtn').removeClass('active-agree active-disagree');
-                var val = $(el).data('val');
-                if (val === 1 || val === 'agree') {
-                    $(el).addClass('active-agree');
-                } else {
-                    $(el).addClass('active-disagree');
-                }
-            };
 
             // Fetch existing review data for this audit
             function fetchReviewData(auditId) {
@@ -970,72 +1047,25 @@ class AllAudits {
                     if (!res.success) return;
                     var data = res.data;
 
-                    // Populate review form if review exists
                     if (data.review) {
                         var r = data.review;
-
-                        // Summary agree
-                        var sumVal = parseInt(r.summary_agree);
-                        var $sumBtns = $('[data-field="summary"] .rbtn');
-                        $sumBtns.each(function() {
-                            if (parseInt($(this).data('val')) === sumVal) {
-                                $(this).addClass(sumVal === 1 ? 'active-agree' : 'active-disagree');
-                            }
-                        });
-
-                        // Evaluations review
-                        if (r.evaluations_review) {
-                            var $evalBtns = $('[data-field="evaluations"] .rbtn');
-                            $evalBtns.each(function() {
-                                if ($(this).data('val') === r.evaluations_review) {
-                                    $(this).addClass(r.evaluations_review === 'agree' ? 'active-agree' : 'active-disagree');
-                                }
-                            });
-                        }
-                        $('#review-evals-note').val(r.evaluations_review || '');
-
-                        // Problems review
-                        if (r.problems_review) {
-                            var $probBtns = $('[data-field="problems"] .rbtn');
-                            $probBtns.each(function() {
-                                if ($(this).data('val') === r.problems_review) {
-                                    $(this).addClass(r.problems_review === 'agree' ? 'active-agree' : 'active-disagree');
-                                }
-                            });
-                        }
-                        $('#review-probs-note').val(r.problems_review || '');
-
-                        // Overall status
-                        if (r.review_status) {
-                            var $ovBtns = $('[data-field="overall"] .rbtn');
-                            $ovBtns.each(function() {
-                                if ($(this).data('val') === r.review_status) {
-                                    $(this).addClass(r.review_status === 'agree' ? 'active-agree' : 'active-disagree');
-                                }
-                            });
-                        }
-
-                        // General notes
-                        $('#review-general-notes').val(r.general_notes || '');
-
-                        // Show reviewer info
                         var reviewerName = r.first_name || r.reviewer_email;
                         var reviewedAt = r.reviewed_at || '';
+
+                        // Lead view: populate notes and show "already reviewed" state
                         if (canReview) {
-                            $('.ar-review-panel-title').html('Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">Last reviewed by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span>');
+                            $('#review-general-notes').val(r.general_notes || '');
+                            $('#btn-mark-reviewed').text('Update Review').removeClass('primary').addClass('secondary');
+                            $('#reviewed-by-info').html('Reviewed by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt));
                         }
 
-                        // Admin: show read-only review summary
-                        if (isAdmin && !canReview) {
+                        // Admin view: show review summary
+                        if (isAdmin) {
                             renderAdminReviewSummary(r);
                         }
-                    } else if (isAdmin && !canReview) {
-                        // No review yet — show "not reviewed" for admins
+                    } else if (isAdmin) {
                         $('#admin-review-summary').html(
-                            '<div class="ar-review-panel" style="border-color:var(--color-border);opacity:0.7;">' +
-                            '<div class="ar-review-panel-title" style="color:var(--color-text-tertiary);">Lead Review</div>' +
-                            '<div style="padding:12px 0;color:var(--color-text-tertiary);font-size:13px;">Not yet reviewed by a team lead.</div>' +
-                            '</div>'
+                            '<div style="padding:12px 16px;border:1px dashed var(--color-border);border-radius:8px;color:var(--color-text-tertiary);font-size:13px;margin-top:16px;">Not yet reviewed by a team lead.</div>'
                         ).show();
                     }
 
@@ -1071,43 +1101,11 @@ class AllAudits {
                 var reviewerName = r.first_name || r.reviewer_email || 'Unknown';
                 var reviewedAt = r.reviewed_at || '';
 
-                function statusBadge(val) {
-                    if (!val) return '<span style="color:var(--color-text-tertiary);">—</span>';
-                    var colors = {
-                        'agree': {bg: '#dcfce7', color: '#16a34a', label: 'Agree'},
-                        '1': {bg: '#dcfce7', color: '#16a34a', label: 'Agree'},
-                        'partial': {bg: '#fef3c7', color: '#d97706', label: 'Partially Agree'},
-                        'disagree': {bg: '#fee2e2', color: '#dc2626', label: 'Disagree'},
-                        '0': {bg: '#fee2e2', color: '#dc2626', label: 'Disagree'}
-                    };
-                    var c = colors[String(val)] || colors['agree'];
-                    return '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:' + c.bg + ';color:' + c.color + ';">' + c.label + '</span>';
-                }
+                var h = '<div class="ar-review-panel" style="border-color:var(--color-success, #16a34a);margin-top:16px;">';
+                h += '<div class="ar-review-panel-title" style="color:var(--color-success, #16a34a);">Reviewed by ' + escHtml(reviewerName) + ' <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">on ' + escHtml(reviewedAt) + '</span></div>';
 
-                var h = '<div class="ar-review-panel" style="border-color:var(--color-success, #16a34a);">';
-                h += '<div class="ar-review-panel-title" style="color:var(--color-success, #16a34a);">Lead Review <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">by ' + escHtml(reviewerName) + ' on ' + escHtml(reviewedAt) + '</span></div>';
-
-                // Overall verdict
-                h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">';
-                h += '<span style="font-size:12px;color:var(--color-text-secondary);font-weight:600;">Overall Verdict:</span>';
-                h += statusBadge(r.review_status);
-                h += '</div>';
-
-                // Summary row
-                h += '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px;">';
-                h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Executive Summary</span><br>' + statusBadge(r.summary_agree) + '</div>';
-                if (r.evaluations_review) {
-                    h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Agent Evaluations</span><br>' + statusBadge(r.evaluations_review) + '</div>';
-                }
-                if (r.problems_review) {
-                    h += '<div><span style="font-size:11px;color:var(--color-text-tertiary);">Problems Found</span><br>' + statusBadge(r.problems_review) + '</div>';
-                }
-                h += '</div>';
-
-                // General notes
                 if (r.general_notes) {
                     h += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-secondary);">';
-                    h += '<div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);margin-bottom:4px;">Notes</div>';
                     h += escHtml(r.general_notes);
                     h += '</div>';
                 }
@@ -1116,42 +1114,22 @@ class AllAudits {
                 $('#admin-review-summary').html(h).show();
             }
 
-            // Save a lead review
-            window.saveReview = function() {
-                var $btn = $('#btn-save-review');
+            // Mark audit as reviewed
+            window.markAsReviewed = function() {
+                var $btn = $('#btn-mark-reviewed');
                 $btn.prop('disabled', true).text('Saving...');
-
-                // Gather review data
-                var summaryAgree = 1;
-                var $sumActive = $('[data-field="summary"] .rbtn.active-agree, [data-field="summary"] .rbtn.active-disagree');
-                if ($sumActive.length) summaryAgree = parseInt($sumActive.data('val'));
-
-                var evalsReview = '';
-                var $evalActive = $('[data-field="evaluations"] .rbtn.active-agree, [data-field="evaluations"] .rbtn.active-disagree');
-                if ($evalActive.length) evalsReview = $evalActive.data('val');
-
-                var probsReview = '';
-                var $probActive = $('[data-field="problems"] .rbtn.active-agree, [data-field="problems"] .rbtn.active-disagree');
-                if ($probActive.length) probsReview = $probActive.data('val');
-
-                var overallStatus = 'agree';
-                var $ovActive = $('[data-field="overall"] .rbtn.active-agree, [data-field="overall"] .rbtn.active-disagree');
-                if ($ovActive.length) overallStatus = $ovActive.data('val');
 
                 $.post(ajaxurl, {
                     action: 'ai_audit_save_review',
                     audit_id: currentAuditId,
                     ticket_id: currentTicketId,
-                    review_status: overallStatus,
-                    summary_agree: summaryAgree,
-                    evaluations_review: evalsReview,
-                    problems_review: probsReview,
+                    review_status: 'reviewed',
+                    summary_agree: 1,
                     general_notes: $('#review-general-notes').val()
                 }, function(res) {
-                    $btn.prop('disabled', false).text('Submit Review');
+                    $btn.prop('disabled', false).text('Update Review').removeClass('primary').addClass('secondary');
                     if (res.success) {
                         $('#review-saved-msg').fadeIn().delay(2000).fadeOut();
-                        // Update row badge
                         var $row = $('#row-' + currentTicketId);
                         $row.find('.review-badge, td:nth-child(4) span').first()
                             .attr('class', 'review-badge reviewed')
@@ -1163,6 +1141,173 @@ class AllAudits {
             };
 
             // Save a score override
+            // Toggle lead request form
+            window.toggleRequestForm = function(safeEmail) {
+                $('#req-form-' + safeEmail).slideToggle(200);
+            };
+
+            // Update current value display when field changes
+            window.updateReqCurrentVal = function(safeEmail, scores) {
+                var field = $('#req-field-' + safeEmail).val();
+                // Current value is embedded in the option label
+            };
+
+            // Lead submits override request
+            window.submitOverrideRequest = function(agentEmail, safeEmail) {
+                var fieldName = $('#req-field-' + safeEmail).val();
+                var suggestedValue = parseInt($('#req-val-' + safeEmail).val());
+                var notes = $('#req-notes-' + safeEmail).val();
+
+                if (isNaN(suggestedValue)) {
+                    alert('Please enter a suggested score');
+                    return;
+                }
+                if (!notes) {
+                    alert('Please provide a reason for the request');
+                    return;
+                }
+
+                $.post(ajaxurl, {
+                    action: 'ai_audit_request_override',
+                    audit_id: currentAuditId,
+                    ticket_id: currentTicketId,
+                    agent_email: agentEmail,
+                    field_name: fieldName,
+                    suggested_value: suggestedValue,
+                    request_notes: notes
+                }, function(res) {
+                    if (res.success) {
+                        $('#req-msg-' + safeEmail).fadeIn().delay(3000).fadeOut();
+                        $('#req-val-' + safeEmail).val('');
+                        $('#req-notes-' + safeEmail).val('');
+                        // Refresh requests display
+                        fetchOverrideRequests(currentAuditId);
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown error'));
+                    }
+                });
+            };
+
+            // Admin resolves (approve/reject) an override request
+            window.resolveOverrideRequest = function(requestId, resolution) {
+                var notes = $('#resolve-notes-' + requestId).val();
+
+                $.post(ajaxurl, {
+                    action: 'ai_audit_resolve_override_request',
+                    request_id: requestId,
+                    resolution: resolution,
+                    resolution_notes: notes
+                }, function(res) {
+                    if (res.success) {
+                        alert(res.data.message);
+                        // Refresh requests + scores
+                        fetchOverrideRequests(currentAuditId);
+                        if (resolution === 'approved' && res.data.new_audit_score !== undefined) {
+                            var sc = parseInt(res.data.new_audit_score);
+                            var $row = $('#row-' + currentTicketId);
+                            $row.find('.col-score').attr('class', 'col-score ' + scoreClass(sc)).text(sc);
+                        }
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown error'));
+                    }
+                });
+            };
+
+            // Fetch override requests for an audit
+            function fetchOverrideRequests(auditId) {
+                if (!auditId) return;
+                $.post(ajaxurl, {
+                    action: 'ai_audit_get_override_requests',
+                    audit_id: auditId
+                }, function(res) {
+                    if (!res.success) return;
+                    var requests = res.data.requests || [];
+                    if (!requests.length) return;
+
+                    var byAgent = {};
+                    requests.forEach(function(r) {
+                        var safe = r.agent_email.replace(/[^a-zA-Z0-9]/g, '_');
+                        if (!byAgent[safe]) byAgent[safe] = [];
+                        byAgent[safe].push(r);
+                    });
+
+                    var fieldLabels = {timing_score: 'Timing', resolution_score: 'Resolution', communication_score: 'Communication'};
+
+                    Object.keys(byAgent).forEach(function(safeEmail) {
+                        var reqs = byAgent[safeEmail];
+
+                        // Admin view: pending requests
+                        if (canOverride) {
+                            var $container = $('#pending-req-' + safeEmail);
+                            if ($container.length) {
+                                var pendingReqs = reqs.filter(function(r) { return r.status === 'pending'; });
+                                var resolvedReqs = reqs.filter(function(r) { return r.status !== 'pending'; });
+                                var ph = '';
+
+                                if (pendingReqs.length > 0) {
+                                    ph += '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:10px;">';
+                                    ph += '<div style="font-size:12px;font-weight:600;color:var(--color-warning);margin-bottom:8px;">Pending Review Requests (' + pendingReqs.length + ')</div>';
+                                    pendingReqs.forEach(function(r) {
+                                        var reqName = r.requester_name || r.requested_by;
+                                        ph += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px;margin-bottom:8px;">';
+                                        ph += '<div style="font-size:12px;"><strong>' + escHtml(reqName) + '</strong> requests <strong>' + (fieldLabels[r.field_name] || r.field_name) + '</strong>: ';
+                                        ph += '<span class="' + scoreClass(parseInt(r.current_value)) + '">' + r.current_value + '</span>';
+                                        ph += ' &rarr; <span class="' + scoreClass(parseInt(r.suggested_value)) + '">' + r.suggested_value + '</span></div>';
+                                        if (r.request_notes) {
+                                            ph += '<div style="font-size:12px;color:var(--color-text-secondary);margin:6px 0;font-style:italic;">"' + escHtml(r.request_notes) + '"</div>';
+                                        }
+                                        ph += '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;">';
+                                        ph += '<input type="text" id="resolve-notes-' + r.id + '" placeholder="Notes (optional)" style="flex:1;height:26px;font-size:11px;padding:0 8px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg);">';
+                                        ph += '<button class="ops-btn primary" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'approved\')">Approve</button>';
+                                        ph += '<button class="ops-btn secondary" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'rejected\')">Reject</button>';
+                                        ph += '</div></div>';
+                                    });
+                                    ph += '</div>';
+                                }
+
+                                if (resolvedReqs.length > 0) {
+                                    ph += '<div style="margin-top:8px;">';
+                                    ph += '<div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;">Past Requests</div>';
+                                    resolvedReqs.forEach(function(r) {
+                                        var reqName = r.requester_name || r.requested_by;
+                                        var statusColor = r.status === 'approved' ? 'var(--color-success)' : 'var(--color-error)';
+                                        var statusLabel = r.status === 'approved' ? 'Approved' : 'Rejected';
+                                        ph += '<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px 0;border-bottom:1px solid var(--color-border);">';
+                                        ph += escHtml(reqName) + ': ' + (fieldLabels[r.field_name] || r.field_name) + ' ' + r.current_value + ' &rarr; ' + r.suggested_value;
+                                        ph += ' <span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
+                                        if (r.resolution_notes) ph += ' — ' + escHtml(r.resolution_notes);
+                                        ph += '</div>';
+                                    });
+                                    ph += '</div>';
+                                }
+
+                                $container.html(ph);
+                            }
+                        }
+
+                        // Lead view: show own requests status
+                        if (canReview && !canOverride) {
+                            var $myReqs = $('#my-req-' + safeEmail);
+                            if ($myReqs.length) {
+                                var mh = '';
+                                reqs.forEach(function(r) {
+                                    var statusColor = r.status === 'pending' ? 'var(--color-warning)' : (r.status === 'approved' ? 'var(--color-success)' : 'var(--color-error)');
+                                    var statusLabel = r.status.charAt(0).toUpperCase() + r.status.slice(1);
+                                    mh += '<div style="font-size:11px;padding:6px 0;border-bottom:1px solid var(--color-border);color:var(--color-text-secondary);">';
+                                    mh += (fieldLabels[r.field_name] || r.field_name) + ': ' + r.current_value + ' &rarr; ' + r.suggested_value;
+                                    mh += ' <span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
+                                    if (r.resolution_notes) mh += '<br><span style="color:var(--color-text-tertiary);margin-left:8px;">Admin: ' + escHtml(r.resolution_notes) + '</span>';
+                                    mh += '</div>';
+                                });
+                                if (mh) {
+                                    $myReqs.html('<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);margin-bottom:4px;">Your Requests</div>' + mh + '</div>');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
             window.saveOverride = function(agentEmail, fieldName, safeEmail, oldVal) {
                 var $input = $('#ov-' + safeEmail + '-' + fieldName);
                 var newVal = parseInt($input.val());
