@@ -31,6 +31,7 @@ class AllAudits {
     }
 
     public function render() {
+        nocache_headers();
         global $wpdb;
 
         // Pagination
