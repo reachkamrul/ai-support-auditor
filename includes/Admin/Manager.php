@@ -18,6 +18,10 @@ class Manager {
      * Sidebar navigation structure
      */
     private $nav_sections = [
+        'MY PORTAL' => [
+            'my-performance'   => ['label' => 'My Performance',   'icon' => 'bar-chart'],
+            'my-schedule'      => ['label' => 'My Schedule',      'icon' => 'calendar'],
+        ],
         'OVERVIEW' => [
             'dashboard'        => ['label' => 'Dashboard',        'icon' => 'grid'],
             'flagged'          => ['label' => 'Flagged Tickets',  'icon' => 'flag',    'badge' => true],
@@ -33,7 +37,13 @@ class Manager {
             'audit-queue'      => ['label' => 'Audit Queue',      'icon' => 'loader', 'badge' => 'queue'],
             'audits'           => ['label' => 'All Audits',       'icon' => 'clipboard'],
             'agent-reports'    => ['label' => 'Agent Reports',    'icon' => 'bar-chart'],
+            'compare'          => ['label' => 'Compare',           'icon' => 'git-compare'],
+            'sla'              => ['label' => 'SLA Dashboard',    'icon' => 'shield'],
             'analytics'        => ['label' => 'Analytics',        'icon' => 'trending-up'],
+        ],
+        'KNOWLEDGE' => [
+            'doc-gaps'         => ['label' => 'Doc Gaps',          'icon' => 'alert-triangle'],
+            'faq-topics'       => ['label' => 'FAQ Topics',        'icon' => 'help-circle'],
         ],
         'SETTINGS' => [
             'timing-penalties' => ['label' => 'Timing Penalties', 'icon' => 'sliders'],
@@ -82,6 +92,12 @@ class Manager {
             'handoff_report'   => new Pages\HandoffReport($this->database),
             'knowledge_base'   => new Pages\KnowledgeBase($this->database),
             'live_audit'       => new Pages\LiveAuditSettings($this->database),
+            'my_performance'   => new Pages\MyPerformance($this->database),
+            'my_schedule'      => new Pages\MySchedule($this->database),
+            'compare'          => new Pages\CompareBenchmark($this->database),
+            'sla'              => new Pages\SlaDashboard($this->database),
+            'doc_gaps'         => new Pages\DocGaps($this->database),
+            'faq_topics'       => new Pages\FaqTopics($this->database),
             'audit_queue'      => new Pages\AuditQueue($this->database),
         ];
     }
@@ -92,11 +108,13 @@ class Manager {
     }
 
     public function register_menu() {
+        // Use view_own_audits as minimum capability (agents, leads, admins all have it)
+        $min_cap = current_user_can('view_team_audits') ? 'view_team_audits' : 'view_own_audits';
         $icon_url = SUPPORT_OPS_PLUGIN_URL . 'assets/images/icon.svg';
         add_menu_page(
             'Support Ops & AI Auditor',
             'Support Ops',
-            'view_team_audits',
+            $min_cap,
             'ai-ops',
             [$this, 'render_main_page'],
             $icon_url,
@@ -107,7 +125,7 @@ class Manager {
             'ai-ops',
             'Dashboard',
             'Dashboard',
-            'view_team_audits',
+            $min_cap,
             'ai-ops',
             [$this, 'render_main_page']
         );
@@ -130,6 +148,10 @@ class Manager {
         if (!empty($_GET['tab'])) {
             $tab = sanitize_text_field($_GET['tab']);
             return $this->tab_to_section[$tab] ?? 'dashboard';
+        }
+        // Agents default to their portal
+        if (AccessControl::is_agent()) {
+            return 'my-performance';
         }
         return 'dashboard';
     }
@@ -156,6 +178,7 @@ class Manager {
         $flagged_count = $this->get_flagged_count();
         $queue_count = $this->get_queue_count();
         $pending_requests_count = AccessControl::is_admin() ? $this->get_pending_requests_count() : 0;
+        $pending_appeals_count = $this->get_pending_appeals_count();
 
         echo '<aside class="ops-sidebar">';
 
@@ -203,7 +226,7 @@ class Manager {
 
                 // Badge counts
                 if ($key === 'flagged') {
-                    $total_flagged = $flagged_count + $pending_requests_count;
+                    $total_flagged = $flagged_count + $pending_requests_count + $pending_appeals_count;
                     if ($total_flagged > 0) {
                         echo '<span class="ops-nav-badge">' . intval($total_flagged) . '</span>';
                     }
@@ -227,12 +250,22 @@ class Manager {
      * Render the active section content
      */
     private function render_section($section) {
-        // Block access to restricted sections for leads
+        // Block access to restricted sections
         if (!AccessControl::can_access($section)) {
-            $section = 'dashboard';
+            $section = AccessControl::is_agent() ? 'my-performance' : 'dashboard';
         }
 
         switch ($section) {
+            case 'my-performance':
+                $this->render_page_header('My Performance', 'Your personal audit scores and trends');
+                $this->pages['my_performance']->render();
+                break;
+
+            case 'my-schedule':
+                $this->render_page_header('My Schedule', 'Your shifts, leaves, and holidays');
+                $this->pages['my_schedule']->render();
+                break;
+
             case 'dashboard':
                 $this->render_page_header('Dashboard', 'Overview of your support operations');
                 $this->pages['dashboard']->render();
@@ -289,9 +322,29 @@ class Manager {
                 }
                 break;
 
+            case 'compare':
+                $this->render_page_header('Compare & Benchmark', 'Side-by-side performance comparison');
+                $this->pages['compare']->render();
+                break;
+
+            case 'sla':
+                $this->render_page_header('SLA Dashboard', 'Response time analytics and SLA breach tracking');
+                $this->pages['sla']->render();
+                break;
+
             case 'analytics':
                 $this->render_page_header('Analytics', 'Team-wide analytics and trends');
                 $this->pages['analytics']->render();
+                break;
+
+            case 'doc-gaps':
+                $this->render_page_header('Documentation Gaps', 'AI-identified knowledge base gaps that need documentation');
+                $this->pages['doc_gaps']->render();
+                break;
+
+            case 'faq-topics':
+                $this->render_page_header('FAQ Topics', 'AI-suggested FAQ articles based on recurring questions');
+                $this->pages['faq_topics']->render();
                 break;
 
             case 'timing-penalties':
@@ -382,6 +435,17 @@ class Manager {
         return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending'");
     }
 
+    private function get_pending_appeals_count() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audit_appeals';
+        $exists = $wpdb->get_var("SHOW TABLES LIKE '{$table}'");
+        if (!$exists) {
+            return 0;
+        }
+        $team_filter = AccessControl::sql_agent_filter('agent_email');
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending' {$team_filter}");
+    }
+
     /**
      * SVG icons for sidebar navigation
      */
@@ -402,7 +466,12 @@ class Manager {
             'key' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
             'repeat' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
             'zap' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+            'shield' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+            'git-compare' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>',
+            'activity' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
             'loader' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>',
+            'alert-triangle' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            'help-circle' => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
         ];
 
         return $icons[$name] ?? '';

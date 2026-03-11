@@ -225,6 +225,87 @@ class FlaggedTickets {
                 <?php endfor; ?>
             </div>
         <?php endif; ?>
+
+        <!-- Pending Agent Appeals -->
+        <?php $this->render_pending_appeals(); ?>
+        <?php
+    }
+
+    private function render_pending_appeals() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audit_appeals';
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) return;
+
+        $team_filter = AccessControl::sql_agent_filter('a.agent_email');
+        $appeals = $wpdb->get_results(
+            "SELECT a.*, ae.agent_name, ae.overall_agent_score, ae.timing_score, ae.resolution_score, ae.communication_score
+             FROM {$table} a
+             LEFT JOIN {$wpdb->prefix}ais_agent_evaluations ae ON a.eval_id = ae.id
+             WHERE a.status = 'pending' {$team_filter}
+             ORDER BY a.created_at ASC"
+        );
+
+        if (empty($appeals)) return;
+        ?>
+        <div class="ops-card" style="margin-top:24px;">
+            <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">
+                Pending Agent Appeals
+                <span class="ops-nav-badge" style="margin-left:8px;"><?php echo count($appeals); ?></span>
+            </h3>
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Ticket</th>
+                        <th>Disputed</th>
+                        <th>Current Score</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th style="width:200px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($appeals as $ap): ?>
+                    <tr id="appeal-row-<?php echo intval($ap->id); ?>">
+                        <td><strong><?php echo esc_html($ap->agent_name ?: $ap->agent_email); ?></strong></td>
+                        <td><a href="<?php echo esc_url(admin_url('admin.php?page=fluent-support#/tickets/' . intval($ap->ticket_id))); ?>" target="_blank">#<?php echo esc_html($ap->ticket_id); ?></a></td>
+                        <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
+                        <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j', strtotime($ap->created_at)); ?></td>
+                        <td>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">
+                                <button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
+                                <button class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <script>
+        function resolveAppeal(id, status) {
+            var notes = document.getElementById('appeal-note-' + id).value;
+            jQuery.post(ajaxurl, {
+                action: 'ai_audit_resolve_appeal',
+                _ajax_nonce: '<?php echo wp_create_nonce('ais_appeal_nonce'); ?>',
+                appeal_id: id,
+                status: status,
+                resolution_notes: notes
+            }, function(res) {
+                if (res.success) {
+                    var row = document.getElementById('appeal-row-' + id);
+                    row.style.background = status === 'approved' ? '#dcfce7' : '#fee2e2';
+                    row.querySelector('td:last-child').innerHTML = '<span class="status-badge ' + (status === 'approved' ? 'success' : 'failed') + '">' + status + '</span>';
+                } else {
+                    alert(res.data || 'Error');
+                }
+            });
+        }
+        </script>
         <?php
     }
 

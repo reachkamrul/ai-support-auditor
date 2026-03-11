@@ -130,20 +130,28 @@ class CalendarHandler {
     // ── Leaves ────────────────────────────────────────────
 
     public function save_leave() {
-        if (!current_user_can('view_team_audits')) {
+        if (!current_user_can('view_team_audits') && !current_user_can('view_own_audits')) {
             wp_send_json_error('Unauthorized');
         }
 
         global $wpdb;
 
         $agent_email = sanitize_email($_POST['agent_email'] ?? '');
-        $date_start  = sanitize_text_field($_POST['date_start'] ?? '');
-        $date_end    = sanitize_text_field($_POST['date_end'] ?? '');
+        $date_start  = sanitize_text_field($_POST['date_start'] ?? ($_POST['leave_date'] ?? ''));
+        $date_end    = sanitize_text_field($_POST['date_end'] ?? ($_POST['leave_date'] ?? ''));
         $leave_type  = sanitize_text_field($_POST['leave_type'] ?? 'personal');
         $reason      = sanitize_text_field($_POST['reason'] ?? '');
 
         if (empty($agent_email) || empty($date_start) || empty($date_end)) {
             wp_send_json_error('Agent, start date, and end date are required');
+        }
+
+        // Agents can only submit leave for themselves
+        if (AccessControl::is_agent()) {
+            $own_email = AccessControl::get_agent_email();
+            if ($agent_email !== $own_email) {
+                wp_send_json_error('You can only request leave for yourself');
+            }
         }
 
         // Team scoping for leads
@@ -160,13 +168,16 @@ class CalendarHandler {
 
         $table = $this->database->get_table('agent_leaves');
 
+        // Agent self-service: pending approval. Lead/admin: auto-approved.
+        $status = AccessControl::is_agent() ? 'pending' : 'approved';
+
         $wpdb->insert($table, [
             'agent_email' => $agent_email,
             'date_start'  => $date_start,
             'date_end'    => $date_end,
             'leave_type'  => $leave_type,
             'reason'      => $reason,
-            'status'      => 'approved',
+            'status'      => $status,
             'created_by'  => $created_by,
         ]);
 

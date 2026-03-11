@@ -726,9 +726,36 @@ class Calendar {
                     <?php endif; ?>
                     <button class="ops-btn secondary" onclick="openLeaveModal()">Leave Management</button>
                     <?php if (!$is_read_only): ?>
+                    <button class="ops-btn secondary" onclick="copyLastWeek()" title="Copy last week's shifts to current week">Copy Last Week</button>
+                    <button class="ops-btn secondary" onclick="jQuery('#shift-templates-panel').slideToggle()">Templates</button>
                     <button class="ops-btn primary bulk-schedule-btn" onclick="jQuery('#bulk-gen').slideToggle()">+ Bulk Schedule</button>
                     <?php endif; ?>
                 </div>
+            </div>
+
+            <!-- ── Shift Templates Panel ── -->
+            <div id="shift-templates-panel" style="display:none;margin-bottom:16px;padding:20px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-md);">
+                <h4 style="margin:0 0 12px;font-size:14px;font-weight:600;">Shift Templates</h4>
+                <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px;">
+                    <div>
+                        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Save Current Week As Template</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="template-name-input" placeholder="Template name..." style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;width:200px;">
+                            <button class="ops-btn primary" style="height:34px;font-size:13px;" onclick="saveTemplate()">Save</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Apply Template to This Week</label>
+                        <div style="display:flex;gap:8px;">
+                            <select id="template-select" style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;min-width:200px;">
+                                <option value="">Loading...</option>
+                            </select>
+                            <button class="ops-btn secondary" style="height:34px;font-size:13px;" onclick="applyTemplate()">Apply</button>
+                            <button class="ops-btn secondary" style="height:34px;font-size:13px;color:var(--color-error);" onclick="deleteTemplate()">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="template-msg" style="display:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:13px;"></div>
             </div>
 
             <!-- ── Bulk Schedule Form ── -->
@@ -1470,6 +1497,111 @@ class Calendar {
             // ── Helpers ──
             function escHtml(s) { return $('<span>').text(s||'').html(); }
             function escAttr(s) { return (s||'').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+            // ── Shift Templates ──
+            var currentMonthStart = '<?php echo $start->format('Y-m-d'); ?>';
+
+            // Get Monday of current week in displayed month
+            function getWeekStart() {
+                var d = new Date(currentMonthStart);
+                // Find first Monday
+                var today = new Date();
+                if (today.getFullYear() === d.getFullYear() && today.getMonth() === d.getMonth()) {
+                    d = today;
+                }
+                var day = d.getDay(); // 0=Sun
+                var diff = d.getDate() - day; // Sunday start
+                return new Date(d.setDate(diff));
+            }
+
+            function fmt(d) { return d.toISOString().slice(0,10); }
+
+            window.copyLastWeek = function() {
+                var ws = getWeekStart();
+                var target = fmt(ws);
+                var source = fmt(new Date(ws.getTime() - 7*86400000));
+                if (!confirm('Copy all shifts from week of ' + source + ' to week of ' + target + '?\nExisting shifts on target days will be replaced.')) return;
+                $.post(ajaxurl, {
+                    action: 'ai_ops_copy_week',
+                    _ajax_nonce: '<?php echo wp_create_nonce('ais_calendar_nonce'); ?>',
+                    source_start: source,
+                    target_start: target
+                }, function(res) {
+                    if (res.success) {
+                        alert('Copied ' + res.data.copied + ' shifts. Reloading...');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown'));
+                    }
+                });
+            };
+
+            window.saveTemplate = function() {
+                var name = $('#template-name-input').val().trim();
+                if (!name) { alert('Enter a template name'); return; }
+                var ws = getWeekStart();
+                $.post(ajaxurl, {
+                    action: 'ai_ops_save_shift_template',
+                    _ajax_nonce: '<?php echo wp_create_nonce('ais_calendar_nonce'); ?>',
+                    template_name: name,
+                    week_start: fmt(ws)
+                }, function(res) {
+                    var msg = $('#template-msg');
+                    if (res.success) {
+                        msg.css({display:'block', background:'#dcfce7', color:'#166534'}).text('Saved "' + name + '" with ' + res.data.shift_count + ' shifts');
+                        loadTemplates();
+                    } else {
+                        msg.css({display:'block', background:'#fee2e2', color:'#991b1b'}).text(res.data || 'Error');
+                    }
+                });
+            };
+
+            window.applyTemplate = function() {
+                var name = $('#template-select').val();
+                if (!name) { alert('Select a template'); return; }
+                var ws = getWeekStart();
+                if (!confirm('Apply template "' + name + '" to week of ' + fmt(ws) + '?\nExisting shifts on affected days will be replaced.')) return;
+                $.post(ajaxurl, {
+                    action: 'ai_ops_apply_shift_template',
+                    _ajax_nonce: '<?php echo wp_create_nonce('ais_calendar_nonce'); ?>',
+                    template_name: name,
+                    target_start: fmt(ws)
+                }, function(res) {
+                    if (res.success) {
+                        alert('Applied ' + res.data.applied + ' shifts. Reloading...');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (res.data || 'Unknown'));
+                    }
+                });
+            };
+
+            window.deleteTemplate = function() {
+                var name = $('#template-select').val();
+                if (!name) { alert('Select a template'); return; }
+                if (!confirm('Delete template "' + name + '"?')) return;
+                $.post(ajaxurl, {
+                    action: 'ai_ops_delete_shift_template',
+                    _ajax_nonce: '<?php echo wp_create_nonce('ais_calendar_nonce'); ?>',
+                    template_name: name
+                }, function(res) {
+                    if (res.success) { loadTemplates(); }
+                    else { alert(res.data || 'Error'); }
+                });
+            };
+
+            function loadTemplates() {
+                $.post(ajaxurl, { action: 'ai_ops_get_shift_templates', _ajax_nonce: '<?php echo wp_create_nonce('ais_calendar_nonce'); ?>' }, function(res) {
+                    var sel = $('#template-select').empty();
+                    sel.append('<option value="">-- Select template --</option>');
+                    if (res.success && res.data.length) {
+                        res.data.forEach(function(t) {
+                            sel.append('<option value="' + escAttr(t.name) + '">' + escHtml(t.name) + ' (' + t.shift_count + ' shifts)</option>');
+                        });
+                    }
+                });
+            }
+            loadTemplates();
         });
         </script>
         <?php

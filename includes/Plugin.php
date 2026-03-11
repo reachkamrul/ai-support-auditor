@@ -106,6 +106,13 @@ class Plugin {
         add_action('wp_ajax_ai_watchdog_sync', [$this->ajax, 'force_watchdog_sync']);
         add_action('wp_ajax_ai_audit_test_webhook', [$this->ajax, 'test_n8n_webhook']);
 
+        // Shift template AJAX handlers
+        add_action('wp_ajax_ai_ops_copy_week', [$this->ajax, 'copy_week_shifts']);
+        add_action('wp_ajax_ai_ops_save_shift_template', [$this->ajax, 'save_shift_template']);
+        add_action('wp_ajax_ai_ops_apply_shift_template', [$this->ajax, 'apply_shift_template']);
+        add_action('wp_ajax_ai_ops_get_shift_templates', [$this->ajax, 'get_shift_templates']);
+        add_action('wp_ajax_ai_ops_delete_shift_template', [$this->ajax, 'delete_shift_template']);
+
         // Calendar AJAX handlers
         add_action('wp_ajax_ai_ops_save_holiday', [$this->ajax, 'save_holiday']);
         add_action('wp_ajax_ai_ops_delete_holiday', [$this->ajax, 'delete_holiday']);
@@ -134,6 +141,12 @@ class Plugin {
         add_action('wp_ajax_ai_kb_sync_sitemap', [$this->ajax, 'kb_sync_sitemap']);
         add_action('wp_ajax_ai_kb_save_sitemap_url', [$this->ajax, 'kb_save_sitemap_url']);
         add_action('wp_ajax_ai_kb_remove_sitemap', [$this->ajax, 'kb_remove_sitemap']);
+
+        // Appeal AJAX handlers
+        add_action('wp_ajax_ai_audit_submit_appeal', [$this->ajax, 'submit_appeal']);
+        add_action('wp_ajax_ai_audit_get_my_appeals', [$this->ajax, 'get_my_appeals']);
+        add_action('wp_ajax_ai_audit_get_pending_appeals', [$this->ajax, 'get_pending_appeals']);
+        add_action('wp_ajax_ai_audit_resolve_appeal', [$this->ajax, 'resolve_appeal']);
 
         // Admin post actions
         add_action('admin_post_export_agent_data', [$this->admin, 'export_agent_data']);
@@ -174,10 +187,27 @@ class Plugin {
             ]);
         }
 
+        // Create the support_agent role if it doesn't exist
+        if (!get_role('support_agent')) {
+            add_role('support_agent', 'Support Agent', [
+                'read' => true,
+                'view_own_audits' => true,
+            ]);
+        }
+
         // Ensure administrators also have the capability
         $admin_role = get_role('administrator');
         if ($admin_role && !$admin_role->has_cap('view_team_audits')) {
             $admin_role->add_cap('view_team_audits');
+        }
+        if ($admin_role && !$admin_role->has_cap('view_own_audits')) {
+            $admin_role->add_cap('view_own_audits');
+        }
+
+        // Ensure leads also have agent portal capability
+        $lead_role = get_role('support_lead');
+        if ($lead_role && !$lead_role->has_cap('view_own_audits')) {
+            $lead_role->add_cap('view_own_audits');
         }
     }
 

@@ -32,7 +32,8 @@ class Manager {
         'agent_leaves',
         'calendar_extras',
         'audit_reviews',
-        'score_overrides'
+        'score_overrides',
+        'audit_appeals'
     ];
     
     /**
@@ -740,6 +741,25 @@ class Manager {
                 KEY audit_id (audit_id),
                 KEY ticket_id (ticket_id),
                 KEY agent_email (agent_email)
+            ) $charset_collate;",
+            'ais_audit_appeals' => "CREATE TABLE {$wpdb->prefix}ais_audit_appeals (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                ticket_id varchar(50) NOT NULL,
+                eval_id bigint(20) NOT NULL,
+                agent_email varchar(100) NOT NULL,
+                appeal_type varchar(30) DEFAULT 'score_dispute' NOT NULL,
+                disputed_field varchar(50) DEFAULT NULL,
+                current_score int(4) DEFAULT NULL,
+                reason text NOT NULL,
+                status varchar(20) DEFAULT 'pending' NOT NULL,
+                resolved_by varchar(255) DEFAULT NULL,
+                resolution_notes text DEFAULT NULL,
+                resolved_at datetime DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY  (id),
+                KEY ticket_id (ticket_id),
+                KEY agent_email (agent_email),
+                KEY status (status)
             ) $charset_collate;",
             'ais_override_requests' => "CREATE TABLE {$wpdb->prefix}ais_override_requests (
                 id bigint(20) NOT NULL AUTO_INCREMENT,

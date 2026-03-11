@@ -41,6 +41,7 @@ class Manager {
             'calendar' => new Handlers\CalendarHandler($this->database),
             'review' => new Handlers\AuditReviewHandler($this->database),
             'kb' => new Handlers\KnowledgeBaseHandler($this->database),
+            'appeal' => new Handlers\AppealHandler($this->database),
         ];
     }
     
@@ -98,6 +99,14 @@ class Manager {
     public function get_day_details() { $this->handlers['calendar']->get_day_details(); }
     public function export_leave_csv() { $this->handlers['calendar']->export_leave_csv(); }
 
+    // ── Shift template handlers ──
+
+    public function copy_week_shifts() { $this->handlers['shift']->copy_week(); }
+    public function save_shift_template() { $this->handlers['shift']->save_template(); }
+    public function apply_shift_template() { $this->handlers['shift']->apply_template(); }
+    public function get_shift_templates() { $this->handlers['shift']->get_templates(); }
+    public function delete_shift_template() { $this->handlers['shift']->delete_template(); }
+
     // ── Audit Review handlers ──
 
     public function save_audit_review() { $this->handlers['review']->save_review(); }
@@ -117,6 +126,13 @@ class Manager {
     public function kb_sync_sitemap() { $this->handlers['kb']->sync_sitemap(); }
     public function kb_save_sitemap_url() { $this->handlers['kb']->save_sitemap_url(); }
     public function kb_remove_sitemap() { $this->handlers['kb']->remove_sitemap(); }
+
+    // ── Appeal handlers ──
+
+    public function submit_appeal() { $this->handlers['appeal']->submit_appeal(); }
+    public function get_my_appeals() { $this->handlers['appeal']->get_my_appeals(); }
+    public function get_pending_appeals() { $this->handlers['appeal']->get_pending_appeals(); }
+    public function resolve_appeal() { $this->handlers['appeal']->resolve_appeal(); }
 
     /**
      * Test N8N webhook connection

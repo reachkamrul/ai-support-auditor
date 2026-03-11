@@ -12,6 +12,14 @@ class AccessControl {
     private static $cache = null;
 
     /**
+     * Sections only visible to agents (self-service portal)
+     */
+    private static $agent_portal_sections = [
+        'my-performance',
+        'my-schedule',
+    ];
+
+    /**
      * Sections completely hidden from team leads
      */
     private static $admin_only_sections = [
@@ -53,11 +61,6 @@ class AccessControl {
             return self::$cache;
         }
 
-        // Check if current user is a linked team lead
-        if (!current_user_can('view_team_audits')) {
-            return self::$cache;
-        }
-
         global $wpdb;
         $wp_user_id = get_current_user_id();
         if (!$wp_user_id) {
@@ -70,12 +73,22 @@ class AccessControl {
             $wp_user_id
         ));
 
-        if (!$agent) {
+        // Check if team lead
+        if (current_user_can('view_team_audits') && $agent) {
+            self::$cache['role'] = 'lead';
+            self::$cache['agent_email'] = $agent->email;
+        } elseif (current_user_can('view_own_audits') && $agent) {
+            // Agent with self-service portal access
+            self::$cache['role'] = 'agent';
+            self::$cache['agent_email'] = $agent->email;
+            return self::$cache;
+        } elseif (!current_user_can('view_team_audits')) {
             return self::$cache;
         }
 
-        self::$cache['role'] = 'lead';
-        self::$cache['agent_email'] = $agent->email;
+        if (!$agent) {
+            return self::$cache;
+        }
 
         // Get team IDs this agent belongs to
         $teams = $wpdb->get_results($wpdb->prepare(
@@ -126,6 +139,20 @@ class AccessControl {
     }
 
     /**
+     * Is current user a support agent (not lead or admin)?
+     */
+    public static function is_agent() {
+        return self::get_role() === 'agent';
+    }
+
+    /**
+     * Get the current user's agent email
+     */
+    public static function get_agent_email() {
+        return self::get_context()['agent_email'];
+    }
+
+    /**
      * Get team IDs the current lead manages. Empty array for admins (no filtering).
      */
     public static function get_team_ids() {
@@ -156,6 +183,14 @@ class AccessControl {
         }
         if (!self::get_role()) {
             return false;
+        }
+        // Agents can only access portal sections
+        if (self::is_agent()) {
+            return in_array($section, self::$agent_portal_sections, true);
+        }
+        // Leads can access portal sections + everything except admin-only
+        if (in_array($section, self::$agent_portal_sections, true)) {
+            return true; // leads always see portal
         }
         return !in_array($section, self::$admin_only_sections, true);
     }
