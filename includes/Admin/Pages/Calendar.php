@@ -173,17 +173,26 @@ class Calendar {
             $end->format('Y-m-d'), $start->format('Y-m-d')
         ));
 
+        // ── Pending leave requests (for leads/admins) ──
+        $pending_leaves = $wpdb->get_results(
+            "SELECT l.*, a.first_name, a.last_name
+             FROM {$this->database->get_table('agent_leaves')} l
+             LEFT JOIN {$agents_table} a ON l.agent_email = a.email
+             WHERE l.status = 'pending'{$leave_filter}
+             ORDER BY l.created_at DESC"
+        );
+
         $this->render_calendar(
             $start, $end, $cal, $mo, $agents, $shift_defs,
             $holidays, $leaves, $comp_offs, $extras,
-            $all_holidays, $all_leaves, $is_read_only, $is_admin
+            $all_holidays, $all_leaves, $pending_leaves, $is_read_only, $is_admin
         );
     }
 
     private function render_calendar(
         $start, $end, $cal, $mo, $agents, $shift_defs,
         $holidays, $leaves, $comp_offs, $extras,
-        $all_holidays, $all_leaves, $is_read_only, $is_admin
+        $all_holidays, $all_leaves, $pending_leaves, $is_read_only, $is_admin
     ) {
         ?>
         <style>
@@ -971,6 +980,38 @@ class Calendar {
                     </div>
                     <?php endif; ?>
 
+                    <?php if (!empty($pending_leaves)): ?>
+                    <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        Pending Requests
+                        <span class="ops-nav-badge" style="font-size:11px;"><?php echo count($pending_leaves); ?></span>
+                    </div>
+                    <table class="modal-table" id="pending-leaves-table">
+                        <thead><tr><th>Agent</th><th>Type</th><th>From</th><th>To</th><th>Reason</th><th style="text-align:right;">Action</th></tr></thead>
+                        <tbody>
+                        <?php foreach($pending_leaves as $pl):
+                            $pl_name = trim(($pl->first_name ?? '') . ' ' . ($pl->last_name ?? '')) ?: $pl->agent_email;
+                        ?>
+                            <tr id="pending-leave-<?php echo $pl->id; ?>">
+                                <td><?php echo esc_html($pl_name); ?></td>
+                                <td><span class="type-badge <?php echo esc_attr($pl->leave_type); ?>"><?php echo esc_html(ucfirst(str_replace('_', ' ', $pl->leave_type))); ?></span></td>
+                                <td><?php echo date('M j', strtotime($pl->date_start)); ?></td>
+                                <td><?php echo date('M j', strtotime($pl->date_end)); ?></td>
+                                <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo esc_html($pl->reason ?: '-'); ?></td>
+                                <?php if (!$is_read_only): ?>
+                                <td style="text-align:right;">
+                                    <button class="ops-btn primary" style="height:26px;font-size:11px;padding:0 10px;margin-right:4px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'approved')">Approve</button>
+                                    <button class="ops-btn danger" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'rejected')">Reject</button>
+                                </td>
+                                <?php else: ?>
+                                <td></td>
+                                <?php endif; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <div style="height:16px;"></div>
+                    <?php endif; ?>
+
                     <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
                         Current Leaves
                         <a href="<?php echo admin_url('admin-post.php?action=export_leave_csv&year=' . $start->format('Y')); ?>" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;">Export CSV</a>
@@ -982,13 +1023,20 @@ class Calendar {
                         <table class="modal-table">
                             <thead><tr><th>Agent</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th></th></tr></thead>
                             <tbody>
-                            <?php foreach($all_leaves as $l):
+                            <?php
+                            $leave_labels = ['full_day'=>'Full Day','half_day'=>'Half Day','emergency'=>'Emergency','personal'=>'Personal','sick'=>'Sick','compensation'=>'Comp-off'];
+                            foreach($all_leaves as $l):
                                 $name = trim(($l->first_name ?? '') . ' ' . ($l->last_name ?? '')) ?: $l->agent_email;
                                 $days = (strtotime($l->date_end) - strtotime($l->date_start)) / 86400 + 1;
+                                $type_label = $leave_labels[$l->leave_type] ?? ucfirst(str_replace('_', ' ', $l->leave_type));
+                                $is_applied = !empty($l->created_by) && $l->created_by === $l->agent_email;
                             ?>
                                 <tr id="leave-row-<?php echo $l->id; ?>">
                                     <td><?php echo esc_html($name); ?></td>
-                                    <td><span class="type-badge <?php echo esc_attr($l->leave_type); ?>"><?php echo esc_html(ucfirst($l->leave_type)); ?></span></td>
+                                    <td>
+                                        <?php if ($is_applied): ?><span style="font-size:10px;padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span><?php endif; ?>
+                                        <span class="type-badge <?php echo esc_attr($l->leave_type); ?>"><?php echo esc_html($type_label); ?></span>
+                                    </td>
                                     <td><?php echo date('M j', strtotime($l->date_start)); ?></td>
                                     <td><?php echo date('M j', strtotime($l->date_end)); ?></td>
                                     <td><?php echo intval($days); ?></td>
@@ -1151,12 +1199,15 @@ class Calendar {
                 h += '</div>';
 
                 // Off Today section (leaves + comp-offs)
+                var leaveLabels = {full_day:'Full Day', half_day:'Half Day', emergency:'Emergency', personal:'Personal', sick:'Sick', compensation:'Comp-off'};
                 var offItems = [];
                 (data.leaves || []).forEach(function(l){
-                    offItems.push({name: (l.first_name || '') + ' ' + (l.last_name || ''), reason: l.leave_type, id: l.id, type:'leave'});
+                    var label = leaveLabels[l.leave_type] || l.leave_type;
+                    var applied = (l.created_by && l.agent_email && l.created_by === l.agent_email);
+                    offItems.push({name: (l.first_name || '') + ' ' + (l.last_name || ''), reason: label, applied: applied, id: l.id, type:'leave'});
                 });
                 (data.comp_offs || []).forEach(function(co){
-                    offItems.push({name: co.first_name || co.agent_email, reason: 'Comp-off', id: co.id, type:'comp_off'});
+                    offItems.push({name: co.first_name || co.agent_email, reason: 'Comp-off', applied: false, id: co.id, type:'comp_off'});
                 });
 
                 if (offItems.length > 0) {
@@ -1165,6 +1216,9 @@ class Calendar {
                     offItems.forEach(function(item){
                         h += '<div class="off-item">';
                         h += '<span class="off-name">' + escHtml(item.name.trim()) + '</span>';
+                        if (item.applied) {
+                            h += '<span style="font-size:10px;padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span>';
+                        }
                         h += '<span class="off-reason">' + escHtml(item.reason) + '</span>';
                         if (!calReadOnly && item.type === 'leave') {
                             h += '<button class="shift-list-delete" onclick="deleteLeaveDay(' + item.id + ')" title="Remove">&times;</button>';
@@ -1492,6 +1546,19 @@ class Calendar {
                         $('#leave-row-' + id).fadeOut(function(){ $(this).remove(); });
                     } else alert(resp.data || 'Error');
                 }).fail(function(){ alert('Error deleting leave'); });
+            };
+
+            window.resolveLeave = function(id, status) {
+                var label = status === 'approved' ? 'approve' : 'reject';
+                if (!confirm('Are you sure you want to ' + label + ' this leave request?')) return;
+                $.post(ajaxurl, {action:'ai_ops_resolve_leave', id:id, status:status}, function(resp){
+                    if (resp.success) {
+                        $('#pending-leave-' + id).fadeOut(function(){ $(this).remove(); });
+                        if (status === 'approved') {
+                            location.reload();
+                        }
+                    } else alert(resp.data || 'Error');
+                }).fail(function(){ alert('Error processing leave request'); });
             };
 
             // ── Helpers ──

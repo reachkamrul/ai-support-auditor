@@ -29,7 +29,7 @@ class Manager {
         'TEAM' => [
             'agents'           => ['label' => 'Agents',           'icon' => 'users'],
             'teams'            => ['label' => 'Teams & Products', 'icon' => 'layers'],
-            'calendar'         => ['label' => 'Shift Calendar',   'icon' => 'calendar'],
+            'calendar'         => ['label' => 'Shift Calendar',   'icon' => 'calendar', 'badge' => 'leaves'],
             'shift-settings'   => ['label' => 'Shift Settings',   'icon' => 'clock'],
             'handoffs'         => ['label' => 'Handoff Report',   'icon' => 'repeat'],
         ],
@@ -179,6 +179,7 @@ class Manager {
         $queue_count = $this->get_queue_count();
         $pending_requests_count = AccessControl::is_admin() ? $this->get_pending_requests_count() : 0;
         $pending_appeals_count = $this->get_pending_appeals_count();
+        $pending_leaves_count = (AccessControl::is_admin() || AccessControl::is_lead()) ? $this->get_pending_leaves_count() : 0;
 
         echo '<aside class="ops-sidebar">';
 
@@ -232,6 +233,8 @@ class Manager {
                     }
                 } elseif ($key === 'audit-queue' && $queue_count > 0) {
                     echo '<span class="ops-nav-badge">' . intval($queue_count) . '</span>';
+                } elseif ($key === 'calendar' && $pending_leaves_count > 0) {
+                    echo '<span class="ops-nav-badge">' . intval($pending_leaves_count) . '</span>';
                 }
 
                 echo '</a>';
@@ -433,6 +436,13 @@ class Manager {
             return 0;
         }
         return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending'");
+    }
+
+    private function get_pending_leaves_count() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_agent_leaves';
+        $team_filter = AccessControl::sql_agent_filter('agent_email');
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending' {$team_filter}");
     }
 
     private function get_pending_appeals_count() {

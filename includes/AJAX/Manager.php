@@ -94,6 +94,7 @@ class Manager {
     public function save_holiday_duty() { $this->handlers['calendar']->save_holiday_duty(); }
     public function save_leave() { $this->handlers['calendar']->save_leave(); }
     public function delete_leave() { $this->handlers['calendar']->delete_leave(); }
+    public function resolve_leave() { $this->handlers['calendar']->resolve_leave(); }
     public function save_extra() { $this->handlers['calendar']->save_extra(); }
     public function delete_extra() { $this->handlers['calendar']->delete_extra(); }
     public function get_day_details() { $this->handlers['calendar']->get_day_details(); }

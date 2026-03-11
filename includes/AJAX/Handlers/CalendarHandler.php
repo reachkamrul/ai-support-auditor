@@ -213,6 +213,41 @@ class CalendarHandler {
         wp_send_json_success();
     }
 
+    public function resolve_leave() {
+        if (!current_user_can('view_team_audits')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        global $wpdb;
+
+        $id = intval($_POST['id'] ?? 0);
+        $status = sanitize_text_field($_POST['status'] ?? '');
+
+        if ($id <= 0 || !in_array($status, ['approved', 'rejected'], true)) {
+            wp_send_json_error('Invalid parameters');
+        }
+
+        // Team scoping for leads
+        if (AccessControl::is_lead()) {
+            $leave_email = $wpdb->get_var($wpdb->prepare(
+                "SELECT agent_email FROM {$this->database->get_table('agent_leaves')} WHERE id = %d",
+                $id
+            ));
+            $team_emails = AccessControl::get_team_agent_emails();
+            if (!in_array($leave_email, $team_emails, true)) {
+                wp_send_json_error('Agent not in your team');
+            }
+        }
+
+        $wpdb->update(
+            $this->database->get_table('agent_leaves'),
+            ['status' => $status],
+            ['id' => $id]
+        );
+
+        wp_send_json_success();
+    }
+
     // ── Calendar Extras ──────────────────────────────────
 
     public function save_extra() {

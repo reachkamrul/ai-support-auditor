@@ -119,6 +119,7 @@ class Plugin {
         add_action('wp_ajax_ai_ops_save_holiday_duty', [$this->ajax, 'save_holiday_duty']);
         add_action('wp_ajax_ai_ops_save_leave', [$this->ajax, 'save_leave']);
         add_action('wp_ajax_ai_ops_delete_leave', [$this->ajax, 'delete_leave']);
+        add_action('wp_ajax_ai_ops_resolve_leave', [$this->ajax, 'resolve_leave']);
         add_action('wp_ajax_ai_ops_save_extra', [$this->ajax, 'save_extra']);
         add_action('wp_ajax_ai_ops_delete_extra', [$this->ajax, 'delete_extra']);
         add_action('wp_ajax_ai_ops_get_day_details', [$this->ajax, 'get_day_details']);
