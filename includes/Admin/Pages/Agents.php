@@ -91,37 +91,116 @@ class Agents {
 
     private function save_agent($post_data) {
         global $wpdb;
-        
+
         $id = intval($post_data['id']);
+        $role = in_array($post_data['role'] ?? 'agent', ['agent', 'lead']) ? $post_data['role'] : 'agent';
+        $email = sanitize_email($post_data['email']);
+        $create_wp = !empty($post_data['create_wp_account']) && $post_data['create_wp_account'] === '1';
+        $wp_user_id = !empty($post_data['wp_user_id']) ? intval($post_data['wp_user_id']) : null;
+
+        // Create WP account if requested and no existing link
+        if ($create_wp && !$wp_user_id && $email) {
+            $wp_user_id = $this->create_wp_account($email, $post_data['fname'] ?? '', $post_data['lname'] ?? '', $role);
+            if (is_wp_error($wp_user_id)) {
+                echo '<div class="notice notice-error is-dismissible"><p>WP account creation failed: ' . esc_html($wp_user_id->get_error_message()) . '</p></div>';
+                $wp_user_id = null;
+            }
+        }
+
+        // Sync WP role if linked to an existing user and role changed
+        if ($wp_user_id && $id > 0) {
+            $old_role = $wpdb->get_var($wpdb->prepare(
+                "SELECT role FROM {$wpdb->prefix}ais_agents WHERE id=%d", $id
+            ));
+            if ($old_role && $old_role !== $role) {
+                $this->sync_wp_role($wp_user_id, $role);
+            }
+        }
+
         $data = [
             'first_name' => sanitize_text_field($post_data['fname']),
             'last_name' => sanitize_text_field($post_data['lname']),
-            'email' => sanitize_email($post_data['email']),
+            'email' => $email,
             'title' => sanitize_text_field($post_data['title']),
-            'role' => in_array($post_data['role'] ?? 'agent', ['agent', 'lead']) ? $post_data['role'] : 'agent',
-            'wp_user_id' => !empty($post_data['wp_user_id']) ? intval($post_data['wp_user_id']) : null,
+            'role' => $role,
+            'wp_user_id' => $wp_user_id,
             'fluent_agent_id' => !empty($post_data['fluent_id']) ? intval($post_data['fluent_id']) : null,
             'avatar_url' => esc_url_raw($post_data['avatar_url']),
             'is_active' => isset($post_data['is_active']) ? 1 : 0
         ];
-        
+
         if($id > 0) {
             $old_email = $wpdb->get_var($wpdb->prepare(
-                "SELECT email FROM {$wpdb->prefix}ais_agents WHERE id=%d", 
+                "SELECT email FROM {$wpdb->prefix}ais_agents WHERE id=%d",
                 $id
             ));
             $wpdb->update($wpdb->prefix.'ais_agents', $data, ['id'=>$id]);
-            
+
             if($old_email && $old_email !== $data['email']) {
                 $wpdb->update(
-                    $wpdb->prefix.'ais_agent_shifts', 
-                    ['agent_email'=>$data['email']], 
+                    $wpdb->prefix.'ais_agent_shifts',
+                    ['agent_email'=>$data['email']],
                     ['agent_email'=>$old_email]
                 );
             }
         } else {
             $wpdb->insert($wpdb->prefix.'ais_agents', $data);
         }
+    }
+
+    /**
+     * Create a WordPress user account for an agent
+     */
+    private function create_wp_account($email, $first_name, $last_name, $role) {
+        // Check if a WP user with this email already exists
+        $existing = get_user_by('email', $email);
+        if ($existing) {
+            // Link to existing user, sync their role
+            $this->sync_wp_role($existing->ID, $role);
+            return $existing->ID;
+        }
+
+        // Generate username from email (part before @)
+        $username = sanitize_user(strstr($email, '@', true), true);
+        if (username_exists($username)) {
+            $username = $username . '_' . wp_rand(100, 999);
+        }
+
+        $password = wp_generate_password(16, true, true);
+        $wp_role = ($role === 'lead') ? 'support_lead' : 'support_agent';
+
+        $user_id = wp_insert_user([
+            'user_login' => $username,
+            'user_email' => $email,
+            'user_pass' => $password,
+            'first_name' => sanitize_text_field($first_name),
+            'last_name' => sanitize_text_field($last_name),
+            'display_name' => trim(sanitize_text_field($first_name) . ' ' . sanitize_text_field($last_name)),
+            'role' => $wp_role,
+        ]);
+
+        if (is_wp_error($user_id)) {
+            return $user_id;
+        }
+
+        // Send password reset email so agent can set their own password
+        wp_new_user_notification($user_id, null, 'user');
+
+        return $user_id;
+    }
+
+    /**
+     * Sync WP user role when agent role changes
+     */
+    private function sync_wp_role($wp_user_id, $agent_role) {
+        $user = get_user_by('ID', $wp_user_id);
+        if (!$user) return;
+
+        // Don't touch administrators
+        if (in_array('administrator', $user->roles, true)) return;
+
+        $new_wp_role = ($agent_role === 'lead') ? 'support_lead' : 'support_agent';
+        $user->set_role($new_wp_role);
     }
     
     private function render_list($agents) {
@@ -647,17 +726,25 @@ class Agents {
                             <small>Leads can view their team's audit reports</small>
                         </div>
                         <div>
-                            <label>WordPress User</label>
-                            <select name="wp_user_id" id="ag_wp_user" class="ops-input">
-                                <option value="">Not linked</option>
-                                <?php
-                                $wp_users = get_users(['role__in' => ['support_lead', 'administrator'], 'orderby' => 'display_name']);
-                                foreach ($wp_users as $wp_user):
-                                ?>
-                                    <option value="<?php echo $wp_user->ID; ?>"><?php echo esc_html($wp_user->display_name . ' (' . $wp_user->user_email . ')'); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small>Link to WP account for dashboard login</small>
+                            <label>WordPress Account</label>
+                            <div id="wp-account-status" style="margin-bottom:8px;">
+                                <span id="wp-linked-info" style="display:none;padding:8px 12px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:12px;color:var(--color-text-secondary);">
+                                    Linked to WP User #<span id="wp-linked-id"></span>
+                                    <button type="button" onclick="unlinkWpAccount()" style="margin-left:8px;background:none;border:none;color:var(--color-error);cursor:pointer;font-size:11px;text-decoration:underline;">Unlink</button>
+                                </span>
+                                <span id="wp-not-linked" style="display:none;padding:8px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius-sm);font-size:12px;color:#92400e;">
+                                    No WP account — agent cannot log in to the dashboard
+                                </span>
+                            </div>
+                            <input type="hidden" name="wp_user_id" id="ag_wp_user" value="">
+                            <input type="hidden" name="create_wp_account" id="ag_create_wp" value="0">
+                            <div id="wp-create-section" style="display:none;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-sm);">
+                                    <input type="checkbox" id="ag_create_wp_check" onchange="document.getElementById('ag_create_wp').value = this.checked ? '1' : '0';" style="width:16px;height:16px;accent-color:var(--color-primary);">
+                                    <span style="font-size:13px;font-weight:500;color:var(--color-text-primary);">Create WP account on save</span>
+                                </label>
+                                <small>Creates a WordPress user with the selected role. Password reset email will be sent to the agent's email.</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -702,13 +789,37 @@ class Agents {
         </div>
         
         <script>
+        function updateWpStatus(wpUserId) {
+            var linked = document.getElementById('wp-linked-info');
+            var notLinked = document.getElementById('wp-not-linked');
+            var createSection = document.getElementById('wp-create-section');
+            if (!linked) return; // admin-only elements
+            if (wpUserId && parseInt(wpUserId) > 0) {
+                linked.style.display = 'inline-block';
+                notLinked.style.display = 'none';
+                createSection.style.display = 'none';
+                document.getElementById('wp-linked-id').textContent = wpUserId;
+            } else {
+                linked.style.display = 'none';
+                notLinked.style.display = 'inline-block';
+                createSection.style.display = 'block';
+            }
+        }
+
+        function unlinkWpAccount() {
+            if (!confirm('Unlink this WP account? The agent will lose dashboard access.')) return;
+            document.getElementById('ag_wp_user').value = '';
+            updateWpStatus(null);
+        }
+
         function editAgent(a) {
             document.getElementById('ag_id').value = a.id;
             document.getElementById('ag_fn').value = a.first_name || '';
             document.getElementById('ag_ln').value = a.last_name || '';
             document.getElementById('ag_em').value = a.email;
             document.getElementById('ag_title').value = a.title || '';
-            document.getElementById('ag_role').value = a.role || 'agent';
+            var roleEl = document.getElementById('ag_role');
+            if (roleEl) roleEl.value = a.role || 'agent';
             document.getElementById('ag_wp_user').value = a.wp_user_id || '';
             document.getElementById('ag_fid').value = a.fluent_agent_id || '';
             document.getElementById('ag_avatar').value = a.avatar_url || '';
@@ -717,30 +828,31 @@ class Agents {
             document.getElementById('form-mode').textContent = 'Editing';
             document.getElementById('form-mode').style.background = 'var(--color-warning-bg)';
             document.getElementById('form-mode').style.color = '#92400e';
-            
-            // Scroll to form with offset for better visibility
+
+            // Reset create checkbox
+            var createCheck = document.getElementById('ag_create_wp_check');
+            if (createCheck) { createCheck.checked = false; document.getElementById('ag_create_wp').value = '0'; }
+            updateWpStatus(a.wp_user_id);
+
             setTimeout(function() {
                 var formCard = document.getElementById('agent-form-card');
                 if (formCard) {
-                    var offset = 100; // Offset from top
+                    var offset = 100;
                     var elementPosition = formCard.getBoundingClientRect().top;
                     var offsetPosition = elementPosition + window.pageYOffset - offset;
-                    
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
+                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
                 }
             }, 100);
         }
-        
+
         function resetAgentForm() {
             document.getElementById('ag_id').value = '';
             document.getElementById('ag_fn').value = '';
             document.getElementById('ag_ln').value = '';
             document.getElementById('ag_em').value = '';
             document.getElementById('ag_title').value = '';
-            document.getElementById('ag_role').value = 'agent';
+            var roleEl = document.getElementById('ag_role');
+            if (roleEl) roleEl.value = 'agent';
             document.getElementById('ag_wp_user').value = '';
             document.getElementById('ag_fid').value = '';
             document.getElementById('ag_avatar').value = '';
@@ -749,6 +861,10 @@ class Agents {
             document.getElementById('form-mode').textContent = 'New Agent';
             document.getElementById('form-mode').style.background = 'var(--color-bg-subtle)';
             document.getElementById('form-mode').style.color = 'var(--color-text-secondary)';
+
+            var createCheck = document.getElementById('ag_create_wp_check');
+            if (createCheck) { createCheck.checked = false; document.getElementById('ag_create_wp').value = '0'; }
+            updateWpStatus(null);
         }
         </script>
         <?php
