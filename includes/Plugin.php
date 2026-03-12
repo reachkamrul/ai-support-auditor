@@ -143,6 +143,10 @@ class Plugin {
         add_action('wp_ajax_ai_kb_save_sitemap_url', [$this->ajax, 'kb_save_sitemap_url']);
         add_action('wp_ajax_ai_kb_remove_sitemap', [$this->ajax, 'kb_remove_sitemap']);
 
+        // Time Machine AJAX handlers
+        add_action('wp_ajax_ai_ops_time_machine', [$this->ajax, 'time_machine_load']);
+        add_action('wp_ajax_ai_ops_test_fs_api', [$this->ajax, 'test_fs_api']);
+
         // Appeal AJAX handlers
         add_action('wp_ajax_ai_audit_submit_appeal', [$this->ajax, 'submit_appeal']);
         add_action('wp_ajax_ai_audit_get_my_appeals', [$this->ajax, 'get_my_appeals']);

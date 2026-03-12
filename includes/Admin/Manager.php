@@ -40,6 +40,7 @@ class Manager {
             'compare'          => ['label' => 'Compare',           'icon' => 'git-compare'],
             'sla'              => ['label' => 'SLA Dashboard',    'icon' => 'shield'],
             'analytics'        => ['label' => 'Analytics',        'icon' => 'trending-up'],
+            'time-machine'     => ['label' => 'Time Machine',    'icon' => 'activity'],
         ],
         'KNOWLEDGE' => [
             'doc-gaps'         => ['label' => 'Doc Gaps',          'icon' => 'alert-triangle'],
@@ -99,6 +100,7 @@ class Manager {
             'doc_gaps'         => new Pages\DocGaps($this->database),
             'faq_topics'       => new Pages\FaqTopics($this->database),
             'audit_queue'      => new Pages\AuditQueue($this->database),
+            'time_machine'     => new Pages\TimeMachine($this->database),
         ];
     }
 
@@ -338,6 +340,11 @@ class Manager {
             case 'analytics':
                 $this->render_page_header('Analytics', 'Team-wide analytics and trends');
                 $this->pages['analytics']->render();
+                break;
+
+            case 'time-machine':
+                $this->render_page_header('Time Machine', 'Go back to any date and see a full support operations snapshot');
+                $this->pages['time_machine']->render();
                 break;
 
             case 'doc-gaps':

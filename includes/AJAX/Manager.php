@@ -42,6 +42,7 @@ class Manager {
             'review' => new Handlers\AuditReviewHandler($this->database),
             'kb' => new Handlers\KnowledgeBaseHandler($this->database),
             'appeal' => new Handlers\AppealHandler($this->database),
+            'time_machine' => new Handlers\TimeMachineHandler($this->database),
         ];
     }
     
@@ -127,6 +128,13 @@ class Manager {
     public function kb_sync_sitemap() { $this->handlers['kb']->sync_sitemap(); }
     public function kb_save_sitemap_url() { $this->handlers['kb']->save_sitemap_url(); }
     public function kb_remove_sitemap() { $this->handlers['kb']->remove_sitemap(); }
+
+    // ── Appeal handlers ──
+
+    // ── Time Machine handlers ──
+
+    public function time_machine_load() { $this->handlers['time_machine']->load_snapshot(); }
+    public function test_fs_api() { $this->handlers['time_machine']->test_fs_api(); }
 
     // ── Appeal handlers ──
 
