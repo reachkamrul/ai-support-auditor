@@ -290,8 +290,10 @@ class Manager {
                 break;
 
             case 'flagged':
+                // Render All Audits with flag filter pre-applied
+                $_GET['flag_status'] = 'needs_review';
                 $this->render_page_header('Flagged Tickets', 'Tickets that need your attention');
-                $this->pages['flagged_tickets']->render();
+                $this->pages['all_audits']->render();
                 break;
 
             case 'agents':

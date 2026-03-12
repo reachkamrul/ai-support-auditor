@@ -43,6 +43,12 @@ class AllAudits {
         $filter_search = isset($_GET['audit_search']) ? sanitize_text_field($_GET['audit_search']) : (isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '');
         $filter_team = AccessControl::get_selected_team_id();
         $filter_review = isset($_GET['review_status']) ? sanitize_text_field($_GET['review_status']) : '';
+        $filter_flag = isset($_GET['flag_status']) ? sanitize_text_field($_GET['flag_status']) : '';
+
+        // Handle flagged ticket actions (reviewed/dismissed)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['flagged_action'])) {
+            $this->handle_flagged_action();
+        }
 
         // Team filtering — build ticket_id subquery
         $team_join = '';
@@ -84,28 +90,38 @@ class AllAudits {
             $review_where = " AND ar.id IS NULL";
         }
 
+        // Flag filter
+        $flag_join = '';
+        $flag_where = '';
+        if ($filter_flag) {
+            $flag_join = " INNER JOIN {$wpdb->prefix}ais_flagged_tickets ft ON a.id = ft.audit_id";
+            $flag_where = $wpdb->prepare(" AND ft.status = %s", $filter_flag);
+        }
+
         $count_sql = "SELECT COUNT(DISTINCT a.ticket_id) FROM {$wpdb->prefix}ais_audits a
             INNER JOIN (
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            {$team_join}{$review_join}
-            {$where}{$team_where}{$review_where}";
+            {$team_join}{$review_join}{$flag_join}
+            {$where}{$team_where}{$review_where}{$flag_where}";
 
         $total = $params ? $wpdb->get_var($wpdb->prepare($count_sql, $params)) : $wpdb->get_var($count_sql);
         $total_pages = max(1, ceil($total / $this->per_page));
 
-        // Data query — include review data
+        // Data query — include review data + flag data
         $data_sql = "SELECT DISTINCT a.*, ar.reviewer_email, ar.review_status as reviewed_status,
-                        ar.reviewed_at, ar_agent.first_name as reviewer_name
+                        ar.reviewed_at, ar_agent.first_name as reviewer_name,
+                        ft2.id as flag_id, ft2.flag_type, ft2.flag_details, ft2.status as flag_status
                      FROM {$wpdb->prefix}ais_audits a
             INNER JOIN (
                 SELECT ticket_id, MAX(id) as max_id
                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
             ) b ON a.ticket_id = b.ticket_id AND a.id = b.max_id
-            {$team_join}{$review_join}
+            {$team_join}{$review_join}{$flag_join}
             LEFT JOIN {$wpdb->prefix}ais_agents ar_agent ON ar.reviewer_email = ar_agent.email
-            {$where}{$team_where}{$review_where}
+            LEFT JOIN {$wpdb->prefix}ais_flagged_tickets ft2 ON a.id = ft2.audit_id
+            {$where}{$team_where}{$review_where}{$flag_where}
             ORDER BY a.created_at DESC
             LIMIT %d OFFSET %d";
         $data_params = array_merge($params, [$this->per_page, $offset]);
@@ -138,6 +154,15 @@ class AllAudits {
                             <option value="">All</option>
                             <option value="unreviewed" <?php selected($filter_review, 'unreviewed'); ?>>Unreviewed</option>
                             <option value="reviewed" <?php selected($filter_review, 'reviewed'); ?>>Reviewed</option>
+                        </select>
+                    </div>
+                    <div class="audit-filter-group narrow">
+                        <label>Flagged</label>
+                        <select name="flag_status" class="ops-input">
+                            <option value="">All</option>
+                            <option value="needs_review" <?php selected($filter_flag, 'needs_review'); ?>>Needs Review</option>
+                            <option value="reviewed" <?php selected($filter_flag, 'reviewed'); ?>>Reviewed</option>
+                            <option value="dismissed" <?php selected($filter_flag, 'dismissed'); ?>>Dismissed</option>
                         </select>
                     </div>
                     <?php $all_teams = AccessControl::get_all_teams(); if (!empty($all_teams)): ?>
@@ -179,20 +204,23 @@ class AllAudits {
                         <th width="100">Status</th>
                         <th width="80">Score</th>
                         <th width="110">Reviewed</th>
+                        <?php if ($filter_flag): ?>
+                        <th width="120">Flag</th>
+                        <?php endif; ?>
                         <th>Summary</th>
-                        <th width="180" style="text-align:right">Actions</th>
+                        <th width="<?php echo $filter_flag ? '240' : '180'; ?>" style="text-align:right">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="audit-rows">
                     <?php if (empty($results)): ?>
                         <tr>
-                            <td colspan="<?php echo AccessControl::is_admin() ? 8 : 7; ?>" class="empty-audits">
+                            <td colspan="<?php echo (AccessControl::is_admin() ? 8 : 7) + ($filter_flag ? 1 : 0); ?>" class="empty-audits">
                                 <p class="empty-audits-text">No audits found. Audits will appear here once tickets are processed.</p>
                             </td>
                         </tr>
                     <?php else:
                         foreach ($results as $row) {
-                            $this->render_row($row);
+                            $this->render_row($row, $filter_flag);
                         }
                     endif; ?>
                 </tbody>
@@ -209,6 +237,7 @@ class AllAudits {
                     if ($filter_search) $base_url .= '&audit_search=' . urlencode($filter_search);
                     if ($filter_team) $base_url .= '&filter_team=' . intval($filter_team);
                     if ($filter_review) $base_url .= '&review_status=' . urlencode($filter_review);
+                    if ($filter_flag) $base_url .= '&flag_status=' . urlencode($filter_flag);
 
                     if ($page > 1): ?>
                         <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;">&laquo; Prev</a>
@@ -232,6 +261,8 @@ class AllAudits {
             </div>
             <?php endif; ?>
         </div>
+
+        <?php $this->render_pending_appeals(); ?>
 
         <div id="audit-modal" class="audit-modal">
             <div class="audit-modal-content">
@@ -534,7 +565,7 @@ class AllAudits {
         return sprintf('In queue — %s audit, next run ~%s', $type_label, $next_time);
     }
 
-    private function render_row($row) {
+    private function render_row($row, $filter_flag = '') {
         $j = !empty($row->audit_response) ? $row->audit_response : $row->raw_json;
 
         if (empty($j) || $j === 'null') {
@@ -590,18 +621,155 @@ class AllAudits {
             $checkbox = "<td><input type='checkbox' class='audit-select' value='{$audit_id}' data-ticket='{$row->ticket_id}'></td>";
         }
 
+        // Flag column
+        $flag_col = '';
+        if ($filter_flag && !empty($row->flag_type)) {
+            $flag_map = [
+                'low_score'       => ['Low Score',   'failed'],
+                'problem_context' => ['Problem',     'warning'],
+                'long_delay'      => ['Long Delay',  'pending'],
+            ];
+            $fi = $flag_map[$row->flag_type] ?? ['Flag', 'pending'];
+            $flag_col = "<td><span class='status-badge {$fi[1]}'>{$fi[0]}</span></td>";
+        } elseif ($filter_flag) {
+            $flag_col = "<td>—</td>";
+        }
+
+        // Flag action buttons
+        $flag_actions = '';
+        if ($filter_flag && !empty($row->flag_id) && $row->flag_status === 'needs_review') {
+            $nonce = wp_create_nonce('flagged_action_' . intval($row->flag_id));
+            $flag_actions = "
+                <form method='post' style='display:inline;'>
+                    <input type='hidden' name='_wpnonce' value='{$nonce}'>
+                    <input type='hidden' name='flagged_action' value='review'>
+                    <input type='hidden' name='flag_id' value='" . intval($row->flag_id) . "'>
+                    <button type='submit' class='ops-btn primary' style='font-size:11px;height:28px;padding:0 8px;'>Reviewed</button>
+                </form>
+                <form method='post' style='display:inline;'>
+                    <input type='hidden' name='_wpnonce' value='{$nonce}'>
+                    <input type='hidden' name='flagged_action' value='dismiss'>
+                    <input type='hidden' name='flag_id' value='" . intval($row->flag_id) . "'>
+                    <button type='submit' class='ops-btn secondary' style='font-size:11px;height:28px;padding:0 8px;'>Dismiss</button>
+                </form>";
+        }
+
         echo "<tr id='row-{$row->ticket_id}'>
             {$checkbox}
             <td style='font-weight:600;color:var(--color-text-primary);'>#{$row->ticket_id}</td>
             <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span></td>
             <td style='text-align:center;'><span class='col-score {$score_class}'>{$score_display}</span>{$sentiment_badge}</td>
             <td style='text-align:center;'>{$review_badge}</td>
+            {$flag_col}
             <td class='col-summary'>" . esc_html(substr($sum, 0, 100)) . "...<textarea id='json-{$row->ticket_id}' class='json-storage' style='display:none'>" . esc_textarea($j) . "</textarea></td>
             <td style='text-align:right;padding-right:16px;'>
                 <button class='ops-btn secondary btn-view' data-id='{$row->ticket_id}' data-audit-id='{$audit_id}'>View</button>
-                <button class='ops-btn primary btn-force' data-id='{$row->ticket_id}'>Re-Audit</button>
+                " . ($filter_flag ? '' : "<button class='ops-btn primary btn-force' data-id='{$row->ticket_id}'>Re-Audit</button>") . "
+                {$flag_actions}
             </td>
         </tr>";
+    }
+
+    private function handle_flagged_action() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_flagged_tickets';
+
+        $flag_id = intval($_POST['flag_id'] ?? 0);
+        $action  = sanitize_text_field($_POST['flagged_action']);
+
+        if (!$flag_id || !wp_verify_nonce($_POST['_wpnonce'] ?? '', 'flagged_action_' . $flag_id)) {
+            return;
+        }
+
+        if ($action === 'review') {
+            $wpdb->update($table, [
+                'status'      => 'reviewed',
+                'reviewed_at' => current_time('mysql'),
+            ], ['id' => $flag_id]);
+        } elseif ($action === 'dismiss') {
+            $wpdb->update($table, [
+                'status'      => 'dismissed',
+                'reviewed_at' => current_time('mysql'),
+            ], ['id' => $flag_id]);
+        }
+    }
+
+    private function render_pending_appeals() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_audit_appeals';
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) return;
+
+        $team_filter = AccessControl::sql_agent_filter('a.agent_email');
+        $appeals = $wpdb->get_results(
+            "SELECT a.*, ae.agent_name, ae.overall_agent_score, ae.timing_score, ae.resolution_score, ae.communication_score
+             FROM {$table} a
+             LEFT JOIN {$wpdb->prefix}ais_agent_evaluations ae ON a.eval_id = ae.id
+             WHERE a.status = 'pending' {$team_filter}
+             ORDER BY a.created_at ASC"
+        );
+
+        if (empty($appeals)) return;
+        ?>
+        <div class="ops-card" style="margin-top:24px;">
+            <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">
+                Pending Agent Appeals
+                <span class="ops-nav-badge" style="margin-left:8px;"><?php echo count($appeals); ?></span>
+            </h3>
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Ticket</th>
+                        <th>Disputed</th>
+                        <th>Current Score</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th style="width:200px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($appeals as $ap): ?>
+                    <tr id="appeal-row-<?php echo intval($ap->id); ?>">
+                        <td><strong><?php echo esc_html($ap->agent_name ?: $ap->agent_email); ?></strong></td>
+                        <td>#<?php echo esc_html($ap->ticket_id); ?></td>
+                        <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
+                        <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j', strtotime($ap->created_at)); ?></td>
+                        <td>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">
+                                <button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
+                                <button class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <script>
+        function resolveAppeal(id, status) {
+            var notes = document.getElementById('appeal-note-' + id).value;
+            jQuery.post(ajaxurl, {
+                action: 'ai_audit_resolve_appeal',
+                _ajax_nonce: '<?php echo wp_create_nonce('ais_appeal_nonce'); ?>',
+                appeal_id: id,
+                status: status,
+                resolution_notes: notes
+            }, function(res) {
+                if (res.success) {
+                    var row = document.getElementById('appeal-row-' + id);
+                    row.style.background = status === 'approved' ? '#dcfce7' : '#fee2e2';
+                    row.querySelector('td:last-child').innerHTML = '<span class="status-badge ' + (status === 'approved' ? 'success' : 'failed') + '">' + status + '</span>';
+                } else {
+                    alert(res.data || 'Error');
+                }
+            });
+        }
+        </script>
+        <?php
     }
 
     private function render_scripts() {
@@ -1444,20 +1612,7 @@ class AllAudits {
                 });
             }
 
-            // ---- Auto-open modal from URL param (e.g. from Flagged page) ----
-            var urlParams = new URLSearchParams(window.location.search);
-            var autoOpen = urlParams.get('auto_open');
-            if (autoOpen) {
-                function tryAutoOpen(attempts) {
-                    var $btn = jQuery('.btn-view[data-id="' + autoOpen + '"]');
-                    if ($btn.length) {
-                        $btn.first().trigger('click');
-                    } else if (attempts < 10) {
-                        setTimeout(function() { tryAutoOpen(attempts + 1); }, 200);
-                    }
-                }
-                setTimeout(function() { tryAutoOpen(0); }, 500);
-            }
+
         });
         </script>
         <?php
