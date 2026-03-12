@@ -450,6 +450,113 @@ class TimeMachineHandler {
     }
 
     /**
+     * Fetch agents from FluentSupport API (for selection UI)
+     */
+    public function fetch_fs_agents() {
+        check_ajax_referer('ai_ops_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $base_url = get_option('ai_audit_fs_api_url', '');
+        $user     = get_option('ai_audit_fs_api_user', '');
+        $pass     = get_option('ai_audit_fs_api_pass', '');
+
+        if (!$base_url || !$user || !$pass) {
+            wp_send_json_error('FluentSupport API not connected. Go to API Config to set it up.');
+        }
+
+        $result = $this->fs_api_get($base_url, $user, $pass, '/agents', ['per_page' => 100]);
+
+        if ($result === null) {
+            wp_send_json_error('Failed to fetch agents from FluentSupport.');
+        }
+
+        $agents_list = $result['agents']['data'] ?? $result['data'] ?? $result['agents'] ?? $result;
+
+        if (!is_array($agents_list)) {
+            wp_send_json_error('Unexpected response format from FluentSupport.');
+        }
+
+        // Clean up the data we send to the frontend
+        $agents = [];
+        foreach ($agents_list as $agent) {
+            if (!is_array($agent)) continue;
+            $email = sanitize_email($agent['email'] ?? '');
+            if (!$email) continue;
+            $agents[] = [
+                'id'         => intval($agent['id'] ?? 0),
+                'first_name' => sanitize_text_field($agent['first_name'] ?? ''),
+                'last_name'  => sanitize_text_field($agent['last_name'] ?? ''),
+                'email'      => $email,
+                'title'      => sanitize_text_field($agent['title'] ?? $agent['designation'] ?? ''),
+                'avatar'     => esc_url_raw($agent['avatar'] ?? $agent['photo'] ?? ''),
+            ];
+        }
+
+        // Get existing emails for comparison
+        global $wpdb;
+        $existing = $wpdb->get_col("SELECT email FROM {$wpdb->prefix}ais_agents");
+
+        wp_send_json_success([
+            'agents'          => $agents,
+            'existing_emails' => $existing,
+        ]);
+    }
+
+    /**
+     * Import selected agents from FluentSupport
+     */
+    public function import_fs_agents() {
+        check_ajax_referer('ai_ops_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $raw = wp_unslash($_POST['agents'] ?? '');
+        $agents = json_decode($raw, true);
+
+        if (!is_array($agents) || empty($agents)) {
+            wp_send_json_error('No agents selected.');
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'ais_agents';
+        $imported = 0;
+
+        foreach ($agents as $agent) {
+            $email = sanitize_email($agent['email'] ?? '');
+            if (!$email) continue;
+
+            // Skip if already exists
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$table} WHERE email = %s", $email
+            ));
+            if ($exists) continue;
+
+            $wpdb->insert($table, [
+                'first_name'      => sanitize_text_field($agent['first_name'] ?? ''),
+                'last_name'       => sanitize_text_field($agent['last_name'] ?? ''),
+                'email'           => $email,
+                'title'           => sanitize_text_field($agent['title'] ?? '') ?: null,
+                'role'            => 'agent',
+                'fluent_agent_id' => intval($agent['id'] ?? 0) ?: null,
+                'avatar_url'      => esc_url_raw($agent['avatar'] ?? '') ?: null,
+                'is_active'       => 1,
+                'last_synced'     => current_time('mysql'),
+            ]);
+            $imported++;
+        }
+
+        wp_send_json_success([
+            'imported' => $imported,
+            'message'  => "{$imported} agent" . ($imported !== 1 ? 's' : '') . " imported successfully.",
+        ]);
+    }
+
+    /**
      * Make a GET request to the FluentSupport REST API
      */
     private function fs_api_get($base_url, $user, $pass, $endpoint, $params = []) {

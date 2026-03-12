@@ -388,17 +388,24 @@ class Agents {
                         Manage your support team members and their information
                     </p>
                 </div>
-                <div class="agents-stats">
-                    <div class="agent-stat">
-                        <span class="agent-stat-label">Total agents</span>
-                        <span class="agent-stat-value"><?php echo count($agents); ?></span>
+                <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+                    <div class="agents-stats">
+                        <div class="agent-stat">
+                            <span class="agent-stat-label">Total agents</span>
+                            <span class="agent-stat-value"><?php echo count($agents); ?></span>
+                        </div>
+                        <div class="agent-stat">
+                            <span class="agent-stat-label">Active</span>
+                            <span class="agent-stat-value" style="color: var(--color-success);">
+                                <?php echo count(array_filter($agents, function($a) { return $a->is_active; })); ?>
+                            </span>
+                        </div>
                     </div>
-                    <div class="agent-stat">
-                        <span class="agent-stat-label">Active</span>
-                        <span class="agent-stat-value" style="color: var(--color-success);">
-                            <?php echo count(array_filter($agents, function($a) { return $a->is_active; })); ?>
-                        </span>
-                    </div>
+                    <?php if (AccessControl::is_admin() && get_option('ai_audit_fs_api_connected')): ?>
+                    <button type="button" class="ops-btn secondary" id="sync-agents-btn" onclick="syncAgentsFromFS()" style="height:36px;white-space:nowrap;">
+                        Sync from FluentSupport
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -489,9 +496,160 @@ class Agents {
             </table>
             <?php endif; ?>
         </div>
+
+        <?php if (AccessControl::is_admin() && get_option('ai_audit_fs_api_connected')): ?>
+        <!-- Import modal -->
+        <div id="fs-import-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+            <div style="background:var(--color-bg);border-radius:var(--radius-lg);max-width:700px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="padding:20px 24px;border-bottom:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h3 style="margin:0;font-size:16px;">Import Agents from FluentSupport</h3>
+                        <p id="fs-import-subtitle" style="margin:4px 0 0;font-size:12px;color:var(--color-text-tertiary);">Loading agents...</p>
+                    </div>
+                    <button onclick="closeImportModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--color-text-tertiary);padding:4px 8px;">&times;</button>
+                </div>
+                <div id="fs-import-body" style="padding:20px 24px;overflow-y:auto;flex:1;">
+                    <div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">Loading...</div>
+                </div>
+                <div id="fs-import-footer" style="display:none;padding:16px 24px;border-top:1px solid var(--color-border);display:flex;gap:12px;align-items:center;">
+                    <button class="ops-btn primary" id="fs-do-import" onclick="importSelectedAgents()">Import Selected</button>
+                    <button class="ops-btn secondary" onclick="closeImportModal()">Cancel</button>
+                    <span id="fs-import-status" style="font-size:12px;margin-left:auto;"></span>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        var fsAgentsData = [];
+
+        function syncAgentsFromFS() {
+            document.getElementById('fs-import-overlay').style.display = 'flex';
+            document.getElementById('fs-import-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">Loading agents from FluentSupport...</div>';
+            document.getElementById('fs-import-footer').style.display = 'none';
+            document.getElementById('fs-import-subtitle').textContent = 'Loading agents...';
+
+            jQuery.post(ajaxurl, {
+                action: 'ai_ops_fetch_fs_agents',
+                nonce: '<?php echo wp_create_nonce('ai_ops_nonce'); ?>'
+            }, function(res) {
+                if (res.success) {
+                    fsAgentsData = res.data.agents;
+                    renderImportList(res.data.agents, res.data.existing_emails);
+                } else {
+                    document.getElementById('fs-import-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--color-error);">' + (res.data || 'Failed to fetch agents') + '</div>';
+                }
+            }).fail(function() {
+                document.getElementById('fs-import-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--color-error);">Request failed</div>';
+            });
+        }
+
+        function renderImportList(agents, existingEmails) {
+            if (!agents.length) {
+                document.getElementById('fs-import-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">No agents found in FluentSupport.</div>';
+                return;
+            }
+
+            var newCount = 0;
+            var html = '<div style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">' +
+                '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
+                '<input type="checkbox" id="fs-select-all" onchange="toggleAllFS(this.checked)" style="width:16px;height:16px;accent-color:var(--color-primary);"> Select all new' +
+                '</label></div>';
+
+            html += '<table class="audit-table" style="margin:0;"><thead><tr>' +
+                '<th style="width:40px;"></th><th>Name</th><th>Email</th><th>Fluent ID</th><th>Status</th>' +
+                '</tr></thead><tbody>';
+
+            for (var i = 0; i < agents.length; i++) {
+                var a = agents[i];
+                var exists = existingEmails.indexOf(a.email) > -1;
+                var name = (a.first_name || '') + ' ' + (a.last_name || '');
+                if (!exists) newCount++;
+
+                html += '<tr style="' + (exists ? 'opacity:0.5;' : '') + '">' +
+                    '<td><input type="checkbox" class="fs-agent-check" data-idx="' + i + '" ' +
+                    (exists ? 'disabled title="Already imported"' : '') +
+                    ' style="width:16px;height:16px;accent-color:var(--color-primary);"></td>' +
+                    '<td style="font-weight:500;">' + escHtml(name.trim()) + '</td>' +
+                    '<td style="font-family:monospace;font-size:12px;">' + escHtml(a.email || '') + '</td>' +
+                    '<td><span style="font-family:monospace;font-size:12px;">#' + (a.id || '-') + '</span></td>' +
+                    '<td>' + (exists ?
+                        '<span class="status-badge">Already imported</span>' :
+                        '<span class="status-badge success">New</span>') +
+                    '</td></tr>';
+            }
+            html += '</tbody></table>';
+
+            document.getElementById('fs-import-body').innerHTML = html;
+            document.getElementById('fs-import-subtitle').textContent = agents.length + ' agents found, ' + newCount + ' new';
+            document.getElementById('fs-import-footer').style.display = 'flex';
+            document.getElementById('fs-import-status').textContent = '';
+            updateImportBtnCount();
+        }
+
+        function toggleAllFS(checked) {
+            var boxes = document.querySelectorAll('.fs-agent-check:not(:disabled)');
+            for (var i = 0; i < boxes.length; i++) boxes[i].checked = checked;
+            updateImportBtnCount();
+        }
+
+        function updateImportBtnCount() {
+            var checked = document.querySelectorAll('.fs-agent-check:checked').length;
+            document.getElementById('fs-do-import').textContent = 'Import Selected (' + checked + ')';
+            document.getElementById('fs-do-import').disabled = checked === 0;
+        }
+
+        // Attach change listener for checkboxes
+        jQuery(document).on('change', '.fs-agent-check', updateImportBtnCount);
+
+        function importSelectedAgents() {
+            var checked = document.querySelectorAll('.fs-agent-check:checked');
+            if (!checked.length) return;
+
+            var selected = [];
+            for (var i = 0; i < checked.length; i++) {
+                selected.push(fsAgentsData[parseInt(checked[i].dataset.idx)]);
+            }
+
+            var btn = document.getElementById('fs-do-import');
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+            document.getElementById('fs-import-status').textContent = '';
+
+            jQuery.post(ajaxurl, {
+                action: 'ai_ops_import_fs_agents',
+                nonce: '<?php echo wp_create_nonce('ai_ops_nonce'); ?>',
+                agents: JSON.stringify(selected)
+            }, function(res) {
+                if (res.success) {
+                    document.getElementById('fs-import-status').innerHTML = '<span style="color:var(--color-success);">' + res.data.message + '</span>';
+                    btn.textContent = 'Done!';
+                    setTimeout(function() { location.reload(); }, 1200);
+                } else {
+                    document.getElementById('fs-import-status').innerHTML = '<span style="color:var(--color-error);">' + (res.data || 'Import failed') + '</span>';
+                    btn.textContent = 'Import Selected';
+                    btn.disabled = false;
+                }
+            }).fail(function() {
+                btn.textContent = 'Import Selected';
+                btn.disabled = false;
+            });
+        }
+
+        function closeImportModal() {
+            document.getElementById('fs-import-overlay').style.display = 'none';
+        }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+        </script>
+        <?php endif; ?>
+
         <?php
     }
-    
+
     private function render_form($agents) {
         ?>
         <style>

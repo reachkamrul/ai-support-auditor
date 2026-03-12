@@ -146,6 +146,8 @@ class Plugin {
         // Time Machine AJAX handlers
         add_action('wp_ajax_ai_ops_time_machine', [$this->ajax, 'time_machine_load']);
         add_action('wp_ajax_ai_ops_test_fs_api', [$this->ajax, 'test_fs_api']);
+        add_action('wp_ajax_ai_ops_fetch_fs_agents', [$this->ajax, 'fetch_fs_agents']);
+        add_action('wp_ajax_ai_ops_import_fs_agents', [$this->ajax, 'import_fs_agents']);
 
         // Appeal AJAX handlers
         add_action('wp_ajax_ai_audit_submit_appeal', [$this->ajax, 'submit_appeal']);

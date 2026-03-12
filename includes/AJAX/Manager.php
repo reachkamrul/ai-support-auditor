@@ -135,6 +135,8 @@ class Manager {
 
     public function time_machine_load() { $this->handlers['time_machine']->load_snapshot(); }
     public function test_fs_api() { $this->handlers['time_machine']->test_fs_api(); }
+    public function fetch_fs_agents() { $this->handlers['time_machine']->fetch_fs_agents(); }
+    public function import_fs_agents() { $this->handlers['time_machine']->import_fs_agents(); }
 
     // ── Appeal handlers ──
 
