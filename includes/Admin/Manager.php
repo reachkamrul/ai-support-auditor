@@ -56,6 +56,17 @@ class Manager {
     ];
 
     /**
+     * Conditionally add reset nav item if AUDIT_RESET is enabled
+     */
+    private function maybe_add_reset_nav() {
+        if (Pages\Reset::is_enabled()) {
+            $this->nav_sections['DANGER ZONE'] = [
+                'reset' => ['label' => 'Reset Database', 'icon' => 'alert-triangle'],
+            ];
+        }
+    }
+
+    /**
      * Map old tab= params to new section= params for backward compatibility
      */
     private $tab_to_section = [
@@ -72,6 +83,7 @@ class Manager {
 
     public function __construct(DatabaseManager $database) {
         $this->database = $database;
+        $this->maybe_add_reset_nav();
         $this->init_pages();
         $this->register_hooks();
     }
@@ -101,6 +113,7 @@ class Manager {
             'faq_topics'       => new Pages\FaqTopics($this->database),
             'audit_queue'      => new Pages\AuditQueue($this->database),
             'time_machine'     => new Pages\TimeMachine($this->database),
+            'reset'            => new Pages\Reset($this->database),
         ];
     }
 
@@ -380,6 +393,11 @@ class Manager {
             case 'api-config':
                 $this->render_page_header('API Config', 'Security tokens and endpoint reference');
                 $this->pages['api_config']->render();
+                break;
+
+            case 'reset':
+                $this->render_page_header('Reset Database', 'Drop all plugin tables and options');
+                $this->pages['reset']->render();
                 break;
 
             default:

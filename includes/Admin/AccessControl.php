@@ -29,6 +29,7 @@ class AccessControl {
         'live-audit',
         'api-config',
         'audit-queue',
+        'reset',
     ];
 
     /**
