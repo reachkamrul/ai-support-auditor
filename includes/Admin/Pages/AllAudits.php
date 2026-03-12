@@ -161,10 +161,20 @@ class AllAudits {
                 </form>
             </div>
 
+            <?php if (AccessControl::is_admin()): ?>
+            <div id="bulk-actions-bar" style="display:none;padding:10px 20px;background:var(--color-bg-subtle);border-bottom:1px solid var(--color-border);align-items:center;gap:12px;">
+                <span id="selected-count" style="font-size:13px;color:var(--color-text-secondary);">0 selected</span>
+                <button id="btn-bulk-delete" class="ops-btn" style="background:#dc3545;border-color:#dc3545;color:#fff;height:28px;font-size:11px;padding:0 12px;">Delete Selected</button>
+            </div>
+            <?php endif; ?>
+
             <div class="audit-table-wrapper">
             <table class="audit-table">
                 <thead>
                     <tr>
+                        <?php if (AccessControl::is_admin()): ?>
+                        <th width="30"><input type="checkbox" id="select-all-audits" title="Select all"></th>
+                        <?php endif; ?>
                         <th width="80">ID</th>
                         <th width="100">Status</th>
                         <th width="80">Score</th>
@@ -176,7 +186,7 @@ class AllAudits {
                 <tbody id="audit-rows">
                     <?php if (empty($results)): ?>
                         <tr>
-                            <td colspan="6" class="empty-audits">
+                            <td colspan="<?php echo AccessControl::is_admin() ? 8 : 7; ?>" class="empty-audits">
                                 <p class="empty-audits-text">No audits found. Audits will appear here once tickets are processed.</p>
                             </td>
                         </tr>
@@ -575,7 +585,13 @@ class AllAudits {
 
         $audit_id = intval($row->id);
 
+        $checkbox = '';
+        if (AccessControl::is_admin()) {
+            $checkbox = "<td><input type='checkbox' class='audit-select' value='{$audit_id}' data-ticket='{$row->ticket_id}'></td>";
+        }
+
         echo "<tr id='row-{$row->ticket_id}'>
+            {$checkbox}
             <td style='font-weight:600;color:var(--color-text-primary);'>#{$row->ticket_id}</td>
             <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span></td>
             <td style='text-align:center;'><span class='col-score {$score_class}'>{$score_display}</span>{$sentiment_badge}</td>
@@ -993,7 +1009,13 @@ class AllAudits {
                         $('#modal-title').text('Audit Report — Ticket #' + ticketId);
                         // Show View Ticket link
                         if (ticketId) {
-                            $('#btn-view-ticket').attr('href', '<?php echo admin_url('admin.php?page=fluent-support#/tickets/'); ?>' + ticketId + '/view').show();
+                            <?php
+                            $live_settings = LiveAuditSettings::get_settings();
+                            $fs_base = !empty($live_settings['fluent_support_url'])
+                                ? rtrim($live_settings['fluent_support_url'], '/') . '/admin.php?page=fluent-support#/tickets/'
+                                : admin_url('admin.php?page=fluent-support#/tickets/');
+                            ?>
+                            $('#btn-view-ticket').attr('href', '<?php echo esc_js($fs_base); ?>' + ticketId + '/view').show();
                         }
 
                         // Load existing review data
@@ -1359,6 +1381,83 @@ class AllAudits {
                     }
                 });
             };
+
+            // ---- Bulk delete (admin only) ----
+            if (isAdmin) {
+                function updateBulkBar() {
+                    var count = $('.audit-select:checked').length;
+                    if (count > 0) {
+                        $('#bulk-actions-bar').css('display', 'flex');
+                        $('#selected-count').text(count + ' selected');
+                    } else {
+                        $('#bulk-actions-bar').hide();
+                    }
+                }
+
+                $(document).on('change', '#select-all-audits', function() {
+                    $('.audit-select').prop('checked', this.checked);
+                    updateBulkBar();
+                });
+
+                $(document).on('change', '.audit-select', function() {
+                    if (!this.checked) $('#select-all-audits').prop('checked', false);
+                    updateBulkBar();
+                });
+
+                $(document).on('click', '#btn-bulk-delete', function() {
+                    var ids = [];
+                    var ticketIds = [];
+                    $('.audit-select:checked').each(function() {
+                        ids.push($(this).val());
+                        ticketIds.push($(this).data('ticket'));
+                    });
+                    if (!ids.length) return;
+
+                    if (!confirm('Are you sure you want to delete ' + ids.length + ' audit(s)?\n\nThis will permanently remove all related data including agent scores, reviews, overrides, and flagged entries.\n\nTicket IDs: ' + ticketIds.join(', '))) {
+                        return;
+                    }
+
+                    var $btn = $(this);
+                    $btn.prop('disabled', true).text('Deleting...');
+
+                    $.post(ajaxurl, {
+                        action: 'ai_audit_delete',
+                        nonce: '<?php echo wp_create_nonce("ai_ops_nonce"); ?>',
+                        audit_ids: ids
+                    }, function(res) {
+                        if (res.success) {
+                            // Remove rows from table
+                            (res.data.ticket_ids || []).forEach(function(tid) {
+                                $('#row-' + tid).fadeOut(300, function() { $(this).remove(); });
+                            });
+                            $('#select-all-audits').prop('checked', false);
+                            updateBulkBar();
+                            alert(res.data.message);
+                        } else {
+                            alert('Error: ' + (res.data || 'Unknown error'));
+                        }
+                        $btn.prop('disabled', false).text('Delete Selected');
+                    }).fail(function() {
+                        alert('Request failed');
+                        $btn.prop('disabled', false).text('Delete Selected');
+                    });
+                });
+            }
+
+            // ---- Auto-open modal from URL param (e.g. from Flagged page) ----
+            var urlParams = new URLSearchParams(window.location.search);
+            var autoOpen = urlParams.get('auto_open');
+            if (autoOpen) {
+                function tryAutoOpen(attempts) {
+                    var $btn = jQuery('.btn-view[data-id="' + autoOpen + '"]');
+                    if ($btn.length) {
+                        $btn.first().trigger('click');
+                    } else if (attempts < 10) {
+                        setTimeout(function() { tryAutoOpen(attempts + 1); }, 200);
+                    }
+                }
+                setTimeout(function() { tryAutoOpen(0); }, 500);
+            }
         });
         </script>
         <?php

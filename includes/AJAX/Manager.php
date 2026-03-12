@@ -117,6 +117,7 @@ class Manager {
     public function request_override() { $this->handlers['review']->request_override(); }
     public function resolve_override_request() { $this->handlers['review']->resolve_override_request(); }
     public function get_override_requests() { $this->handlers['review']->get_override_requests(); }
+    public function delete_audit() { $this->handlers['review']->delete_audit(); }
 
     // ── Knowledge Base handlers ──
 
@@ -156,8 +157,9 @@ class Manager {
         }
 
         $n8n_url = get_option('ai_audit_n8n_url', 'https://team.junior.ninja');
-        $webhook_path = '/webhook/6d2250a7-1f9f-4c0b-b002-9ae1a95b2437';
-        $webhook_url = rtrim($n8n_url, '/') . $webhook_path;
+        $live_settings = \SupportOps\Admin\Pages\LiveAuditSettings::get_settings();
+        $webhook_uuid = $live_settings['n8n_webhook_path'] ?: '0076dfb2-1ffb-4f68-8b65-cc6af87f04a6';
+        $webhook_url = rtrim($n8n_url, '/') . '/webhook/' . $webhook_uuid;
 
         $response = wp_remote_post($webhook_url, [
             'timeout' => 10,

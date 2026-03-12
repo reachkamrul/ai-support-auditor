@@ -34,9 +34,12 @@ class TranscriptBuilder {
      */
     private function load_known_agents() {
         global $wpdb;
-        $this->known_agents = $wpdb->get_col(
-            "SELECT email FROM {$this->database->get_table('agents')}"
-        );
+        $table = $this->database->get_table('agents');
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            $this->known_agents = [];
+            return;
+        }
+        $this->known_agents = $wpdb->get_col("SELECT email FROM {$table}");
     }
     
     /**
@@ -124,6 +127,10 @@ class TranscriptBuilder {
         });
         
         foreach ($responses as $response) {
+            // Skip bot workflow auto-replies
+            if (!empty($response->source) && $response->source === 'fluent_bot_workflow') {
+                continue;
+            }
             $timeline .= $this->format_response($response, $ticket);
         }
         

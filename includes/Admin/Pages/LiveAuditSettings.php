@@ -40,6 +40,9 @@ class LiveAuditSettings {
             'trigger_mode' => 'every_reply',    // 'every_reply' | 'first_and_close' | 'every_nth'
             'milestone_interval' => 3,           // For 'every_nth' mode
             'min_interval_minutes' => 15,        // Throttle: min minutes between audits per ticket
+            'n8n_webhook_path' => '',            // Collector webhook path (UUID only)
+            'n8n_batch_webhook_path' => '',      // Batch workflow force-trigger webhook path (UUID only)
+            'fluent_support_url' => '',          // FluentSupport admin URL (e.g. https://support.wpmanageninja.com/wp-admin/)
             'updated_at' => null,
         ];
     }
@@ -84,6 +87,9 @@ class LiveAuditSettings {
 
         $settings['milestone_interval'] = max(2, min(20, intval($post_data['milestone_interval'] ?? 3)));
         $settings['min_interval_minutes'] = max(5, min(120, intval($post_data['min_interval_minutes'] ?? 15)));
+        $settings['n8n_webhook_path'] = sanitize_text_field($post_data['n8n_webhook_path'] ?? '');
+        $settings['n8n_batch_webhook_path'] = sanitize_text_field($post_data['n8n_batch_webhook_path'] ?? '');
+        $settings['fluent_support_url'] = esc_url_raw($post_data['fluent_support_url'] ?? '');
         $settings['updated_at'] = current_time('mysql');
 
         update_option(self::OPTION_KEY, $settings);
@@ -400,9 +406,10 @@ class LiveAuditSettings {
     }
 
     private function render_webhook_setup() {
+        $settings = self::get_settings();
         $n8n_url = get_option('ai_audit_n8n_url', 'https://team.junior.ninja');
-        $webhook_path = '/webhook/6d2250a7-1f9f-4c0b-b002-9ae1a95b2437';
-        $webhook_url = rtrim($n8n_url, '/') . $webhook_path;
+        $webhook_uuid = $settings['n8n_webhook_path'] ?: '0076dfb2-1ffb-4f68-8b65-cc6af87f04a6';
+        $webhook_url = rtrim($n8n_url, '/') . '/webhook/' . $webhook_uuid;
 
         $webhook_status = \SupportOps\Services\LiveAuditTrigger::get_webhook_status();
         $has_closed = !empty($webhook_status['ticket_closed']);
@@ -455,6 +462,35 @@ MUCODE;
                 FluentSupport must send webhooks to N8N so that live audits can be triggered.
                 Follow these steps on your <strong>FluentSupport server</strong>.
             </p>
+
+            <div style="padding:14px 16px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:16px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">N8N Collector Webhook UUID</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <code style="font-size:12px;color:var(--color-text-tertiary);white-space:nowrap;"><?php echo esc_html(rtrim($n8n_url, '/')); ?>/webhook/</code>
+                    <input type="text" name="n8n_webhook_path" class="ops-input" value="<?php echo esc_attr($webhook_uuid); ?>"
+                        style="flex:1;font-family:monospace;font-size:12px;" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <small style="color:var(--color-text-tertiary);font-size:11px;">Copy the UUID from your N8N Collector workflow's Webhook trigger node.</small>
+            </div>
+
+            <div style="padding:14px 16px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:16px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">N8N Batch Workflow Force-Trigger UUID</label>
+                <?php $batch_uuid = $settings['n8n_batch_webhook_path'] ?: '7394145a-6afd-4386-ae70-21b012cf904f'; ?>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <code style="font-size:12px;color:var(--color-text-tertiary);white-space:nowrap;"><?php echo esc_html(rtrim($n8n_url, '/')); ?>/webhook/</code>
+                    <input type="text" name="n8n_batch_webhook_path" class="ops-input" value="<?php echo esc_attr($batch_uuid); ?>"
+                        style="flex:1;font-family:monospace;font-size:12px;" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <small style="color:var(--color-text-tertiary);font-size:11px;">Copy the UUID from your N8N Batch workflow's Force Webhook trigger node. Used to immediately trigger batch processing.</small>
+            </div>
+
+            <div style="padding:14px 16px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:16px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">FluentSupport Admin URL</label>
+                <?php $fs_url = $settings['fluent_support_url'] ?: ''; ?>
+                <input type="url" name="fluent_support_url" class="ops-input" value="<?php echo esc_attr($fs_url); ?>"
+                    style="width:100%;font-family:monospace;font-size:12px;" placeholder="https://support.wpmanageninja.com/wp-admin/">
+                <small style="color:var(--color-text-tertiary);font-size:11px;">Base wp-admin URL of the FluentSupport server. Used for "View Ticket" links. Leave empty to use this site's admin URL.</small>
+            </div>
 
             <!-- Step 1: Ticket Closed (native workflow) -->
             <div class="la-setup-step">

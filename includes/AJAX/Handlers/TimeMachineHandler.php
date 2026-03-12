@@ -467,7 +467,12 @@ class TimeMachineHandler {
             wp_send_json_error('FluentSupport API not connected. Go to API Config to set it up.');
         }
 
-        $result = $this->fs_api_get($base_url, $user, $pass, '/agents', ['per_page' => 100]);
+        $result = $this->fs_api_request($base_url, $user, $pass, '/agents', ['per_page' => 100]);
+
+        if (is_string($result)) {
+            // Error message returned
+            wp_send_json_error($result);
+        }
 
         if ($result === null) {
             wp_send_json_error('Failed to fetch agents from FluentSupport.');
@@ -497,7 +502,10 @@ class TimeMachineHandler {
 
         // Get existing emails for comparison
         global $wpdb;
-        $existing = $wpdb->get_col("SELECT email FROM {$wpdb->prefix}ais_agents");
+        $table = $wpdb->prefix . 'ais_agents';
+        $existing = ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") === $table)
+            ? $wpdb->get_col("SELECT email FROM {$table}")
+            : [];
 
         wp_send_json_success([
             'agents'          => $agents,
@@ -524,6 +532,12 @@ class TimeMachineHandler {
 
         global $wpdb;
         $table = $wpdb->prefix . 'ais_agents';
+
+        // Auto-create table if missing (fresh install)
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            $this->database->setup();
+        }
+
         $imported = 0;
 
         foreach ($agents as $agent) {
@@ -557,21 +571,59 @@ class TimeMachineHandler {
     }
 
     /**
-     * Make a GET request to the FluentSupport REST API
+     * Build a local-bypass URL and headers for same-server FluentSupport requests.
+     *
+     * If the FS API target resolves to the same server (localhost), rewrite the URL
+     * to http://127.0.0.1 with a Host header so we skip Cloudflare entirely.
      */
-    private function fs_api_get($base_url, $user, $pass, $endpoint, $params = []) {
+    private function build_fs_request($base_url, $user, $pass, $endpoint, $params = []) {
         $url = rtrim($base_url, '/') . '/wp-json/fluent-support/v2' . $endpoint;
 
         if (!empty($params)) {
             $url = add_query_arg($params, $url);
         }
 
-        $response = wp_remote_get($url, [
-            'timeout' => 15,
-            'headers' => [
-                'Authorization' => 'Basic ' . base64_encode($user . ':' . $pass),
-                'Accept'        => 'application/json',
-            ],
+        $parsed = wp_parse_url($base_url);
+        $host   = $parsed['host'] ?? '';
+
+        $headers = [
+            'Authorization' => 'Basic ' . base64_encode($user . ':' . $pass),
+            'Accept'        => 'application/json',
+            'User-Agent'    => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        ];
+
+        // Check if the target host resolves to this server — bypass Cloudflare via localhost
+        $is_local = false;
+        if ($host && $host !== 'localhost') {
+            $local_ips = ['127.0.0.1', '::1'];
+            $server_ip = gethostbyname(gethostname());
+            if ($server_ip) {
+                $local_ips[] = $server_ip;
+            }
+            $resolved = gethostbyname($host);
+            $is_local = in_array($resolved, $local_ips, true);
+        } elseif ($host === 'localhost') {
+            $is_local = true;
+        }
+
+        if ($is_local && $host) {
+            // Rewrite URL to go through localhost, add Host header to bypass Cloudflare
+            $url = str_replace($parsed['scheme'] . '://' . $host, 'http://127.0.0.1', $url);
+            $headers['Host'] = $host;
+        }
+
+        return ['url' => $url, 'headers' => $headers];
+    }
+
+    /**
+     * Make a GET request to the FluentSupport REST API
+     */
+    private function fs_api_get($base_url, $user, $pass, $endpoint, $params = []) {
+        $req = $this->build_fs_request($base_url, $user, $pass, $endpoint, $params);
+
+        $response = wp_remote_get($req['url'], [
+            'timeout'   => 15,
+            'headers'   => $req['headers'],
             'sslverify' => false,
         ]);
 
@@ -582,6 +634,38 @@ class TimeMachineHandler {
         $code = wp_remote_retrieve_response_code($response);
         if ($code < 200 || $code >= 300) {
             return null;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        return json_decode($body, true);
+    }
+
+    /**
+     * Make a GET request with detailed error reporting (for user-facing actions)
+     *
+     * @return array|string|null Array on success, error string on failure, null on unknown
+     */
+    private function fs_api_request($base_url, $user, $pass, $endpoint, $params = []) {
+        $req = $this->build_fs_request($base_url, $user, $pass, $endpoint, $params);
+
+        $response = wp_remote_get($req['url'], [
+            'timeout'   => 30,
+            'headers'   => $req['headers'],
+            'sslverify' => false,
+        ]);
+
+        if (is_wp_error($response)) {
+            return 'Connection error: ' . $response->get_error_message();
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+
+        if ($code === 401 || $code === 403) {
+            return 'Authentication failed (HTTP ' . $code . '). Check your API credentials in API Config.';
+        }
+
+        if ($code < 200 || $code >= 300) {
+            return 'FluentSupport returned HTTP ' . $code . '. URL: ' . $base_url;
         }
 
         $body = wp_remote_retrieve_body($response);

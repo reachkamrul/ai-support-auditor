@@ -184,7 +184,7 @@ class FlaggedTickets {
                             <td style="color:var(--color-text-tertiary);font-size:12px;"><?php echo date('M j, H:i', strtotime($f->created_at)); ?></td>
                             <td>
                                 <div style="display:flex;gap:4px;">
-                                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&search=' . $f->ticket_id); ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" title="View Audit">View</a>
+                                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&search=' . $f->ticket_id . '&auto_open=' . $f->ticket_id); ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" title="View Audit">View</a>
                                     <?php if ($f->status === 'needs_review'): ?>
                                         <form method="post" style="display:inline;">
                                             <?php wp_nonce_field('flagged_action_' . $f->id); ?>

@@ -140,7 +140,9 @@ class LiveAuditTrigger {
      */
     private function notify_n8n_processor() {
         $n8n_url = get_option('ai_audit_n8n_url', 'https://team.junior.ninja');
-        $webhook_url = rtrim($n8n_url, '/') . '/webhook/force-audit';
+        $live_settings = \SupportOps\Admin\Pages\LiveAuditSettings::get_settings();
+        $batch_uuid = $live_settings['n8n_batch_webhook_path'] ?: '7394145a-6afd-4386-ae70-21b012cf904f';
+        $webhook_url = rtrim($n8n_url, '/') . '/webhook/' . $batch_uuid;
 
         wp_remote_post($webhook_url, [
             'timeout'  => 2,

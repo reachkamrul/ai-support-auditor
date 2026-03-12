@@ -411,4 +411,105 @@ class AuditReviewHandler {
 
         wp_send_json_success(['requests' => $requests]);
     }
+
+    /**
+     * Delete audit(s) and all related data (admin only)
+     */
+    public function delete_audit() {
+        check_ajax_referer('ai_ops_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Only administrators can delete audits');
+        }
+
+        global $wpdb;
+
+        $audit_ids = isset($_POST['audit_ids']) ? array_map('intval', (array) $_POST['audit_ids']) : [];
+        $audit_ids = array_filter($audit_ids, function($id) { return $id > 0; });
+
+        if (empty($audit_ids)) {
+            wp_send_json_error('No audit IDs provided');
+        }
+
+        $placeholders = implode(',', array_fill(0, count($audit_ids), '%d'));
+
+        // Get ticket_ids for these audits (needed for cleaning related tables)
+        $audit_table = $this->database->get_table('audits');
+        $audits = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, ticket_id FROM {$audit_table} WHERE id IN ({$placeholders})",
+            ...$audit_ids
+        ));
+
+        if (empty($audits)) {
+            wp_send_json_error('No audits found');
+        }
+
+        $ticket_ids = array_unique(array_column($audits, 'ticket_id'));
+        $found_audit_ids = array_column($audits, 'id');
+
+        $audit_ph = implode(',', array_fill(0, count($found_audit_ids), '%d'));
+        $ticket_ph = implode(',', array_fill(0, count($ticket_ids), '%s'));
+
+        // Delete from all related tables
+        // 1. Agent evaluations
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('agent_evaluations')} WHERE ticket_id IN ({$ticket_ph})",
+            ...$ticket_ids
+        ));
+
+        // 2. Agent contributions
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('agent_contributions')} WHERE ticket_id IN ({$ticket_ph})",
+            ...$ticket_ids
+        ));
+
+        // 3. Problem contexts
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('problem_contexts')} WHERE ticket_id IN ({$ticket_ph})",
+            ...$ticket_ids
+        ));
+
+        // 4. Audit reviews
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('audit_reviews')} WHERE audit_id IN ({$audit_ph})",
+            ...$found_audit_ids
+        ));
+
+        // 5. Score overrides
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('score_overrides')} WHERE audit_id IN ({$audit_ph})",
+            ...$found_audit_ids
+        ));
+
+        // 6. Override requests
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('override_requests')} WHERE audit_id IN ({$audit_ph})",
+            ...$found_audit_ids
+        ));
+
+        // 7. Audit appeals
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('audit_appeals')} WHERE audit_id IN ({$audit_ph})",
+            ...$found_audit_ids
+        ));
+
+        // 8. Flagged tickets
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$this->database->get_table('flagged_tickets')} WHERE ticket_id IN ({$ticket_ph})",
+            ...$ticket_ids
+        ));
+
+        // 9. Delete ALL audit records for these ticket_ids (including older versions)
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$audit_table} WHERE ticket_id IN ({$ticket_ph})",
+            ...$ticket_ids
+        ));
+
+        $count = count($found_audit_ids);
+        wp_send_json_success([
+            'message' => $count . ' audit(s) and all related data deleted',
+            'deleted_ids' => $found_audit_ids,
+            'ticket_ids' => $ticket_ids,
+        ]);
+    }
 }

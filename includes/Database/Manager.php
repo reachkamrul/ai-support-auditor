@@ -401,9 +401,10 @@ class Manager {
         // Auto-create new tables if missing (flagged_tickets, teams, etc.)
         $this->ensure_new_tables();
         
-        // Check version and run setup if needed
-        $current_version = get_option('ai_audit_db_version', '22.1');
-        if (version_compare($current_version, '10.0', '<')) {
+        // Run setup if core tables are missing (fresh install) or version mismatch
+        $core_table = $wpdb->prefix . 'ais_agents';
+        $core_exists = $wpdb->get_var("SHOW TABLES LIKE '{$core_table}'") === $core_table;
+        if (!$core_exists) {
             $this->setup();
         }
     }
