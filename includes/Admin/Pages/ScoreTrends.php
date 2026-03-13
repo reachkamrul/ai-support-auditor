@@ -47,7 +47,7 @@ class ScoreTrends {
                     ROUND(AVG(ae.communication_score), 1) as avg_communication,
                     COUNT(DISTINCT ae.ticket_id) as tickets
              FROM {$wpdb->prefix}ais_agent_evaluations ae
-             WHERE DATE(ae.created_at) >= %s {$team_filter}
+             WHERE DATE(ae.created_at) >= %s AND ae.exclude_from_stats = 0 {$team_filter}
              GROUP BY DATE(ae.created_at)
              ORDER BY day ASC",
             $date_from
@@ -63,7 +63,7 @@ class ScoreTrends {
                         ROUND(AVG(ae.resolution_score), 1) as avg_resolution,
                         ROUND(AVG(ae.communication_score), 1) as avg_communication
                  FROM {$wpdb->prefix}ais_agent_evaluations ae
-                 WHERE ae.agent_email = %s AND DATE(ae.created_at) >= %s
+                 WHERE ae.agent_email = %s AND DATE(ae.created_at) >= %s AND ae.exclude_from_stats = 0
                  GROUP BY DATE(ae.created_at)
                  ORDER BY day ASC",
                 $selected_agent, $date_from
@@ -104,7 +104,7 @@ class ScoreTrends {
                  FROM {$wpdb->prefix}ais_agent_evaluations ae
                  INNER JOIN {$wpdb->prefix}ais_team_members tm ON ae.agent_email = tm.agent_email
                  INNER JOIN {$wpdb->prefix}ais_teams t ON tm.team_id = t.id
-                 WHERE DATE(ae.created_at) >= %s
+                 WHERE DATE(ae.created_at) >= %s AND ae.exclude_from_stats = 0
                  GROUP BY YEARWEEK(ae.created_at, 1), t.id, t.name
                  ORDER BY week_start ASC",
                 $date_from

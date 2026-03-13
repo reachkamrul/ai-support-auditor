@@ -19,16 +19,19 @@ class EvaluationSaver {
     
     public function save($ticket_id, $audit_data) {
         global $wpdb;
-        
+
         if (empty($audit_data['agent_evaluations']) || !is_array($audit_data['agent_evaluations'])) {
             return;
         }
-        
+
         $evaluations_table = $this->database->get_table('agent_evaluations');
-        
+
+        // Get exclude_from_stats from audit summary (AI decides)
+        $exclude_from_stats = !empty($audit_data['audit_summary']['exclude_from_stats']) ? 1 : 0;
+
         // Delete old evaluations
         $wpdb->delete($evaluations_table, ['ticket_id' => $ticket_id]);
-        
+
         // Insert new evaluations
         foreach ($audit_data['agent_evaluations'] as $eval) {
             $agent_email = sanitize_email($eval['agent_email'] ?? '');
@@ -68,9 +71,10 @@ class EvaluationSaver {
                 'key_achievements' => !empty($eval['key_achievements']) 
                     ? json_encode($eval['key_achievements'], JSON_UNESCAPED_UNICODE) 
                     : null,
-                'areas_for_improvement' => !empty($eval['areas_for_improvement']) 
-                    ? json_encode($eval['areas_for_improvement'], JSON_UNESCAPED_UNICODE) 
+                'areas_for_improvement' => !empty($eval['areas_for_improvement'])
+                    ? json_encode($eval['areas_for_improvement'], JSON_UNESCAPED_UNICODE)
                     : null,
+                'exclude_from_stats' => $exclude_from_stats,
                 'created_at' => current_time('mysql')
             ]);
         }

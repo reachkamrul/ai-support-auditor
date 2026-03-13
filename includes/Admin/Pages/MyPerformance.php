@@ -47,7 +47,7 @@ class MyPerformance {
                     ROUND(AVG(communication_score), 1) as avg_communication,
                     SUM(reply_count) as total_replies
              FROM {$wpdb->prefix}ais_agent_evaluations
-             WHERE agent_email = %s AND DATE(created_at) >= %s",
+             WHERE agent_email = %s AND DATE(created_at) >= %s AND exclude_from_stats = 0",
             $agent_email, $date_from
         ));
 
@@ -59,7 +59,7 @@ class MyPerformance {
                     ROUND(AVG(resolution_score), 1) as avg_resolution,
                     ROUND(AVG(communication_score), 1) as avg_communication
              FROM {$wpdb->prefix}ais_agent_evaluations
-             WHERE agent_email = %s AND DATE(created_at) BETWEEN %s AND %s",
+             WHERE agent_email = %s AND DATE(created_at) BETWEEN %s AND %s AND exclude_from_stats = 0",
             $agent_email, $prev_from, $date_from
         ));
 
@@ -69,7 +69,7 @@ class MyPerformance {
                     ROUND(AVG(overall_agent_score), 1) as avg_score,
                     COUNT(DISTINCT ticket_id) as tickets
              FROM {$wpdb->prefix}ais_agent_evaluations
-             WHERE agent_email = %s AND DATE(created_at) >= %s
+             WHERE agent_email = %s AND DATE(created_at) >= %s AND exclude_from_stats = 0
              GROUP BY DATE(created_at) ORDER BY day ASC",
             $agent_email, $date_from
         ));
@@ -78,7 +78,7 @@ class MyPerformance {
         $team_avg = $wpdb->get_var($wpdb->prepare(
             "SELECT ROUND(AVG(overall_agent_score), 1)
              FROM {$wpdb->prefix}ais_agent_evaluations
-             WHERE DATE(created_at) >= %s",
+             WHERE DATE(created_at) >= %s AND exclude_from_stats = 0",
             $date_from
         ));
 

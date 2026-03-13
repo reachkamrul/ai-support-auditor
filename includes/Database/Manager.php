@@ -60,6 +60,8 @@ class Manager {
             audit_type varchar(20) DEFAULT 'full',
             processing_started_at datetime DEFAULT NULL,
             processing_duration_seconds int DEFAULT NULL,
+            exclude_from_stats tinyint(1) DEFAULT 0,
+            exclude_reason varchar(100) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY ticket_id (ticket_id),
@@ -160,6 +162,7 @@ class Manager {
             response_breakdown longtext,
             key_achievements longtext,
             areas_for_improvement longtext,
+            exclude_from_stats tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY ticket_id (ticket_id),
@@ -465,6 +468,16 @@ class Manager {
             $wpdb->query("ALTER TABLE $table ADD COLUMN audit_type varchar(20) DEFAULT 'full'");
         }
 
+        // Add exclude_from_stats columns
+        $col_efs = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'exclude_from_stats'");
+        if (empty($col_efs)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN exclude_from_stats tinyint(1) DEFAULT 0");
+        }
+        $col_er = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'exclude_reason'");
+        if (empty($col_er)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN exclude_reason varchar(100) DEFAULT NULL");
+        }
+
         // Add queue management columns
         $col_psa = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'processing_started_at'");
         if (empty($col_psa)) {
@@ -542,6 +555,12 @@ class Manager {
         $col3 = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'handoff_score'");
         if (empty($col3)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN handoff_score int(4) DEFAULT NULL AFTER communication_score");
+        }
+
+        // Add exclude_from_stats column
+        $col_efs = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'exclude_from_stats'");
+        if (empty($col_efs)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN exclude_from_stats tinyint(1) DEFAULT 0");
         }
     }
 

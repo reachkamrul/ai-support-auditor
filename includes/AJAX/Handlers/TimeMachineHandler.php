@@ -81,7 +81,7 @@ class TimeMachineHandler {
 
         $avg_audit = $wpdb->get_var($wpdb->prepare(
             "SELECT ROUND(AVG(a.overall_score), 1) FROM {$p}ais_audits a
-             WHERE a.status = 'success' AND DATE(a.created_at) BETWEEN %s AND %s {$ticket_filter}",
+             WHERE a.status = 'success' AND a.exclude_from_stats = 0 AND DATE(a.created_at) BETWEEN %s AND %s {$ticket_filter}",
             $date_from, $date_to
         ));
 
@@ -91,7 +91,7 @@ class TimeMachineHandler {
                     ROUND(AVG(ae.overall_agent_score), 1) as avg_score,
                     COUNT(DISTINCT ae.agent_email) as active_agents
              FROM {$p}ais_agent_evaluations ae
-             WHERE DATE(ae.created_at) BETWEEN %s AND %s {$team_filter}",
+             WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0 {$team_filter}",
             $date_from, $date_to
         ));
 
@@ -129,7 +129,7 @@ class TimeMachineHandler {
                     ROUND(AVG(ae.communication_score), 1) as avg_communication,
                     SUM(ae.reply_count) as total_replies
              FROM {$p}ais_agent_evaluations ae
-             WHERE DATE(ae.created_at) BETWEEN %s AND %s {$team_filter}
+             WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0 {$team_filter}
              GROUP BY ae.agent_email, ae.agent_name
              ORDER BY avg_overall DESC",
             $date_from, $date_to
@@ -223,7 +223,7 @@ class TimeMachineHandler {
                     COUNT(*) as audits,
                     ROUND(AVG(a.overall_score), 1) as avg_score
              FROM {$p}ais_audits a
-             WHERE a.status = 'success' AND DATE(a.created_at) BETWEEN %s AND %s {$ticket_filter}
+             WHERE a.status = 'success' AND a.exclude_from_stats = 0 AND DATE(a.created_at) BETWEEN %s AND %s {$ticket_filter}
              GROUP BY DATE(a.created_at)
              ORDER BY day ASC",
             $date_from, $date_to

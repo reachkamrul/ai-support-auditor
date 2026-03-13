@@ -40,7 +40,7 @@ class AgentEndpoint {
                 ROUND(AVG(ae.resolution_score), 1) as avg_resolution_score,
                 ROUND(AVG(ae.communication_score), 1) as avg_communication_score
             FROM {$wpdb->prefix}ais_agent_evaluations ae
-            WHERE DATE(ae.created_at) BETWEEN %s AND %s
+            WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0
             GROUP BY ae.agent_email, ae.agent_name
             ORDER BY avg_overall_score DESC
             LIMIT %d OFFSET %d
@@ -84,7 +84,7 @@ class AgentEndpoint {
                 COUNT(DISTINCT ae.ticket_id) as total_tickets,
                 ROUND(AVG(ae.overall_agent_score), 1) as avg_overall_score
             FROM {$wpdb->prefix}ais_agent_evaluations ae
-            WHERE ae.agent_email = %s AND DATE(ae.created_at) BETWEEN %s AND %s
+            WHERE ae.agent_email = %s AND DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0
             GROUP BY ae.agent_email, ae.agent_name
         ", $agent_email, $date_from, $date_to));
         

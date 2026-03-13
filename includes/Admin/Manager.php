@@ -588,7 +588,7 @@ class Manager {
                 ROUND(AVG(resolution_score), 1) as avg_resolution_score,
                 ROUND(AVG(communication_score), 1) as avg_communication_score
             FROM {$wpdb->prefix}ais_agent_evaluations
-            WHERE DATE(created_at) BETWEEN %s AND %s
+            WHERE DATE(created_at) BETWEEN %s AND %s AND exclude_from_stats = 0
             GROUP BY agent_email, agent_name
             ORDER BY avg_overall_score DESC
         ", $date_from, $date_to));

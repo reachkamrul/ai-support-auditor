@@ -46,10 +46,10 @@ class Dashboard {
         ));
 
         $avg_score_30  = $wpdb->get_var($wpdb->prepare(
-            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) >= %s{$ticket_filter}", $thirty_ago
+            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND exclude_from_stats = 0 AND DATE(created_at) >= %s{$ticket_filter}", $thirty_ago
         ));
         $avg_score_prev = $wpdb->get_var($wpdb->prepare(
-            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND DATE(created_at) BETWEEN %s AND %s{$ticket_filter}", $sixty_ago, $thirty_ago
+            "SELECT ROUND(AVG(overall_score),1) FROM {$wpdb->prefix}ais_audits WHERE status='success' AND exclude_from_stats = 0 AND DATE(created_at) BETWEEN %s AND %s{$ticket_filter}", $sixty_ago, $thirty_ago
         ));
 
         $active_agents = (int) $wpdb->get_var($wpdb->prepare(

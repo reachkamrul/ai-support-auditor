@@ -330,6 +330,12 @@ class AuditEndpoint {
                             $update_data['audit_response'] = json_encode($audit, JSON_UNESCAPED_UNICODE);
                         }
 
+                        // Extract exclude_from_stats from AI response
+                        $exclude = !empty($audit['audit_summary']['exclude_from_stats']) ? 1 : 0;
+                        $exclude_reason = sanitize_text_field($audit['audit_summary']['exclude_reason'] ?? '');
+                        $update_data['exclude_from_stats'] = $exclude;
+                        $update_data['exclude_reason'] = $exclude_reason;
+
                         // Detect audit type from pending record
                         $pending_record = $wpdb->get_row($wpdb->prepare(
                             "SELECT audit_type, last_response_count FROM {$wpdb->prefix}ais_audits
@@ -866,10 +872,6 @@ class AuditEndpoint {
             return;
         }
 
-        $settings = get_option('ai_audit_flag_settings', []);
-        $score_threshold  = intval($settings['score_threshold'] ?? 40);
-        $timing_threshold = intval($settings['timing_threshold'] ?? -30);
-
         // Get audit_id for linking
         $audit_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}ais_audits WHERE ticket_id = %d ORDER BY id DESC LIMIT 1",
@@ -879,50 +881,53 @@ class AuditEndpoint {
         // Remove old flags for this ticket (re-audit = fresh flags)
         $wpdb->delete($table, ['ticket_id' => $ticket_id]);
 
-        // Flag 1: Low score
-        if ($score < $score_threshold) {
-            $wpdb->insert($table, [
-                'ticket_id'    => $ticket_id,
-                'audit_id'     => $audit_id,
-                'flag_type'    => 'low_score',
-                'flag_details' => json_encode(['score' => $score, 'threshold' => $score_threshold]),
-                'created_at'   => current_time('mysql'),
-            ]);
+        // Defense in depth: Skip if no agent evaluations (0 agent replies)
+        $agent_evals = $audit['agent_evaluations'] ?? [];
+        if (empty($agent_evals)) {
+            return;
         }
 
-        // Flag 2: Problem context (Critical or High severity)
-        foreach ($audit['problem_contexts'] ?? [] as $pc) {
-            if (in_array($pc['severity'] ?? '', ['Critical', 'High'])) {
+        // PRIMARY: AI-recommended flag — the AI is the judge
+        if (!empty($audit['flag_recommendation'])) {
+            $flag_rec = $audit['flag_recommendation'];
+            if (($flag_rec['should_flag'] ?? false) === true) {
                 $wpdb->insert($table, [
                     'ticket_id'    => $ticket_id,
                     'audit_id'     => $audit_id,
-                    'flag_type'    => 'problem_context',
+                    'flag_type'    => 'ai_recommended',
                     'flag_details' => json_encode([
-                        'severity'    => $pc['severity'],
-                        'category'    => $pc['category'] ?? '',
-                        'description' => substr($pc['issue_description'] ?? '', 0, 200),
+                        'reason'   => substr($flag_rec['reason'] ?? '', 0, 500),
+                        'severity' => $flag_rec['severity'] ?? 'Medium',
+                        'category' => $flag_rec['category'] ?? 'general',
                     ]),
                     'created_at'   => current_time('mysql'),
                 ]);
-                break; // One flag per type
             }
         }
 
-        // Flag 3: Long delay
-        foreach ($audit['agent_evaluations'] ?? [] as $ev) {
-            if (intval($ev['timing_score'] ?? 0) < $timing_threshold) {
-                $wpdb->insert($table, [
-                    'ticket_id'    => $ticket_id,
-                    'audit_id'     => $audit_id,
-                    'flag_type'    => 'long_delay',
-                    'flag_details' => json_encode([
-                        'agent_name'   => $ev['agent_name'] ?? '',
-                        'agent_email'  => $ev['agent_email'] ?? '',
-                        'timing_score' => $ev['timing_score'],
-                    ]),
-                    'created_at'   => current_time('mysql'),
-                ]);
-                break; // One flag per type
+        // FALLBACK: Flag Critical problem_contexts even if AI didn't explicitly flag
+        // (defense in depth — Critical issues should never be missed)
+        foreach ($audit['problem_contexts'] ?? [] as $pc) {
+            if (($pc['severity'] ?? '') === 'Critical') {
+                // Check if AI already flagged this ticket
+                $already_flagged = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$table} WHERE ticket_id = %d",
+                    $ticket_id
+                ));
+                if (!$already_flagged) {
+                    $wpdb->insert($table, [
+                        'ticket_id'    => $ticket_id,
+                        'audit_id'     => $audit_id,
+                        'flag_type'    => 'problem_context',
+                        'flag_details' => json_encode([
+                            'severity'    => 'Critical',
+                            'category'    => $pc['category'] ?? '',
+                            'description' => substr($pc['issue_description'] ?? '', 0, 200),
+                        ]),
+                        'created_at'   => current_time('mysql'),
+                    ]);
+                }
+                break;
             }
         }
     }

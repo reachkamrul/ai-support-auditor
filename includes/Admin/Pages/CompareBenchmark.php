@@ -291,7 +291,7 @@ class CompareBenchmark {
              FROM {$wpdb->prefix}ais_teams t
              INNER JOIN {$wpdb->prefix}ais_team_members tm ON t.id = tm.team_id
              INNER JOIN {$wpdb->prefix}ais_agent_evaluations ae ON tm.agent_email = ae.agent_email
-             WHERE DATE(ae.created_at) >= %s
+             WHERE DATE(ae.created_at) >= %s AND ae.exclude_from_stats = 0
              GROUP BY t.id, t.name, t.color
              ORDER BY avg_score DESC",
             $date_from
@@ -402,7 +402,7 @@ class CompareBenchmark {
                     COUNT(DISTINCT ae.agent_email) as active_agents,
                     SUM(ae.reply_count) as total_replies
              FROM {$wpdb->prefix}ais_agent_evaluations ae
-             WHERE DATE(ae.created_at) BETWEEN %s AND %s {$team_filter}",
+             WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0 {$team_filter}",
             $current_from, $current_to
         ));
 
@@ -415,7 +415,7 @@ class CompareBenchmark {
                     COUNT(DISTINCT ae.agent_email) as active_agents,
                     SUM(ae.reply_count) as total_replies
              FROM {$wpdb->prefix}ais_agent_evaluations ae
-             WHERE DATE(ae.created_at) BETWEEN %s AND %s {$team_filter}",
+             WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0 {$team_filter}",
             $prev_from, $prev_to
         ));
 
@@ -426,13 +426,13 @@ class CompareBenchmark {
              FROM (
                  SELECT agent_email, agent_name, AVG(overall_agent_score) as avg_score
                  FROM {$wpdb->prefix}ais_agent_evaluations
-                 WHERE DATE(created_at) BETWEEN %s AND %s {$team_filter}
+                 WHERE DATE(created_at) BETWEEN %s AND %s AND exclude_from_stats = 0 {$team_filter}
                  GROUP BY agent_email, agent_name
              ) cur
              INNER JOIN (
                  SELECT agent_email, AVG(overall_agent_score) as avg_score
                  FROM {$wpdb->prefix}ais_agent_evaluations
-                 WHERE DATE(created_at) BETWEEN %s AND %s {$team_filter}
+                 WHERE DATE(created_at) BETWEEN %s AND %s AND exclude_from_stats = 0 {$team_filter}
                  GROUP BY agent_email
              ) prev ON cur.agent_email = prev.agent_email
              ORDER BY improvement DESC
@@ -530,7 +530,7 @@ class CompareBenchmark {
                     COUNT(DISTINCT ticket_id) as total_tickets,
                     SUM(reply_count) as total_replies
              FROM {$wpdb->prefix}ais_agent_evaluations
-             WHERE agent_email = %s AND DATE(created_at) >= %s
+             WHERE agent_email = %s AND DATE(created_at) >= %s AND exclude_from_stats = 0
              HAVING COUNT(*) > 0",
             $email, $date_from
         ));

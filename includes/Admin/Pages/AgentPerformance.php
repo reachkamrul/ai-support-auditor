@@ -46,9 +46,9 @@ class AgentPerformance {
                 ROUND(AVG(ae.communication_score), 1) as avg_communication_score,
                 SUM(ae.reply_count) as total_replies
             FROM {$wpdb->prefix}ais_agent_evaluations ae
-            WHERE DATE(ae.created_at) BETWEEN %s AND %s
+            WHERE DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0
         ";
-        
+
         $params = [$date_from, $date_to];
 
         // Team filtering
@@ -601,7 +601,7 @@ class AgentPerformance {
                 ROUND(AVG(ae.contribution_percentage), 1) as avg_contribution_percentage,
                 SUM(ae.reply_count) as total_replies
             FROM {$wpdb->prefix}ais_agent_evaluations ae
-            WHERE ae.agent_email = %s AND DATE(ae.created_at) BETWEEN %s AND %s
+            WHERE ae.agent_email = %s AND DATE(ae.created_at) BETWEEN %s AND %s AND ae.exclude_from_stats = 0
             GROUP BY ae.agent_email, ae.agent_name
         ", $agent_email, $date_from, $date_to));
         
@@ -928,65 +928,23 @@ class AgentPerformance {
                 <?php $this->render_insights_tab($latest_insights, $summary); ?>
             <?php endif; ?>
             
-            <!-- Audit Modal -->
-            <div id="audit-modal" class="audit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9999; backdrop-filter: blur(4px);">
-                <div class="audit-modal-content" style="background: var(--color-bg); width: 90%; max-width: 900px; max-height: 90vh; margin: 5vh auto; border-radius: var(--radius-lg); padding: 0; box-shadow: var(--shadow-lg); overflow: hidden; display: flex; flex-direction: column;">
-                    <div class="audit-modal-header" style="padding: 24px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; background: var(--color-bg-subtle);">
-                        <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--color-text-primary);">Audit Details</h2>
-                        <span class="close-modal" style="cursor: pointer; font-size: 24px; font-weight: 300; line-height: 1; color: var(--color-text-tertiary); transition: color 0.2s ease;">&times;</span>
-                    </div>
-                    <div id="modal-body" class="json-viewer" style="background: var(--color-bg-subtle); padding: var(--space-md); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; word-wrap: break-word; max-height: 60vh; overflow-y: auto; flex: 1; margin: 24px;"></div>
-                </div>
-            </div>
-            
+            <?php AuditModal::render_modal_html(); ?>
+
             <script>
             jQuery(document).ready(function($){
-                window.auditDataStore = window.auditDataStore || {};
-                
-                // Store audit data
+                <?php AuditModal::render_modal_js(); ?>
+
+                // Store audit data for modal
                 <?php foreach ($audit_data as $ticket_id => $data): ?>
                 window.auditDataStore['<?php echo esc_js($ticket_id); ?>'] = <?php echo json_encode($data); ?>;
                 <?php endforeach; ?>
-                
-                // Handle View Audit button clicks
+
+                // Handle View Audit button clicks — open modal with parsed view
                 $(document).on('click', '.btn-view-audit', function(e){
                     e.preventDefault();
                     var ticketId = $(this).data('id');
-                    var txt = null;
-                    
-                    if(window.auditDataStore && window.auditDataStore[ticketId]) {
-                        txt = window.auditDataStore[ticketId];
-                    }
-                    
-                    if(!txt || txt === '' || txt === 'null') {
-                        $('#modal-body').html('<div style="text-align:center;padding:40px;color:var(--color-text-secondary);">No audit data available yet. The ticket may still be processing.</div>');
-                    } else {
-                        try{ 
-                            var parsed = JSON.parse(txt);
-                            txt = JSON.stringify(parsed, null, 2);
-                            $('#modal-body').text(txt);
-                        } catch(e){ 
-                            $('#modal-body').html('<div style="color:var(--color-error);padding:20px;">Error parsing JSON: ' + e.message + '</div><pre style="margin-top:20px;padding:20px;background:var(--color-bg);border-radius:6px;overflow-x:auto;">' + txt + '</pre>');
-                        }
-                    }
-                    
-                    $('#audit-modal').fadeIn(200);
-                });
-                
-                $('.close-modal').click(function(){ 
-                    $('#audit-modal').fadeOut(); 
-                });
-                
-                $('#audit-modal').click(function(e){
-                    if($(e.target).is('#audit-modal')) {
-                        $(this).fadeOut();
-                    }
-                });
-                
-                $(document).keyup(function(e) {
-                    if (e.key === "Escape") {
-                        $('#audit-modal').fadeOut();
-                    }
+                    var txt = window.auditDataStore[ticketId] || '';
+                    openAuditModal(ticketId, 0, txt);
                 });
             });
             </script>
@@ -1006,8 +964,9 @@ class AgentPerformance {
                 AVG(resolution_score) as avg_resolution,
                 AVG(communication_score) as avg_communication
             FROM {$wpdb->prefix}ais_agent_evaluations
-            WHERE agent_email = %s 
+            WHERE agent_email = %s
             AND DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND exclude_from_stats = 0
             GROUP BY DATE(created_at)
             ORDER BY date ASC
         ", $summary->agent_email));
@@ -1021,6 +980,7 @@ class AgentPerformance {
                 AVG(communication_score) as avg_communication
             FROM {$wpdb->prefix}ais_agent_evaluations
             WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND exclude_from_stats = 0
         "));
         
         // Prepare chart data
