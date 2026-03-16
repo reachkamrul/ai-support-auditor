@@ -159,14 +159,14 @@ class FaqTopics {
                                     ?>
                                     <span class="status-badge <?php echo $badge_class; ?>"><?php echo $count; ?>x</span>
                                 </td>
-                                <td style="color:var(--color-text-secondary);font-size:13px;">
+                                <td style="color:var(--color-text-secondary);font-size:var(--font-size-sm);">
                                     <?php echo $row['last_seen'] ? esc_html(wp_date('M j, Y', strtotime($row['last_seen']))) : '-'; ?>
                                 </td>
                                 <td>
                                     <?php if ($row['has_doc']): ?>
-                                        <span style="color:var(--color-success);font-weight:600;font-size:12px;" title="<?php echo esc_attr($row['has_doc']); ?>">Exists</span>
+                                        <span style="color:var(--color-success);font-weight:600;font-size:var(--font-size-xs);" title="<?php echo esc_attr($row['has_doc']); ?>">Exists</span>
                                     <?php else: ?>
-                                        <span style="color:var(--color-error);font-size:12px;">Missing</span>
+                                        <span style="color:var(--color-error);font-size:var(--font-size-xs);">Missing</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

@@ -159,20 +159,20 @@ class Dashboard {
                 <div class="stat-label">Flagged tickets</div>
                 <div class="stat-value" style="<?php echo $flagged_count > 0 ? 'color:var(--color-error);' : ''; ?>"><?php echo $flagged_count; ?></div>
                 <?php if ($flagged_count > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" style="font-size:12px;">View all &rarr;</a>
+                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=flagged'); ?>" style="font-size:var(--font-size-xs);">View all &rarr;</a>
                 <?php else: ?>
                     <div class="stat-change positive">All clear</div>
                 <?php endif; ?>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Reviews this week</div>
-                <div class="stat-value"><?php echo $reviewed_week; ?><span style="font-size:14px;font-weight:400;color:var(--color-text-tertiary);"> / <?php echo $total_audits_week; ?></span></div>
+                <div class="stat-value"><?php echo $reviewed_week; ?><span style="font-size:var(--font-size-base);font-weight:400;color:var(--color-text-tertiary);"> / <?php echo $total_audits_week; ?></span></div>
                 <?php if ($total_audits_week > 0): ?>
                     <div style="margin-top:6px;">
                         <div style="background:var(--color-border);border-radius:4px;height:6px;overflow:hidden;">
                             <div style="width:<?php echo $review_pct; ?>%;height:100%;border-radius:4px;background:<?php echo $review_pct >= 80 ? 'var(--color-success)' : ($review_pct >= 50 ? 'var(--color-warning)' : 'var(--color-error)'); ?>;"></div>
                         </div>
-                        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px;"><?php echo $review_pct; ?>% reviewed<?php if ($unreviewed_week > 0): ?> &middot; <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&review_status=unreviewed'); ?>" style="font-size:11px;"><?php echo $unreviewed_week; ?> pending</a><?php endif; ?></div>
+                        <div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-top:4px;"><?php echo $review_pct; ?>% reviewed<?php if ($unreviewed_week > 0): ?> &middot; <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&review_status=unreviewed'); ?>" style="font-size:var(--font-size-xs);"><?php echo $unreviewed_week; ?> pending</a><?php endif; ?></div>
                     </div>
                 <?php else: ?>
                     <div class="stat-change">No audits this week</div>
@@ -211,12 +211,12 @@ class Dashboard {
                 $per_page = 10;
                 $total_pages = ceil($orphan_count / $per_page);
             ?>
-                <table class="audit-table" style="font-size:13px;">
+                <table class="audit-table" style="font-size:var(--font-size-sm);">
                     <thead><tr><th>Ticket</th><th>Assigned Agent</th><th>Status</th><th>Orphaned</th><th>Suggested Replacement</th><th></th></tr></thead>
                     <tbody id="orphan-tbody">
                     <?php foreach ($watchdog['orphaned_tickets'] as $i => $o): ?>
                         <tr class="orphan-row" data-page="<?php echo floor($i / $per_page) + 1; ?>" <?php echo $i >= $per_page ? 'style="display:none;"' : ''; ?>>
-                            <td><strong>#<?php echo esc_html($o['ticket_id']); ?></strong><br><span style="font-size:11px;color:var(--color-text-tertiary);"><?php echo esc_html(mb_strimwidth($o['title'], 0, 40, '...')); ?></span></td>
+                            <td><strong>#<?php echo esc_html($o['ticket_id']); ?></strong><br><span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);"><?php echo esc_html(mb_strimwidth($o['title'], 0, 40, '...')); ?></span></td>
                             <td>
                                 <?php echo esc_html($o['assigned_agent_name']); ?>
                                 <span class="badge-offshift">OFF-SHIFT</span>
@@ -227,12 +227,12 @@ class Dashboard {
                                 <?php if ($o['suggested_agent_name']): ?>
                                     <?php echo esc_html($o['suggested_agent_name']); ?>
                                     <span class="badge-onshift">ON-SHIFT</span>
-                                    <br><span style="font-size:10px;color:var(--color-text-tertiary);"><?php echo esc_html($o['suggested_reason']); ?></span>
+                                    <br><span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);"><?php echo esc_html($o['suggested_reason']); ?></span>
                                 <?php else: ?>
                                     <span style="color:var(--color-text-tertiary);">No suggestion</span>
                                 <?php endif; ?>
                             </td>
-                            <td><a href="<?php echo admin_url('admin.php?page=fluent-support#/tickets/' . $o['ticket_id'] . '/view'); ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" target="_blank">Open</a></td>
+                            <td><a href="<?php echo admin_url('admin.php?page=fluent-support#/tickets/' . $o['ticket_id'] . '/view'); ?>" class="ops-btn secondary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;" target="_blank">Open</a></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
@@ -268,7 +268,7 @@ class Dashboard {
                         No tickets need review right now.
                     </div>
                 <?php else: ?>
-                    <table class="audit-table" style="font-size:13px;">
+                    <table class="audit-table" style="font-size:var(--font-size-sm);">
                         <thead><tr><th>Ticket</th><th>Flag</th><th>Score</th><th>Date</th></tr></thead>
                         <tbody>
                         <?php foreach ($flagged_tickets as $ft): ?>
@@ -324,15 +324,15 @@ class Dashboard {
                             elseif ($open_count >= 4) $q_class = 'medium';
                         ?>
                             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--color-bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--color-border);">
-                                <div style="width:32px;height:32px;border-radius:50%;background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--color-primary);">
+                                <div style="width:32px;height:32px;border-radius:50%;background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-size-xs);color:var(--color-primary);">
                                     <?php echo strtoupper(substr($agent->first_name ?: $agent->agent_email, 0, 1)); ?>
                                 </div>
                                 <div>
-                                    <div style="font-weight:600;font-size:13px;">
+                                    <div style="font-weight:600;font-size:var(--font-size-sm);">
                                         <?php echo esc_html(trim(($agent->first_name ?: '') . ' ' . ($agent->last_name ?: '')) ?: $agent->agent_email); ?>
                                         <span class="queue-count <?php echo $q_class; ?>" title="Open tickets"><?php echo $open_count; ?></span>
                                     </div>
-                                    <span class="shift-pill" style="background:<?php echo esc_attr($agent->shift_color ?: '#f1f5f9'); ?>;font-size:10px;padding:2px 6px;margin:0;"><?php echo esc_html($agent->shift_type); ?></span>
+                                    <span class="shift-pill" style="background:<?php echo esc_attr($agent->shift_color ?: '#f1f5f9'); ?>;font-size:var(--font-size-xs);padding:2px 6px;margin:0;"><?php echo esc_html($agent->shift_type); ?></span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -353,7 +353,7 @@ class Dashboard {
                     <div class="ops-empty-state-description">Audits will appear here once tickets are processed by the AI workflow.</div>
                 </div>
             <?php else: ?>
-                <table class="audit-table" style="font-size:13px;">
+                <table class="audit-table" style="font-size:var(--font-size-sm);">
                     <thead>
                         <tr>
                             <th>Ticket ID</th>

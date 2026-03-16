@@ -234,13 +234,13 @@ class Agents {
             }
             
             .agent-stat-label {
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 color: var(--color-text-tertiary);
             }
             
             .agent-stat-value {
-                font-size: 24px;
+                font-size: var(--font-size-2xl);
                 font-weight: 700;
                 color: var(--color-text-primary);
                 line-height: 1.2;
@@ -279,7 +279,7 @@ class Agents {
                 align-items: center;
                 justify-content: center;
                 font-weight: 600;
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 flex-shrink: 0;
                 border: 2px solid var(--color-border);
             }
@@ -293,25 +293,25 @@ class Agents {
             .agent-name {
                 font-weight: 600;
                 color: var(--color-text-primary);
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 line-height: 1.4;
             }
             
             .agent-email-small {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-tertiary);
                 line-height: 1.3;
             }
             
             .agent-title-cell {
                 color: var(--color-text-secondary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 line-height: 1.4;
             }
             
             .agent-email-cell {
                 font-family: var(--font-mono);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-secondary);
             }
             
@@ -322,7 +322,7 @@ class Agents {
                 padding: 4px 10px;
                 background: var(--color-bg-subtle);
                 border-radius: 6px;
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-text-secondary);
                 font-family: var(--font-mono);
@@ -336,7 +336,7 @@ class Agents {
             }
             
             .agent-actions .ops-btn {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 padding: 0 16px;
                 height: 32px;
                 min-width: 80px;
@@ -354,18 +354,18 @@ class Agents {
             }
             
             .empty-state-icon {
-                font-size: 48px;
+                font-size: var(--font-size-2xl);
                 margin-bottom: 16px;
                 opacity: 0.5;
             }
             
             .empty-state-text {
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 margin-bottom: 8px;
             }
             
             .empty-state-subtext {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-tertiary);
             }
             
@@ -384,7 +384,7 @@ class Agents {
             <div class="agents-header">
                 <div>
                     <h3 style="margin: 0 0 4px 0;">Support Team Agents</h3>
-                    <p style="margin: 0; color: var(--color-text-secondary); font-size: 13px;">
+                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
                         Manage your support team members and their information
                     </p>
                 </div>
@@ -487,7 +487,7 @@ class Agents {
                             </a>
                                 </div>
                                 <?php else: ?>
-                                <span style="color:var(--color-text-tertiary);font-size:12px;">View only</span>
+                                <span style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">View only</span>
                                 <?php endif; ?>
                         </td>
                     </tr>
@@ -503,10 +503,10 @@ class Agents {
             <div style="background:var(--color-bg);border-radius:var(--radius-lg);max-width:700px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
                 <div style="padding:20px 24px;border-bottom:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;">
                     <div>
-                        <h3 style="margin:0;font-size:16px;">Import Agents from FluentSupport</h3>
-                        <p id="fs-import-subtitle" style="margin:4px 0 0;font-size:12px;color:var(--color-text-tertiary);">Loading agents...</p>
+                        <h3 style="margin:0;font-size:var(--font-size-md);">Import Agents from FluentSupport</h3>
+                        <p id="fs-import-subtitle" style="margin:4px 0 0;font-size:var(--font-size-xs);color:var(--color-text-tertiary);">Loading agents...</p>
                     </div>
-                    <button onclick="closeImportModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--color-text-tertiary);padding:4px 8px;">&times;</button>
+                    <button onclick="closeImportModal()" style="background:none;border:none;font-size:var(--font-size-xl);cursor:pointer;color:var(--color-text-tertiary);padding:4px 8px;">&times;</button>
                 </div>
                 <div id="fs-import-body" style="padding:20px 24px;overflow-y:auto;flex:1;">
                     <div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">Loading...</div>
@@ -514,7 +514,7 @@ class Agents {
                 <div id="fs-import-footer" style="display:none;padding:16px 24px;border-top:1px solid var(--color-border);display:flex;gap:12px;align-items:center;">
                     <button class="ops-btn primary" id="fs-do-import" onclick="importSelectedAgents()">Import Selected</button>
                     <button class="ops-btn secondary" onclick="closeImportModal()">Cancel</button>
-                    <span id="fs-import-status" style="font-size:12px;margin-left:auto;"></span>
+                    <span id="fs-import-status" style="font-size:var(--font-size-xs);margin-left:auto;"></span>
                 </div>
             </div>
         </div>
@@ -551,7 +551,7 @@ class Agents {
 
             var newCount = 0;
             var html = '<div style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">' +
-                '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
+                '<label style="font-size:var(--font-size-sm);cursor:pointer;display:flex;align-items:center;gap:6px;">' +
                 '<input type="checkbox" id="fs-select-all" onchange="toggleAllFS(this.checked)" style="width:16px;height:16px;accent-color:var(--color-primary);"> Select all new' +
                 '</label></div>';
 
@@ -570,8 +570,8 @@ class Agents {
                     (exists ? 'disabled title="Already imported"' : '') +
                     ' style="width:16px;height:16px;accent-color:var(--color-primary);"></td>' +
                     '<td style="font-weight:500;">' + escHtml(name.trim()) + '</td>' +
-                    '<td style="font-family:monospace;font-size:12px;">' + escHtml(a.email || '') + '</td>' +
-                    '<td><span style="font-family:monospace;font-size:12px;">#' + (a.id || '-') + '</span></td>' +
+                    '<td style="font-family:monospace;font-size:var(--font-size-xs);">' + escHtml(a.email || '') + '</td>' +
+                    '<td><span style="font-family:monospace;font-size:var(--font-size-xs);">#' + (a.id || '-') + '</span></td>' +
                     '<td>' + (exists ?
                         '<span class="status-badge">Already imported</span>' :
                         '<span class="status-badge success">New</span>') +
@@ -671,7 +671,7 @@ class Agents {
             }
             
             .agent-form-header .form-mode {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 padding: 5px 12px;
@@ -700,7 +700,7 @@ class Agents {
             .agent-form label {
                 display: block;
                 font-weight: 500;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 margin-bottom: 8px;
                 color: var(--color-text-secondary);
             }
@@ -713,7 +713,7 @@ class Agents {
             .agent-form small {
                 display: block;
                 margin-top: 6px;
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-tertiary);
                 line-height: 1.5;
             }
@@ -776,7 +776,7 @@ class Agents {
                 margin: 0;
                 cursor: pointer;
                 font-weight: 500;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-primary);
                 text-transform: none;
                 letter-spacing: 0;
@@ -784,7 +784,7 @@ class Agents {
             }
             
             .agent-checkbox-wrapper .checkbox-hint {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-tertiary);
                 margin-top: 4px;
                 line-height: 1.5;
@@ -806,7 +806,7 @@ class Agents {
             
             .agent-form-actions .ops-btn span {
                 opacity: 1;
-                font-size: 14px;
+                font-size: var(--font-size-base);
             }
             
             .form-section {
@@ -818,7 +818,7 @@ class Agents {
             }
             
             .form-section-title {
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 color: var(--color-text-tertiary);
                 margin-bottom: 20px;
@@ -886,11 +886,11 @@ class Agents {
                         <div>
                             <label>WordPress Account</label>
                             <div id="wp-account-status" style="margin-bottom:8px;">
-                                <span id="wp-linked-info" style="display:none;padding:8px 12px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:12px;color:var(--color-text-secondary);">
+                                <span id="wp-linked-info" style="display:none;padding:8px 12px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-sm);font-size:var(--font-size-xs);color:var(--color-text-secondary);">
                                     Linked to WP User #<span id="wp-linked-id"></span>
-                                    <button type="button" onclick="unlinkWpAccount()" style="margin-left:8px;background:none;border:none;color:var(--color-error);cursor:pointer;font-size:11px;text-decoration:underline;">Unlink</button>
+                                    <button type="button" onclick="unlinkWpAccount()" style="margin-left:8px;background:none;border:none;color:var(--color-error);cursor:pointer;font-size:var(--font-size-xs);text-decoration:underline;">Unlink</button>
                                 </span>
-                                <span id="wp-not-linked" style="display:none;padding:8px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius-sm);font-size:12px;color:#92400e;">
+                                <span id="wp-not-linked" style="display:none;padding:8px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius-sm);font-size:var(--font-size-xs);color:#92400e;">
                                     No WP account — agent cannot log in to the dashboard
                                 </span>
                             </div>
@@ -899,7 +899,7 @@ class Agents {
                             <div id="wp-create-section" style="display:none;">
                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-sm);">
                                     <input type="checkbox" id="ag_create_wp_check" onchange="document.getElementById('ag_create_wp').value = this.checked ? '1' : '0';" style="width:16px;height:16px;accent-color:var(--color-primary);">
-                                    <span style="font-size:13px;font-weight:500;color:var(--color-text-primary);">Create WP account on save</span>
+                                    <span style="font-size:var(--font-size-sm);font-weight:500;color:var(--color-text-primary);">Create WP account on save</span>
                                 </label>
                                 <small>Creates a WordPress user with the selected role. Password reset email will be sent to the agent's email.</small>
                             </div>

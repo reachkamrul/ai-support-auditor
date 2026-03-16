@@ -55,7 +55,7 @@ class ApiConfig {
 
         <div class="ops-card">
             <h3>FluentSupport API</h3>
-            <p style="margin:0 0 16px;color:var(--color-text-secondary);font-size:13px;">
+            <p style="margin:0 0 16px;color:var(--color-text-secondary);font-size:var(--font-size-sm);">
                 Connect to FluentSupport REST API for Time Machine and other features.
             </p>
 
@@ -66,10 +66,10 @@ class ApiConfig {
                         <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
                         <span style="font-weight:600;color:var(--color-text-primary);">Connected</span>
                     </div>
-                    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:4px;">
+                    <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-bottom:4px;">
                         <strong>URL:</strong> <?php echo esc_html($fs_api_url); ?>
                     </div>
-                    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px;">
+                    <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-bottom:16px;">
                         <strong>User:</strong> <?php echo esc_html($fs_api_user); ?>
                     </div>
                     <form method="post" style="display:inline;" onsubmit="return confirm('Disconnect FluentSupport API?')">
@@ -84,22 +84,22 @@ class ApiConfig {
                     <input type="hidden" name="save_fs_api" value="1">
                     <div style="display:grid;gap:12px;max-width:500px;">
                         <div>
-                            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">API Base URL</label>
+                            <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">API Base URL</label>
                             <input type="url" name="fs_api_url" class="ops-input" value="<?php echo esc_attr($fs_api_url); ?>" placeholder="https://support.junior.ninja" style="width:100%;" required>
                             <small style="color:var(--color-text-tertiary);">The WordPress site where FluentSupport is installed</small>
                         </div>
                         <div>
-                            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Username</label>
+                            <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Username</label>
                             <input type="text" name="fs_api_user" class="ops-input" value="<?php echo esc_attr($fs_api_user); ?>" placeholder="admin" style="width:100%;" required>
                         </div>
                         <div>
-                            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Application Password</label>
+                            <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Application Password</label>
                             <input type="password" name="fs_api_pass" class="ops-input" value="" placeholder="Paste application password" style="width:100%;" required>
                             <small style="color:var(--color-text-tertiary);">Generate at Users &rarr; Profile &rarr; Application Passwords</small>
                         </div>
                         <div style="display:flex;gap:8px;align-items:center;">
                             <button type="button" class="ops-btn primary" onclick="testAndConnect()">Test & Connect</button>
-                            <span id="fs-test-result" style="font-size:12px;"></span>
+                            <span id="fs-test-result" style="font-size:var(--font-size-xs);"></span>
                         </div>
                     </div>
                 </form>
@@ -133,10 +133,10 @@ class ApiConfig {
 
         <div class="ops-card">
             <h3>API security</h3>
-            <p style="margin:0 0 16px;color:var(--color-text-secondary);font-size:13px;">This security token is required for n8n to communicate with WordPress.</p>
+            <p style="margin:0 0 16px;color:var(--color-text-secondary);font-size:var(--font-size-sm);">This security token is required for n8n to communicate with WordPress.</p>
 
             <div style="padding:20px;border-radius:var(--radius-md);margin-top:4px;background:var(--color-bg-subtle);border:1px solid var(--color-border);">
-                <h4 style="margin:0 0 12px;font-size:14px;font-weight:500;">Current security token</h4>
+                <h4 style="margin:0 0 12px;font-size:var(--font-size-base);font-weight:500;">Current security token</h4>
                 <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
                     <code data-token="<?php echo esc_attr($token); ?>" class="ops-token-display" style="flex:1;">
                         <?php echo esc_html($token); ?>
@@ -291,7 +291,7 @@ class ApiConfig {
             
             <div style="margin-top:30px;padding:15px;background:var(--color-info-bg);border-left:3px solid var(--color-primary);border-radius:var(--radius-sm);">
                 <h4 style="margin-top:0;">Usage example</h4>
-                <pre style="background:#fff;padding:12px;border-radius:4px;overflow-x:auto;font-size:12px;margin:10px 0 0 0;"><code>curl -X POST "<?php echo esc_html($base_url); ?>/wp-json/ai-audit/v1/save-result" \
+                <pre style="background:#fff;padding:12px;border-radius:4px;overflow-x:auto;font-size:var(--font-size-xs);margin:10px 0 0 0;"><code>curl -X POST "<?php echo esc_html($base_url); ?>/wp-json/ai-audit/v1/save-result" \
   -H "Content-Type: application/json" \
   -H "X-Audit-Token: <?php echo esc_html($token); ?>" \
   -d '{

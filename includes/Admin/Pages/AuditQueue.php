@@ -109,10 +109,10 @@ class AuditQueue {
         <?php if ($failed_count > 0): ?>
         <div class="ops-card failed-alert-banner">
             <div style="display:flex;align-items:center;gap:12px;">
-                <span style="font-size:20px;">!</span>
+                <span style="font-size:var(--font-size-xl);">!</span>
                 <div>
                     <strong><?php echo $failed_count; ?> failed audit<?php echo $failed_count !== 1 ? 's' : ''; ?> in the last 24 hours</strong>
-                    <div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px;">
+                    <div style="font-size:var(--font-size-xs);color:var(--color-text-secondary);margin-top:2px;">
                         These tickets were not audited. Review errors below and retry.
                         <?php if (!$processing && $pending_count === 0): ?>
                             <span style="color:var(--color-success);">Queue is idle — auto-retry will run on next page load.</span>
@@ -138,7 +138,7 @@ class AuditQueue {
             </div>
             <div class="stat-card">
                 <div class="stat-label">Processing</div>
-                <div class="stat-value" style="font-size:18px;">
+                <div class="stat-value" style="font-size:var(--font-size-lg);">
                     <?php if ($processing): ?>
                         <span style="color:var(--color-info);">#<?php echo esc_html($processing->ticket_id); ?></span>
                     <?php else: ?>
@@ -148,13 +148,13 @@ class AuditQueue {
             </div>
             <div class="stat-card">
                 <div class="stat-label">Avg Processing</div>
-                <div class="stat-value" style="font-size:18px;<?php echo $avg_duration > 120 ? 'color:var(--color-warning);' : ''; ?>">
+                <div class="stat-value" style="font-size:var(--font-size-lg);<?php echo $avg_duration > 120 ? 'color:var(--color-warning);' : ''; ?>">
                     <?php echo $avg_display; ?>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Est. Wait</div>
-                <div class="stat-value" style="font-size:18px;<?php echo $est_wait > 10 ? 'color:var(--color-warning);' : ''; ?>">
+                <div class="stat-value" style="font-size:var(--font-size-lg);<?php echo $est_wait > 10 ? 'color:var(--color-warning);' : ''; ?>">
                     <?php echo $est_wait > 0 ? $est_wait . 'm' : '--'; ?>
                 </div>
             </div>
@@ -180,9 +180,9 @@ class AuditQueue {
             ?>
             <div class="ops-card queue-processing-card">
                 <div>
-                    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--color-text-tertiary);margin-bottom:4px;">Currently Processing</div>
+                    <div style="font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:1px;color:var(--color-text-tertiary);margin-bottom:4px;">Currently Processing</div>
                     <div style="display:flex;align-items:center;gap:12px;">
-                        <strong style="font-size:18px;">#<?php echo esc_html($processing->ticket_id); ?></strong>
+                        <strong style="font-size:var(--font-size-lg);">#<?php echo esc_html($processing->ticket_id); ?></strong>
                         <?php echo $this->type_badge($processing->audit_type); ?>
                     </div>
                 </div>
@@ -193,11 +193,11 @@ class AuditQueue {
                         <?php echo floor($elapsed / 60) . 'm ' . ($elapsed % 60) . 's'; ?>
                     </div>
                     <?php if ($is_stale): ?>
-                        <div style="font-size:11px;color:var(--color-error);margin-top:4px;">
+                        <div style="font-size:var(--font-size-xs);color:var(--color-error);margin-top:4px;">
                             Stale — will auto-reset at 10m
                         </div>
                     <?php else: ?>
-                        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px;">Elapsed</div>
+                        <div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-top:4px;">Elapsed</div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -230,14 +230,14 @@ class AuditQueue {
                 </a>
                 <div style="flex:1;"></div>
                 <?php if ($active_tab === 'pending'): ?>
-                    <span style="font-size:12px;color:var(--color-text-tertiary);padding-right:16px;align-self:center;">
+                    <span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);padding-right:16px;align-self:center;">
                         Priority: Final &gt; Incremental &gt; Full
                     </span>
                 <?php elseif ($active_tab === 'failed' && $failed_count > 0): ?>
                     <form method="post" style="padding-right:16px;align-self:center;">
                         <?php wp_nonce_field('queue_action_retry_all'); ?>
                         <input type="hidden" name="queue_action" value="retry_all">
-                        <button type="submit" class="ops-btn primary" style="font-size:11px;height:28px;padding:0 10px;">Retry All</button>
+                        <button type="submit" class="ops-btn primary" style="font-size:var(--font-size-xs);height:28px;padding:0 10px;">Retry All</button>
                     </form>
                 <?php endif; ?>
             </div>
@@ -281,7 +281,7 @@ class AuditQueue {
                                 <td><strong>#<?php echo esc_html($item->ticket_id); ?></strong></td>
                                 <td><?php echo $this->type_badge($item->audit_type); ?></td>
                                 <td style="color:var(--color-text-tertiary);">v<?php echo intval($item->computed_version); ?></td>
-                                <td style="color:var(--color-text-tertiary);font-size:12px;"><?php echo $queued_time; ?></td>
+                                <td style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);"><?php echo $queued_time; ?></td>
                                 <td>
                                     <div style="display:flex;gap:4px;">
                                         <?php if ($item->audit_type !== 'final'): ?>
@@ -289,14 +289,14 @@ class AuditQueue {
                                                 <?php wp_nonce_field('queue_action_' . $item->id); ?>
                                                 <input type="hidden" name="queue_action" value="boost">
                                                 <input type="hidden" name="audit_id" value="<?php echo $item->id; ?>">
-                                                <button type="submit" class="ops-btn primary" style="font-size:11px;height:28px;padding:0 8px;" title="Boost to top priority">Boost</button>
+                                                <button type="submit" class="ops-btn primary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;" title="Boost to top priority">Boost</button>
                                             </form>
                                         <?php endif; ?>
                                         <form method="post" style="display:inline;">
                                             <?php wp_nonce_field('queue_action_' . $item->id); ?>
                                             <input type="hidden" name="queue_action" value="cancel">
                                             <input type="hidden" name="audit_id" value="<?php echo $item->id; ?>">
-                                            <button type="submit" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;">Cancel</button>
+                                            <button type="submit" class="ops-btn secondary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;">Cancel</button>
                                         </form>
                                     </div>
                                 </td>
@@ -342,10 +342,10 @@ class AuditQueue {
                             <tr>
                                 <td><strong>#<?php echo esc_html($fi->ticket_id); ?></strong></td>
                                 <td><?php echo $this->type_badge($fi->audit_type); ?></td>
-                                <td style="font-size:12px;color:var(--color-error);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                <td style="font-size:var(--font-size-xs);color:var(--color-error);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                                     <?php echo esc_html($fi->error_message ?: 'Unknown error'); ?>
                                 </td>
-                                <td style="color:var(--color-text-tertiary);font-size:12px;">
+                                <td style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">
                                     <?php echo human_time_diff(strtotime($fi->created_at), current_time('timestamp')); ?> ago
                                 </td>
                                 <td>
@@ -353,7 +353,7 @@ class AuditQueue {
                                         <?php wp_nonce_field('queue_action_' . $fi->id); ?>
                                         <input type="hidden" name="queue_action" value="retry">
                                         <input type="hidden" name="audit_id" value="<?php echo $fi->id; ?>">
-                                        <button type="submit" class="ops-btn primary" style="font-size:11px;height:28px;padding:0 8px;">Retry</button>
+                                        <button type="submit" class="ops-btn primary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;">Retry</button>
                                     </form>
                                 </td>
                             </tr>
@@ -394,10 +394,10 @@ class AuditQueue {
                                         <?php echo intval($r->overall_score); ?>
                                     </span>
                                 </td>
-                                <td style="font-family:var(--font-mono, monospace);font-size:13px;">
+                                <td style="font-family:var(--font-mono, monospace);font-size:var(--font-size-sm);">
                                     <?php echo intval($r->processing_duration_seconds); ?>s
                                 </td>
-                                <td style="color:var(--color-text-tertiary);font-size:12px;">
+                                <td style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">
                                     <?php echo human_time_diff(strtotime($r->created_at), current_time('timestamp')); ?> ago
                                 </td>
                             </tr>
@@ -538,7 +538,7 @@ class AuditQueue {
                 border-left: 4px solid var(--color-info, #3b82f6);
             }
             .queue-elapsed {
-                font-size: 28px;
+                font-size: var(--font-size-2xl);
                 font-weight: 700;
                 font-family: var(--font-mono, monospace);
                 color: var(--color-info, #3b82f6);
@@ -560,7 +560,7 @@ class AuditQueue {
                 border-radius: 50%;
                 background: var(--color-bg-subtle, #f1f5f9);
                 border: 1px solid var(--color-border, #e2e8f0);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 700;
                 color: var(--color-text-secondary, #64748b);
             }
@@ -581,7 +581,7 @@ class AuditQueue {
             }
             .queue-tab {
                 padding: 12px 20px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 600;
                 color: var(--color-text-secondary, #64748b);
                 text-decoration: none;
@@ -607,7 +607,7 @@ class AuditQueue {
                 height: 20px;
                 padding: 0 6px;
                 border-radius: 10px;
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 700;
                 background: var(--color-bg-subtle, #f1f5f9);
                 color: var(--color-text-secondary, #64748b);

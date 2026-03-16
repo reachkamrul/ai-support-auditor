@@ -132,8 +132,8 @@ class ScoreTrends {
             .trends-chart-grid.two-col { grid-template-columns:1fr 1fr; }
             @media (max-width:1200px) { .trends-chart-grid.two-col { grid-template-columns:1fr; } }
             .chart-container { position:relative; height:320px; }
-            .chart-title { font-size:15px; font-weight:600; color:var(--color-text-primary); margin-bottom:4px; }
-            .chart-subtitle { font-size:12px; color:var(--color-text-secondary); margin-bottom:16px; }
+            .chart-title { font-size:var(--font-size-md); font-weight:600; color:var(--color-text-primary); margin-bottom:4px; }
+            .chart-subtitle { font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:16px; }
         </style>
 
         <!-- Filters -->
@@ -143,10 +143,10 @@ class ScoreTrends {
                     <?php foreach ([7 => '7 Days', 30 => '30 Days', 60 => '60 Days', 90 => '90 Days', 365 => '1 Year'] as $d => $label): ?>
                         <a href="<?php echo esc_url(add_query_arg(['days' => $d, 'agent' => $selected_agent], $base_url)); ?>"
                            class="ops-btn <?php echo $days == $d ? 'primary' : 'secondary'; ?>"
-                           style="padding:0 16px;height:36px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
+                           style="padding:0 16px;height:36px;font-size:var(--font-size-sm);font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
                     <?php endforeach; ?>
                 </div>
-                <select id="trends-agent-select" style="min-width:220px;height:36px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;">
+                <select id="trends-agent-select" style="min-width:220px;height:36px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);">
                     <option value="">All Agents (Team Average)</option>
                     <?php foreach ($agents as $a): ?>
                         <option value="<?php echo esc_attr($a->agent_email); ?>" <?php selected($selected_agent, $a->agent_email); ?>>

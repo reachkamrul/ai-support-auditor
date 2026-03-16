@@ -216,11 +216,11 @@ class Calendar {
                 padding: 0 12px;
                 height: 36px;
                 min-width: 40px;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
             }
             .calendar-month {
-                font-size: 20px;
+                font-size: var(--font-size-xl);
                 font-weight: 700;
                 color: var(--color-text-primary);
                 min-width: 180px;
@@ -256,7 +256,7 @@ class Calendar {
             }
             #bulk-gen label {
                 display: block;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 margin-bottom: 8px;
@@ -266,7 +266,7 @@ class Calendar {
                 height: 38px !important;
                 border: 1px solid var(--color-border) !important;
                 border-radius: var(--radius-sm) !important;
-                font-size: 14px !important;
+                font-size: var(--font-size-base) !important;
                 padding: 0 12px !important;
                 background: var(--color-bg) !important;
                 transition: all 0.15s ease !important;
@@ -313,7 +313,7 @@ class Calendar {
                 padding: 12px 8px;
                 text-align: center;
                 font-weight: 500;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-tertiary);
                 border-bottom: 1px solid var(--color-border);
             }
@@ -347,7 +347,7 @@ class Calendar {
             }
             .cal-date {
                 font-weight: 600;
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 color: var(--color-text-primary);
                 margin-bottom: 6px;
                 display: flex;
@@ -355,7 +355,7 @@ class Calendar {
                 gap: 6px;
             }
             .cal-holiday-badge {
-                font-size: 10px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 background: #fef3e2;
                 color: #b45309;
@@ -369,7 +369,7 @@ class Calendar {
                 margin-bottom: 4px;
             }
             .cal-off-badge {
-                font-size: 10px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 background: #fef2f2;
                 color: #b91c1c;
@@ -379,7 +379,7 @@ class Calendar {
                 margin-bottom: 4px;
             }
             .cal-alert-badge {
-                font-size: 10px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-error);
                 position: absolute;
@@ -387,7 +387,7 @@ class Calendar {
                 right: 8px;
             }
             .shift-pill {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 padding: 4px 8px;
                 border-radius: 4px;
                 margin-bottom: 4px;
@@ -443,14 +443,14 @@ class Calendar {
             }
             .cal-modal-header h3 {
                 margin: 0;
-                font-size: 15px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
                 color: var(--color-text-primary);
                 letter-spacing: -0.01em;
             }
             .cal-modal-close {
                 background: none; border: none;
-                font-size: 20px;
+                font-size: var(--font-size-xl);
                 color: var(--color-text-tertiary);
                 cursor: pointer; line-height: 1;
                 width: 32px; height: 32px;
@@ -482,7 +482,7 @@ class Calendar {
             .day-section { margin-bottom: 20px; }
             .day-section:last-child { margin-bottom: 0; }
             .day-section-title {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-text-secondary);
                 margin-bottom: 10px;
@@ -496,7 +496,7 @@ class Calendar {
                 border-radius: 10px;
                 padding: 10px 14px;
                 margin-bottom: 16px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 color: #92400e;
             }
@@ -512,7 +512,7 @@ class Calendar {
                 gap: 6px;
                 padding: 6px 12px;
                 border-radius: 8px;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 border: 1px solid var(--color-border);
                 background: var(--color-bg-subtle);
@@ -537,7 +537,7 @@ class Calendar {
             .shift-list-name {
                 font-weight: 500;
                 color: var(--color-text-primary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 flex: 1;
             }
             .shift-list-type {
@@ -545,7 +545,7 @@ class Calendar {
                 color: var(--color-primary);
                 padding: 3px 10px;
                 border-radius: var(--radius-pill);
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 white-space: nowrap;
             }
@@ -556,7 +556,7 @@ class Calendar {
                 padding: 4px;
                 border-radius: 6px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 line-height: 1;
                 transition: all 0.15s ease;
                 display: flex;
@@ -575,14 +575,14 @@ class Calendar {
                 gap: 10px;
                 padding: 8px 14px;
                 margin-bottom: 4px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-secondary);
                 background: #fef2f2;
                 border-radius: 8px;
             }
             .off-item .off-name { font-weight: 500; color: var(--color-text-primary); flex: 1; }
             .off-item .off-reason {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 background: rgba(0,0,0,0.06);
                 padding: 2px 8px;
                 border-radius: 4px;
@@ -596,7 +596,7 @@ class Calendar {
             }
             .day-form-grid label {
                 display: block;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 margin-bottom: 6px;
@@ -606,7 +606,7 @@ class Calendar {
             .day-form-grid select {
                 width: 100%;
                 height: 36px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 border-radius: 8px;
                 border: 1px solid var(--color-border);
                 padding: 0 10px;
@@ -620,7 +620,7 @@ class Calendar {
             }
             .day-form-actions .ops-btn {
                 height: 34px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 border-radius: 8px;
             }
             .day-quick-actions {
@@ -630,7 +630,7 @@ class Calendar {
             }
             .day-quick-actions .ops-btn {
                 height: 30px;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 border-radius: 6px;
                 padding: 0 12px;
             }
@@ -646,7 +646,7 @@ class Calendar {
             .modal-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 margin-bottom: 16px;
             }
             .modal-table th {
@@ -655,7 +655,7 @@ class Calendar {
                 color: var(--color-text-secondary);
                 padding: 8px 10px;
                 border-bottom: 1px solid var(--color-border);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
             }
             .modal-table td {
                 padding: 8px 10px;
@@ -664,7 +664,7 @@ class Calendar {
             }
             .modal-table tr:last-child td { border-bottom: none; }
             .modal-table .type-badge {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 padding: 2px 8px;
                 border-radius: 4px;
                 font-weight: 500;
@@ -684,7 +684,7 @@ class Calendar {
             .modal-form-row > div { flex: 1; min-width: 120px; }
             .modal-form-row label {
                 display: block;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 margin-bottom: 6px;
@@ -693,14 +693,14 @@ class Calendar {
             .modal-form-row select {
                 width: 100%;
                 height: 36px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 border-radius: 8px;
                 border: 1px solid var(--color-border);
                 padding: 0 10px;
                 background: var(--color-bg);
             }
             .modal-section-title {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-text-secondary);
                 margin-bottom: 12px;
@@ -711,13 +711,13 @@ class Calendar {
                 text-align: center;
                 padding: 24px;
                 color: var(--color-text-tertiary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
             }
             .cal-loading {
                 text-align: center;
                 padding: 40px 20px;
                 color: var(--color-text-tertiary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
             }
         </style>
 
@@ -744,27 +744,27 @@ class Calendar {
 
             <!-- ── Shift Templates Panel ── -->
             <div id="shift-templates-panel" style="display:none;margin-bottom:16px;padding:20px;background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:var(--radius-md);">
-                <h4 style="margin:0 0 12px;font-size:14px;font-weight:600;">Shift Templates</h4>
+                <h4 style="margin:0 0 12px;font-size:var(--font-size-base);font-weight:600;">Shift Templates</h4>
                 <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px;">
                     <div>
-                        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Save Current Week As Template</label>
+                        <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Save Current Week As Template</label>
                         <div style="display:flex;gap:8px;">
-                            <input type="text" id="template-name-input" placeholder="Template name..." style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;width:200px;">
-                            <button class="ops-btn primary" style="height:34px;font-size:13px;" onclick="saveTemplate()">Save</button>
+                            <input type="text" id="template-name-input" placeholder="Template name..." style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);width:200px;">
+                            <button class="ops-btn primary" style="height:34px;font-size:var(--font-size-sm);" onclick="saveTemplate()">Save</button>
                         </div>
                     </div>
                     <div>
-                        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Apply Template to This Week</label>
+                        <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Apply Template to This Week</label>
                         <div style="display:flex;gap:8px;">
-                            <select id="template-select" style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;min-width:200px;">
+                            <select id="template-select" style="height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);min-width:200px;">
                                 <option value="">Loading...</option>
                             </select>
-                            <button class="ops-btn secondary" style="height:34px;font-size:13px;" onclick="applyTemplate()">Apply</button>
-                            <button class="ops-btn secondary" style="height:34px;font-size:13px;color:var(--color-error);" onclick="deleteTemplate()">Delete</button>
+                            <button class="ops-btn secondary" style="height:34px;font-size:var(--font-size-sm);" onclick="applyTemplate()">Apply</button>
+                            <button class="ops-btn secondary" style="height:34px;font-size:var(--font-size-sm);color:var(--color-error);" onclick="deleteTemplate()">Delete</button>
                         </div>
                     </div>
                 </div>
-                <div id="template-msg" style="display:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:13px;"></div>
+                <div id="template-msg" style="display:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:var(--font-size-sm);"></div>
             </div>
 
             <!-- ── Bulk Schedule Form ── -->
@@ -857,7 +857,7 @@ class Calendar {
                         echo "<div class='shift-pill' style='background:{$c}' onclick='event.stopPropagation();'>" . esc_html($n) . "</div>";
                     }
                     if (count($shifts) > 4) {
-                        echo "<div style='font-size:11px;color:var(--color-text-tertiary);'>+" . (count($shifts) - 4) . " more</div>";
+                        echo "<div style='font-size:var(--font-size-xs);color:var(--color-text-tertiary);'>+" . (count($shifts) - 4) . " more</div>";
                     }
 
                     // Off badge
@@ -983,7 +983,7 @@ class Calendar {
                     <?php if (!empty($pending_leaves)): ?>
                     <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
                         Pending Requests
-                        <span class="ops-nav-badge" style="font-size:11px;"><?php echo count($pending_leaves); ?></span>
+                        <span class="ops-nav-badge" style="font-size:var(--font-size-xs);"><?php echo count($pending_leaves); ?></span>
                     </div>
                     <table class="modal-table" id="pending-leaves-table">
                         <thead><tr><th>Agent</th><th>Type</th><th>From</th><th>To</th><th>Reason</th><th style="text-align:right;">Action</th></tr></thead>
@@ -996,11 +996,11 @@ class Calendar {
                                 <td><span class="type-badge <?php echo esc_attr($pl->leave_type); ?>"><?php echo esc_html(ucfirst(str_replace('_', ' ', $pl->leave_type))); ?></span></td>
                                 <td><?php echo wp_date('M j', strtotime($pl->date_start)); ?></td>
                                 <td><?php echo wp_date('M j', strtotime($pl->date_end)); ?></td>
-                                <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo esc_html($pl->reason ?: '-'); ?></td>
+                                <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);"><?php echo esc_html($pl->reason ?: '-'); ?></td>
                                 <?php if (!$is_read_only): ?>
                                 <td style="text-align:right;">
-                                    <button class="ops-btn primary" style="height:26px;font-size:11px;padding:0 10px;margin-right:4px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'approved')">Approve</button>
-                                    <button class="ops-btn danger" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'rejected')">Reject</button>
+                                    <button class="ops-btn primary" style="height:26px;font-size:var(--font-size-xs);padding:0 10px;margin-right:4px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'approved')">Approve</button>
+                                    <button class="ops-btn danger" style="height:26px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveLeave(<?php echo $pl->id; ?>,'rejected')">Reject</button>
                                 </td>
                                 <?php else: ?>
                                 <td></td>
@@ -1014,7 +1014,7 @@ class Calendar {
 
                     <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center;">
                         Current Leaves
-                        <a href="<?php echo admin_url('admin-post.php?action=export_leave_csv&year=' . $start->format('Y')); ?>" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;">Export CSV</a>
+                        <a href="<?php echo admin_url('admin-post.php?action=export_leave_csv&year=' . $start->format('Y')); ?>" class="ops-btn secondary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;">Export CSV</a>
                     </div>
                     <div id="leave-list">
                         <?php if (empty($all_leaves)): ?>
@@ -1034,7 +1034,7 @@ class Calendar {
                                 <tr id="leave-row-<?php echo $l->id; ?>">
                                     <td><?php echo esc_html($name); ?></td>
                                     <td>
-                                        <?php if ($is_applied): ?><span style="font-size:10px;padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span><?php endif; ?>
+                                        <?php if ($is_applied): ?><span style="font-size:var(--font-size-xs);padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span><?php endif; ?>
                                         <span class="type-badge <?php echo esc_attr($l->leave_type); ?>"><?php echo esc_html($type_label); ?></span>
                                     </td>
                                     <td><?php echo date('M j', strtotime($l->date_start)); ?></td>
@@ -1194,7 +1194,7 @@ class Calendar {
                         h += '</div>';
                     });
                 } else {
-                    h += '<div style="padding:8px 0;font-size:13px;color:var(--color-text-tertiary);">No shifts on this day</div>';
+                    h += '<div style="padding:8px 0;font-size:var(--font-size-sm);color:var(--color-text-tertiary);">No shifts on this day</div>';
                 }
                 h += '</div>';
 
@@ -1217,7 +1217,7 @@ class Calendar {
                         h += '<div class="off-item">';
                         h += '<span class="off-name">' + escHtml(item.name.trim()) + '</span>';
                         if (item.applied) {
-                            h += '<span style="font-size:10px;padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span>';
+                            h += '<span style="font-size:var(--font-size-xs);padding:2px 6px;background:#dbeafe;color:#1e40af;border-radius:8px;font-weight:600;margin-right:4px;">Applied</span>';
                         }
                         h += '<span class="off-reason">' + escHtml(item.reason) + '</span>';
                         if (!calReadOnly && item.type === 'leave') {
@@ -1254,14 +1254,14 @@ class Calendar {
                             h += '<span class="shift-list-name">' + escHtml(hd.first_name || hd.agent_email) + '</span>';
                             h += '<span class="shift-list-type">' + escHtml(hd.shift_type) + '</span>';
                             if (hd.comp_off_date) {
-                                h += '<span style="font-size:11px;color:var(--color-text-secondary);">CO: ' + hd.comp_off_date + '</span>';
+                                h += '<span style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">CO: ' + hd.comp_off_date + '</span>';
                             }
                             h += '</div>';
                         });
                     } else {
-                        h += '<div style="font-size:13px;color:var(--color-text-tertiary);padding:8px 0;">No duty assigned yet</div>';
+                        h += '<div style="font-size:var(--font-size-sm);color:var(--color-text-tertiary);padding:8px 0;">No duty assigned yet</div>';
                     }
-                    h += '<div style="margin-top:10px"><button class="ops-btn secondary" onclick="toggleDutyForm()" style="height:30px;font-size:12px">Assign Duty</button></div>';
+                    h += '<div style="margin-top:10px"><button class="ops-btn secondary" onclick="toggleDutyForm()" style="height:30px;font-size:var(--font-size-xs)">Assign Duty</button></div>';
                     h += '<div id="duty-form" class="inline-form">';
                     h += buildDutyForm(data.holiday);
                     h += '</div>';
@@ -1301,7 +1301,7 @@ class Calendar {
                     h += '</select></div>';
                     h += '<div><label>Type</label><select id="day-leave-type" class="ops-input"><option value="personal">Personal</option><option value="sick">Sick</option><option value="compensation">Comp-off</option></select></div>';
                     h += '</div>';
-                    h += '<div style="margin-top:8px"><label style="display:block;font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;">Reason</label><input type="text" id="day-leave-reason" class="ops-input" placeholder="Optional" style="width:100%;height:36px;border-radius:8px;"></div>';
+                    h += '<div style="margin-top:8px"><label style="display:block;font-size:var(--font-size-xs);font-weight:500;color:var(--color-text-secondary);margin-bottom:6px;">Reason</label><input type="text" id="day-leave-reason" class="ops-input" placeholder="Optional" style="width:100%;height:36px;border-radius:8px;"></div>';
                     h += '<div class="day-form-actions"><button class="ops-btn primary" onclick="saveDayLeave()">Add Leave</button></div>';
                     h += '</div>';
 
@@ -1330,17 +1330,17 @@ class Calendar {
                 var h = '<div style="margin-top:8px;">';
                 ['morning','afternoon','night'].forEach(function(cat){
                     h += '<div style="margin-bottom:10px;">';
-                    h += '<div style="font-size:12px;font-weight:500;margin-bottom:6px;">' + shiftIcon(cat) + ' ' + cat.charAt(0).toUpperCase() + cat.slice(1) + '</div>';
+                    h += '<div style="font-size:var(--font-size-xs);font-weight:500;margin-bottom:6px;">' + shiftIcon(cat) + ' ' + cat.charAt(0).toUpperCase() + cat.slice(1) + '</div>';
                     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
                     agentsList.forEach(function(a){
-                        h += '<label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">';
+                        h += '<label style="font-size:var(--font-size-xs);display:flex;align-items:center;gap:4px;cursor:pointer;">';
                         h += '<input type="checkbox" class="duty-cb" data-email="' + escAttr(a.email) + '" data-shift="' + cat + '"> ' + escHtml(a.name);
                         h += '</label>';
                     });
                     h += '</div></div>';
                 });
-                h += '<div style="margin-top:8px;"><label style="font-size:12px;font-weight:500;">Comp-off dates (per agent):</label>';
-                h += '<div id="duty-comp-offs" style="margin-top:6px;font-size:12px;color:var(--color-text-secondary);">Select agents above first</div>';
+                h += '<div style="margin-top:8px;"><label style="font-size:var(--font-size-xs);font-weight:500;">Comp-off dates (per agent):</label>';
+                h += '<div id="duty-comp-offs" style="margin-top:6px;font-size:var(--font-size-xs);color:var(--color-text-secondary);">Select agents above first</div>';
                 h += '</div>';
                 h += '<div class="day-form-actions"><button class="ops-btn primary" onclick="saveDuty(' + holiday.id + ')">Save Duty</button></div>';
                 h += '</div>';
@@ -1364,7 +1364,7 @@ class Calendar {
                     agentsList.forEach(function(a){ if(a.email===email) name = a.name; });
                     h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
                     h += '<span style="min-width:100px;">' + escHtml(name) + ':</span>';
-                    h += '<input type="date" class="comp-off-date" data-email="' + escAttr(email) + '" style="height:28px;font-size:12px;border:1px solid var(--color-border);border-radius:6px;padding:0 8px;">';
+                    h += '<input type="date" class="comp-off-date" data-email="' + escAttr(email) + '" style="height:28px;font-size:var(--font-size-xs);border:1px solid var(--color-border);border-radius:6px;padding:0 8px;">';
                     h += '</div>';
                 });
                 $('#duty-comp-offs').html(h);

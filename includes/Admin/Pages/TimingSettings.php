@@ -150,12 +150,12 @@ class TimingSettings {
             .toggle-switch input:checked + .toggle-slider { background: var(--color-success, #22c55e); }
             .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
             .toggle-label {
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 font-weight: 500;
                 color: var(--color-text-secondary, #64748b);
             }
             .toggle-status-badge {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 padding: 4px 10px;
                 border-radius: 999px;
@@ -170,7 +170,7 @@ class TimingSettings {
                 padding-bottom: 12px;
                 border-bottom: 1px solid var(--color-border, #e2e8f0);
             }
-            .section-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+            .section-header h3 { margin: 0; font-size: var(--font-size-md); font-weight: 600; }
             .rule-row {
                 display: flex;
                 gap: 10px;
@@ -180,13 +180,13 @@ class TimingSettings {
             }
             .rule-row:last-child { border-bottom: none; }
             .rule-row .ops-input { width: 110px; }
-            .rule-label { font-size: 13px; color: var(--color-text-secondary, #64748b); min-width: 40px; }
+            .rule-label { font-size: var(--font-size-sm); color: var(--color-text-secondary, #64748b); min-width: 40px; }
             .rule-remove {
                 background: none;
                 border: none;
                 color: #ef4444;
                 cursor: pointer;
-                font-size: 18px;
+                font-size: var(--font-size-lg);
                 padding: 4px 8px;
                 border-radius: 4px;
             }
@@ -199,7 +199,7 @@ class TimingSettings {
                 margin-top: 8px;
                 border-top: 2px solid var(--color-border, #e2e8f0);
             }
-            .default-penalty-label { font-size: 13px; font-weight: 600; }
+            .default-penalty-label { font-size: var(--font-size-sm); font-weight: 600; }
             .info-box {
                 padding: 10px 14px;
                 background: #eff6ff;
@@ -207,7 +207,7 @@ class TimingSettings {
                 border-left: 3px solid var(--color-primary, #3b82f6);
                 border-radius: 4px;
                 margin-top: 14px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-secondary, #64748b);
                 line-height: 1.5;
             }
@@ -225,18 +225,18 @@ class TimingSettings {
                 background: var(--color-bg-subtle, #f8fafc);
                 border: 1px solid var(--color-border, #e2e8f0);
                 border-radius: 999px;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
             }
             .tag-chip .remove {
                 cursor: pointer;
                 color: #94a3b8;
-                font-size: 14px;
+                font-size: var(--font-size-base);
             }
             .tag-chip .remove:hover { color: #ef4444; }
             .empty-tags {
                 color: #94a3b8;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-style: italic;
                 padding: 16px;
                 text-align: center;
@@ -251,7 +251,7 @@ class TimingSettings {
             }
             .save-bar .last-saved {
                 margin-left: auto;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-secondary, #64748b);
             }
             .tag-add-row {
@@ -300,7 +300,7 @@ class TimingSettings {
                 <h3>Delay Penalty Rules</h3>
                 <button type="button" class="ops-btn secondary" onclick="addRule()">+ Add Rule</button>
             </div>
-            <p style="margin:0 0 12px;font-size:13px;color:var(--color-text-secondary,#64748b)">
+            <p style="margin:0 0 12px;font-size:var(--font-size-sm);color:var(--color-text-secondary,#64748b)">
                 Define penalty brackets by maximum delay hours. The agent's worst on-shift delay is matched against these brackets (evaluated shortest to longest).
             </p>
             <div id="rules-container">
@@ -335,7 +335,7 @@ class TimingSettings {
             <div class="section-header">
                 <h3>Tag Exclusions</h3>
             </div>
-            <p style="margin:0 0 12px;font-size:13px;color:var(--color-text-secondary,#64748b)">
+            <p style="margin:0 0 12px;font-size:var(--font-size-sm);color:var(--color-text-secondary,#64748b)">
                 Tickets with any of these FluentSupport tags will be exempt from timing penalties.
                 All agents on the ticket get timing_score = 0 with an exclusion note in the audit.
             </p>

@@ -192,8 +192,8 @@ class AllAudits {
 
             <?php if (AccessControl::is_admin()): ?>
             <div id="bulk-actions-bar" style="display:none;padding:10px 20px;background:var(--color-bg-subtle);border-bottom:1px solid var(--color-border);align-items:center;gap:12px;">
-                <span id="selected-count" style="font-size:13px;color:var(--color-text-secondary);">0 selected</span>
-                <button id="btn-bulk-delete" class="ops-btn" style="background:#dc3545;border-color:#dc3545;color:#fff;height:28px;font-size:11px;padding:0 12px;">Delete Selected</button>
+                <span id="selected-count" style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">0 selected</span>
+                <button id="btn-bulk-delete" class="ops-btn" style="background:#dc3545;border-color:#dc3545;color:#fff;height:28px;font-size:var(--font-size-xs);padding:0 12px;">Delete Selected</button>
             </div>
             <?php endif; ?>
 
@@ -244,7 +244,7 @@ class AllAudits {
                     if ($filter_flag) $base_url .= '&flag_status=' . urlencode($filter_flag);
 
                     if ($page > 1): ?>
-                        <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;">&laquo; Prev</a>
+                        <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:var(--font-size-xs);padding:0 12px;">&laquo; Prev</a>
                     <?php endif;
 
                     // Show page numbers
@@ -252,14 +252,14 @@ class AllAudits {
                     $end = min($total_pages, $page + 2);
                     for ($i = $start; $i <= $end; $i++): ?>
                         <?php if ($i === $page): ?>
-                            <span class="ops-btn primary" style="height:32px;font-size:12px;padding:0 12px;cursor:default;"><?php echo $i; ?></span>
+                            <span class="ops-btn primary" style="height:32px;font-size:var(--font-size-xs);padding:0 12px;cursor:default;"><?php echo $i; ?></span>
                         <?php else: ?>
-                            <a href="<?php echo esc_url($base_url . '&paged=' . $i); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;"><?php echo $i; ?></a>
+                            <a href="<?php echo esc_url($base_url . '&paged=' . $i); ?>" class="ops-btn secondary" style="height:32px;font-size:var(--font-size-xs);padding:0 12px;"><?php echo $i; ?></a>
                         <?php endif; ?>
                     <?php endfor;
 
                     if ($page < $total_pages): ?>
-                        <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:12px;padding:0 12px;">Next &raquo;</a>
+                        <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="ops-btn secondary" style="height:32px;font-size:var(--font-size-xs);padding:0 12px;">Next &raquo;</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -290,17 +290,17 @@ class AllAudits {
                 display: flex; flex-direction: column; gap: 8px;
             }
             .audit-filter-group label {
-                font-size: 13px; font-weight: 500; color: var(--color-text-tertiary);
+                font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-tertiary);
             }
             .audit-filter-group.wide { flex: 2; min-width: 250px; }
             .audit-filter-group.narrow { flex: 1; min-width: 150px; }
             .audit-table-wrapper { overflow-x: auto; }
             .audit-table { margin: 0; }
             .col-summary {
-                color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; max-width: 500px;
+                color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: 1.5; max-width: 500px;
             }
             .btn-view, .btn-force {
-                font-size: 12px; padding: 0 12px; height: 32px; margin-left: 6px;
+                font-size: var(--font-size-xs); padding: 0 12px; height: 32px; margin-left: 6px;
             }
             .btn-view { min-width: 70px; }
             .btn-force { min-width: 90px; }
@@ -314,7 +314,7 @@ class AllAudits {
                 display: flex; align-items: center; justify-content: space-between;
                 padding: 16px 20px; border-top: 1px solid var(--color-border);
             }
-            .pagination-info { font-size: 13px; color: var(--color-text-tertiary); }
+            .pagination-info { font-size: var(--font-size-sm); color: var(--color-text-tertiary); }
             .pagination-links { display: flex; gap: 2px; }
 
             /* Modal styles now in AuditModal::render_modal_styles() */
@@ -322,7 +322,7 @@ class AllAudits {
             /* Review badge in table (AllAudits-specific) */
             .review-badge {
                 display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
-                font-size: 11px; font-weight: 600;
+                font-size: var(--font-size-xs); font-weight: 600;
             }
             .review-badge.reviewed {
                 background: var(--color-success-bg); color: #065f46;
@@ -388,11 +388,11 @@ class AllAudits {
         if (!empty($row->overall_sentiment)) {
             $s = strtolower($row->overall_sentiment);
             $badge_class = $s === 'positive' ? 'success' : ($s === 'negative' ? 'failed' : 'warning');
-            $sentiment_badge = " <span class='status-badge {$badge_class}' style='font-size:9px;padding:2px 6px;min-width:auto;'>" . esc_html($row->overall_sentiment) . "</span>";
+            $sentiment_badge = " <span class='status-badge {$badge_class}' style='font-size:var(--font-size-xs);padding:2px 6px;min-width:auto;'>" . esc_html($row->overall_sentiment) . "</span>";
         }
 
         // Review badge
-        $review_badge = '<span style="color:var(--color-text-tertiary);font-size:12px;">—</span>';
+        $review_badge = '<span style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">—</span>';
         if (!empty($row->reviewer_name)) {
             $review_badge = '<span class="review-badge reviewed" title="' . esc_attr($row->reviewed_status) . '">' . esc_html($row->reviewer_name) . '</span>';
         } elseif (!empty($row->reviewer_email)) {
@@ -431,20 +431,20 @@ class AllAudits {
                     <input type='hidden' name='_wpnonce' value='{$nonce}'>
                     <input type='hidden' name='flagged_action' value='review'>
                     <input type='hidden' name='flag_id' value='" . intval($row->flag_id) . "'>
-                    <button type='submit' class='ops-btn primary' style='font-size:11px;height:28px;padding:0 8px;'>Reviewed</button>
+                    <button type='submit' class='ops-btn primary' style='font-size:var(--font-size-xs);height:28px;padding:0 8px;'>Reviewed</button>
                 </form>
                 <form method='post' style='display:inline;'>
                     <input type='hidden' name='_wpnonce' value='{$nonce}'>
                     <input type='hidden' name='flagged_action' value='dismiss'>
                     <input type='hidden' name='flag_id' value='" . intval($row->flag_id) . "'>
-                    <button type='submit' class='ops-btn secondary' style='font-size:11px;height:28px;padding:0 8px;'>Dismiss</button>
+                    <button type='submit' class='ops-btn secondary' style='font-size:var(--font-size-xs);height:28px;padding:0 8px;'>Dismiss</button>
                 </form>";
         }
 
         echo "<tr id='row-{$row->ticket_id}'>
             {$checkbox}
             <td style='font-weight:600;color:var(--color-text-primary);'>#{$row->ticket_id}</td>
-            <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span>" . (!empty($row->exclude_from_stats) ? " <span class='status-badge pending' title='" . esc_attr($row->exclude_reason ?? 'Excluded from stats') . "' style='font-size:9px;padding:2px 6px;min-width:auto;'>Excluded</span>" : "") . "</td>
+            <td><span class='status-badge {$row->status}'>" . ucfirst($row->status) . "</span>" . (!empty($row->exclude_from_stats) ? " <span class='status-badge pending' title='" . esc_attr($row->exclude_reason ?? 'Excluded from stats') . "' style='font-size:var(--font-size-xs);padding:2px 6px;min-width:auto;'>Excluded</span>" : "") . "</td>
             <td style='text-align:center;'><span class='col-score {$score_class}'>{$score_display}</span>{$sentiment_badge}</td>
             <td style='text-align:center;'>{$review_badge}</td>
             {$flag_col}
@@ -498,7 +498,7 @@ class AllAudits {
         if (empty($appeals)) return;
         ?>
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">
                 Pending Agent Appeals
                 <span class="ops-nav-badge" style="margin-left:8px;"><?php echo count($appeals); ?></span>
             </h3>
@@ -519,15 +519,15 @@ class AllAudits {
                     <tr id="appeal-row-<?php echo intval($ap->id); ?>">
                         <td><strong><?php echo esc_html($ap->agent_name ?: $ap->agent_email); ?></strong></td>
                         <td>#<?php echo esc_html($ap->ticket_id); ?></td>
-                        <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
+                        <td style="font-size:var(--font-size-xs);"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
                         <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
                         <td>
                             <div style="display:flex;gap:6px;align-items:center;">
-                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">
-                                <button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
-                                <button class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
+                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:var(--font-size-xs);flex:1;">
+                                <button class="ops-btn primary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
+                                <button class="ops-btn secondary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
                             </div>
                         </td>
                     </tr>
@@ -669,7 +669,7 @@ class AllAudits {
                         }
                     } else if (isAdmin) {
                         $('#admin-review-summary').html(
-                            '<div style="padding:12px 16px;border:1px dashed var(--color-border);border-radius:8px;color:var(--color-text-tertiary);font-size:13px;margin-top:16px;">Not yet reviewed by a team lead.</div>'
+                            '<div style="padding:12px 16px;border:1px dashed var(--color-border);border-radius:8px;color:var(--color-text-tertiary);font-size:var(--font-size-sm);margin-top:16px;">Not yet reviewed by a team lead.</div>'
                         ).show();
                     }
 
@@ -686,7 +686,7 @@ class AllAudits {
                             var $trail = $('#ov-trail-' + safeEmail);
                             if ($trail.length === 0) return;
 
-                            var trailHtml = '<div style="margin-top:6px;font-size:11px;font-weight:600;color:var(--color-text-secondary);">Override History:</div>';
+                            var trailHtml = '<div style="margin-top:6px;font-size:var(--font-size-xs);font-weight:600;color:var(--color-text-secondary);">Override History:</div>';
                             trailsByAgent[safeEmail].forEach(function(o) {
                                 var byName = o.override_by_name || o.override_by;
                                 trailHtml += '<div class="ar-override-trail-item">';
@@ -706,10 +706,10 @@ class AllAudits {
                 var reviewedAt = r.reviewed_at || '';
 
                 var h = '<div class="ar-review-panel" style="border-color:var(--color-success, #16a34a);margin-top:16px;">';
-                h += '<div class="ar-review-panel-title" style="color:var(--color-success, #16a34a);">Reviewed by ' + escHtml(reviewerName) + ' <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);">on ' + escHtml(reviewedAt) + '</span></div>';
+                h += '<div class="ar-review-panel-title" style="color:var(--color-success, #16a34a);">Reviewed by ' + escHtml(reviewerName) + ' <span style="font-size:var(--font-size-xs);font-weight:400;color:var(--color-text-tertiary);">on ' + escHtml(reviewedAt) + '</span></div>';
 
                 if (r.general_notes) {
-                    h += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-secondary);">';
+                    h += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px 14px;font-size:var(--font-size-sm);color:var(--color-text-secondary);">';
                     h += escHtml(r.general_notes);
                     h += '</div>';
                 }
@@ -850,20 +850,20 @@ class AllAudits {
 
                                 if (pendingReqs.length > 0) {
                                     ph += '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:10px;">';
-                                    ph += '<div style="font-size:12px;font-weight:600;color:var(--color-warning);margin-bottom:8px;">Pending Review Requests (' + pendingReqs.length + ')</div>';
+                                    ph += '<div style="font-size:var(--font-size-xs);font-weight:600;color:var(--color-warning);margin-bottom:8px;">Pending Review Requests (' + pendingReqs.length + ')</div>';
                                     pendingReqs.forEach(function(r) {
                                         var reqName = r.requester_name || r.requested_by;
                                         ph += '<div style="background:var(--color-bg-subtle);border:1px solid var(--color-border);border-radius:8px;padding:10px;margin-bottom:8px;">';
-                                        ph += '<div style="font-size:12px;"><strong>' + escHtml(reqName) + '</strong> requests <strong>' + (fieldLabels[r.field_name] || r.field_name) + '</strong>: ';
+                                        ph += '<div style="font-size:var(--font-size-xs);"><strong>' + escHtml(reqName) + '</strong> requests <strong>' + (fieldLabels[r.field_name] || r.field_name) + '</strong>: ';
                                         ph += '<span class="' + scoreClass(parseInt(r.current_value)) + '">' + r.current_value + '</span>';
                                         ph += ' &rarr; <span class="' + scoreClass(parseInt(r.suggested_value)) + '">' + r.suggested_value + '</span></div>';
                                         if (r.request_notes) {
-                                            ph += '<div style="font-size:12px;color:var(--color-text-secondary);margin:6px 0;font-style:italic;">"' + escHtml(r.request_notes) + '"</div>';
+                                            ph += '<div style="font-size:var(--font-size-xs);color:var(--color-text-secondary);margin:6px 0;font-style:italic;">"' + escHtml(r.request_notes) + '"</div>';
                                         }
                                         ph += '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;">';
-                                        ph += '<input type="text" id="resolve-notes-' + r.id + '" placeholder="Notes (optional)" style="flex:1;height:26px;font-size:11px;padding:0 8px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg);">';
-                                        ph += '<button class="ops-btn primary" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'approved\')">Approve</button>';
-                                        ph += '<button class="ops-btn secondary" style="height:26px;font-size:11px;padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'rejected\')">Reject</button>';
+                                        ph += '<input type="text" id="resolve-notes-' + r.id + '" placeholder="Notes (optional)" style="flex:1;height:26px;font-size:var(--font-size-xs);padding:0 8px;border:1px solid var(--color-border);border-radius:6px;background:var(--color-bg);">';
+                                        ph += '<button class="ops-btn primary" style="height:26px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'approved\')">Approve</button>';
+                                        ph += '<button class="ops-btn secondary" style="height:26px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveOverrideRequest(' + r.id + ',\'rejected\')">Reject</button>';
                                         ph += '</div></div>';
                                     });
                                     ph += '</div>';
@@ -871,12 +871,12 @@ class AllAudits {
 
                                 if (resolvedReqs.length > 0) {
                                     ph += '<div style="margin-top:8px;">';
-                                    ph += '<div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;">Past Requests</div>';
+                                    ph += '<div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-bottom:4px;">Past Requests</div>';
                                     resolvedReqs.forEach(function(r) {
                                         var reqName = r.requester_name || r.requested_by;
                                         var statusColor = r.status === 'approved' ? 'var(--color-success)' : 'var(--color-error)';
                                         var statusLabel = r.status === 'approved' ? 'Approved' : 'Rejected';
-                                        ph += '<div style="font-size:11px;color:var(--color-text-tertiary);padding:4px 0;border-bottom:1px solid var(--color-border);">';
+                                        ph += '<div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);padding:4px 0;border-bottom:1px solid var(--color-border);">';
                                         ph += escHtml(reqName) + ': ' + (fieldLabels[r.field_name] || r.field_name) + ' ' + r.current_value + ' &rarr; ' + r.suggested_value;
                                         ph += ' <span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
                                         if (r.resolution_notes) ph += ' — ' + escHtml(r.resolution_notes);
@@ -897,14 +897,14 @@ class AllAudits {
                                 reqs.forEach(function(r) {
                                     var statusColor = r.status === 'pending' ? 'var(--color-warning)' : (r.status === 'approved' ? 'var(--color-success)' : 'var(--color-error)');
                                     var statusLabel = r.status.charAt(0).toUpperCase() + r.status.slice(1);
-                                    mh += '<div style="font-size:11px;padding:6px 0;border-bottom:1px solid var(--color-border);color:var(--color-text-secondary);">';
+                                    mh += '<div style="font-size:var(--font-size-xs);padding:6px 0;border-bottom:1px solid var(--color-border);color:var(--color-text-secondary);">';
                                     mh += (fieldLabels[r.field_name] || r.field_name) + ': ' + r.current_value + ' &rarr; ' + r.suggested_value;
                                     mh += ' <span style="color:' + statusColor + ';font-weight:600;">' + statusLabel + '</span>';
                                     if (r.resolution_notes) mh += '<br><span style="color:var(--color-text-tertiary);margin-left:8px;">Admin: ' + escHtml(r.resolution_notes) + '</span>';
                                     mh += '</div>';
                                 });
                                 if (mh) {
-                                    $myReqs.html('<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:var(--color-text-tertiary);margin-bottom:4px;">Your Requests</div>' + mh + '</div>');
+                                    $myReqs.html('<div style="margin-top:8px;"><div style="font-size:var(--font-size-xs);font-weight:600;color:var(--color-text-tertiary);margin-bottom:4px;">Your Requests</div>' + mh + '</div>');
                                 }
                             }
                         }

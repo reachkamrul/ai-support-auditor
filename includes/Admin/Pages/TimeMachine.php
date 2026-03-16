@@ -40,10 +40,10 @@ class TimeMachine {
         <style>
         .tm-kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
         .tm-kpi-card { background:var(--color-bg-secondary); border-radius:8px; padding:16px; text-align:center; }
-        .tm-kpi-value { font-size:28px; font-weight:700; line-height:1.2; }
-        .tm-kpi-label { font-size:12px; color:var(--color-text-secondary); margin-top:4px; }
-        .tm-table { width:100%; border-collapse:collapse; font-size:13px; }
-        .tm-table th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--color-border); font-weight:600; font-size:11px; text-transform:uppercase; color:var(--color-text-secondary); letter-spacing:0.5px; }
+        .tm-kpi-value { font-size:var(--font-size-2xl); font-weight:700; line-height:1.2; }
+        .tm-kpi-label { font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:4px; }
+        .tm-table { width:100%; border-collapse:collapse; font-size:var(--font-size-sm); }
+        .tm-table th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--color-border); font-weight:600; font-size:var(--font-size-xs); text-transform:uppercase; color:var(--color-text-secondary); letter-spacing:0.5px; }
         .tm-table td { padding:10px 12px; border-bottom:1px solid var(--color-border); }
         .tm-table tbody tr:hover { background:var(--color-bg-secondary); }
         .tm-spinner { width:32px; height:32px; border:3px solid var(--color-border); border-top-color:var(--color-primary); border-radius:50%; animation:tm-spin 0.8s linear infinite; margin:0 auto; }
@@ -58,15 +58,15 @@ class TimeMachine {
         <div class="ops-card" style="margin-bottom:20px;">
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <div>
-                    <label style="font-size:12px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">Date</label>
+                    <label style="font-size:var(--font-size-xs);font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">Date</label>
                     <input type="date" id="tm-date" class="ops-input" value="<?php echo esc_attr($today); ?>" max="<?php echo esc_attr($today); ?>" style="width:170px;">
                 </div>
                 <div>
-                    <label style="font-size:12px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">End Date (optional range)</label>
+                    <label style="font-size:var(--font-size-xs);font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">End Date (optional range)</label>
                     <input type="date" id="tm-date-end" class="ops-input" value="" max="<?php echo esc_attr($today); ?>" style="width:170px;" placeholder="Same as start">
                 </div>
                 <div>
-                    <label style="font-size:12px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">Quick Select</label>
+                    <label style="font-size:var(--font-size-xs);font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px;">Quick Select</label>
                     <div style="display:flex;gap:6px;">
                         <button class="ops-btn secondary tm-preset" data-days="0">Today</button>
                         <button class="ops-btn secondary tm-preset" data-days="1">Yesterday</button>
@@ -157,10 +157,10 @@ class TimeMachine {
 
             // -- Date Header --
             html += '<div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
-            html += '<span style="font-size:20px;font-weight:700;color:var(--color-text-primary);">' + dateLabel + '</span>';
+            html += '<span style="font-size:var(--font-size-xl);font-weight:700;color:var(--color-text-primary);">' + dateLabel + '</span>';
             if (isRange) {
                 var days = Math.round((new Date(d.date_to) - new Date(d.date_from)) / 86400000) + 1;
-                html += '<span style="background:var(--color-bg-tertiary);padding:2px 10px;border-radius:12px;font-size:12px;color:var(--color-text-secondary);">' + days + ' days</span>';
+                html += '<span style="background:var(--color-bg-tertiary);padding:2px 10px;border-radius:12px;font-size:var(--font-size-xs);color:var(--color-text-secondary);">' + days + ' days</span>';
             }
             html += '</div>';
 
@@ -177,7 +177,7 @@ class TimeMachine {
             // -- FluentSupport Live Data (if available) --
             if (d.fluent && d.fluent.available) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">FluentSupport Ticket Activity</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">FluentSupport Ticket Activity</h3>';
                 html += '<div class="tm-kpi-grid">';
                 html += kpiCard('New Tickets', d.fluent.new_tickets, '', '#3b82f6');
                 html += kpiCard('Closed Tickets', d.fluent.closed_tickets, '', '#22c55e');
@@ -192,7 +192,7 @@ class TimeMachine {
             // -- Agent Performance Table --
             if (d.agents && d.agents.length > 0) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">Agent Performance</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">Agent Performance</h3>';
                 html += '<div style="overflow-x:auto;">';
                 html += '<table class="tm-table">';
                 html += '<thead><tr>';
@@ -208,7 +208,7 @@ class TimeMachine {
                 html += '<tbody>';
                 d.agents.forEach(function(a) {
                     html += '<tr>';
-                    html += '<td><strong>' + esc(a.agent_name) + '</strong><br><span style="font-size:11px;color:var(--color-text-tertiary);">' + esc(a.agent_email) + '</span></td>';
+                    html += '<td><strong>' + esc(a.agent_name) + '</strong><br><span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">' + esc(a.agent_email) + '</span></td>';
                     html += '<td style="text-align:center;">' + a.ticket_count + '</td>';
                     html += '<td style="text-align:center;"><span style="color:' + scoreColor(a.avg_overall, true) + ';font-weight:600;">' + a.avg_overall + '</span></td>';
                     html += '<td style="text-align:center;"><span style="color:' + timingColor(a.avg_timing) + ';">' + a.avg_timing + '</span></td>';
@@ -224,13 +224,13 @@ class TimeMachine {
             // -- Problem Breakdown --
             if (d.problems && d.problems.length > 0) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">Problem Categories</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">Problem Categories</h3>';
                 html += '<div style="display:flex;flex-wrap:wrap;gap:12px;">';
                 d.problems.forEach(function(p) {
                     var color = problemColor(p.category);
                     html += '<div style="background:' + color + '15;border:1px solid ' + color + '30;border-radius:8px;padding:12px 16px;min-width:180px;">';
-                    html += '<div style="font-size:22px;font-weight:700;color:' + color + ';">' + p.count + '</div>';
-                    html += '<div style="font-size:12px;color:var(--color-text-secondary);">' + esc(p.category) + '</div>';
+                    html += '<div style="font-size:var(--font-size-xl);font-weight:700;color:' + color + ';">' + p.count + '</div>';
+                    html += '<div style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">' + esc(p.category) + '</div>';
                     html += '</div>';
                 });
                 html += '</div></div>';
@@ -239,13 +239,13 @@ class TimeMachine {
             // -- Shift Coverage --
             if (d.shifts && d.shifts.length > 0) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">Shift Coverage</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">Shift Coverage</h3>';
                 html += '<div style="display:flex;flex-wrap:wrap;gap:12px;">';
                 d.shifts.forEach(function(s) {
                     html += '<div style="background:var(--color-bg-secondary);border-radius:8px;padding:12px 16px;min-width:150px;">';
-                    html += '<div style="font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:4px;">' + esc(s.shift_type) + '</div>';
-                    html += '<div style="font-size:20px;font-weight:700;color:var(--color-primary);">' + s.agent_count + '</div>';
-                    html += '<div style="font-size:11px;color:var(--color-text-tertiary);">agents scheduled</div>';
+                    html += '<div style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-primary);margin-bottom:4px;">' + esc(s.shift_type) + '</div>';
+                    html += '<div style="font-size:var(--font-size-xl);font-weight:700;color:var(--color-primary);">' + s.agent_count + '</div>';
+                    html += '<div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">agents scheduled</div>';
                     html += '</div>';
                 });
                 html += '</div></div>';
@@ -254,7 +254,7 @@ class TimeMachine {
             // -- Daily Breakdown (for ranges) --
             if (d.daily && d.daily.length > 1) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">Daily Breakdown</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">Daily Breakdown</h3>';
                 html += '<div style="overflow-x:auto;">';
                 html += '<table class="tm-table">';
                 html += '<thead><tr><th>Date</th><th style="text-align:center;">Audits</th><th style="text-align:center;">Avg Score</th><th style="text-align:center;">Problems</th><th style="text-align:center;">Agents Active</th></tr></thead>';
@@ -274,7 +274,7 @@ class TimeMachine {
             // -- Worst Tickets --
             if (d.worst_tickets && d.worst_tickets.length > 0) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">Lowest Scoring Tickets</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">Lowest Scoring Tickets</h3>';
                 html += '<div style="overflow-x:auto;">';
                 html += '<table class="tm-table">';
                 html += '<thead><tr><th>Ticket</th><th>Score</th><th>Sentiment</th><th>Agents</th></tr></thead>';
@@ -284,7 +284,7 @@ class TimeMachine {
                     html += '<td><a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits'); ?>&search=' + t.ticket_id + '" style="color:var(--color-primary);font-weight:600;">#' + t.ticket_id + '</a></td>';
                     html += '<td><span style="color:' + scoreColor(t.score) + ';font-weight:600;">' + t.score + '</span></td>';
                     html += '<td>' + esc(t.sentiment || '—') + '</td>';
-                    html += '<td style="font-size:12px;">' + esc(t.agents) + '</td>';
+                    html += '<td style="font-size:var(--font-size-xs);">' + esc(t.agents) + '</td>';
                     html += '</tr>';
                 });
                 html += '</tbody></table></div></div>';
@@ -293,7 +293,7 @@ class TimeMachine {
             // -- FluentSupport Agent Response Stats --
             if (d.fluent && d.fluent.agent_responses && d.fluent.agent_responses.length > 0) {
                 html += '<div class="ops-card" style="margin-bottom:20px;">';
-                html += '<h3 style="margin:0 0 16px;font-size:15px;font-weight:600;">FluentSupport Response Activity</h3>';
+                html += '<h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:600;">FluentSupport Response Activity</h3>';
                 html += '<div style="overflow-x:auto;">';
                 html += '<table class="tm-table">';
                 html += '<thead><tr><th>Agent</th><th style="text-align:center;">Responses</th><th style="text-align:center;">Interactions</th><th style="text-align:center;">Closed</th></tr></thead>';
@@ -314,7 +314,7 @@ class TimeMachine {
 
         function kpiCard(label, value, suffix, color) {
             return '<div class="tm-kpi-card">' +
-                '<div class="tm-kpi-value" style="color:' + (color || 'var(--color-text-primary)') + ';">' + value + '<span style="font-size:14px;font-weight:400;color:var(--color-text-tertiary);">' + (suffix || '') + '</span></div>' +
+                '<div class="tm-kpi-value" style="color:' + (color || 'var(--color-text-primary)') + ';">' + value + '<span style="font-size:var(--font-size-base);font-weight:400;color:var(--color-text-tertiary);">' + (suffix || '') + '</span></div>' +
                 '<div class="tm-kpi-label">' + label + '</div>' +
                 '</div>';
         }

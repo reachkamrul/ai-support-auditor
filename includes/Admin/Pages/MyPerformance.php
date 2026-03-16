@@ -111,15 +111,15 @@ class MyPerformance {
         ?>
         <style>
             .portal-header { display:flex; align-items:center; gap:20px; margin-bottom:24px; }
-            .portal-avatar { width:56px; height:56px; border-radius:50%; background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; }
-            .portal-name { font-size:20px; font-weight:700; color:var(--color-text-primary); }
-            .portal-email { font-size:13px; color:var(--color-text-secondary); }
-            .portal-vs-team { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+            .portal-avatar { width:56px; height:56px; border-radius:50%; background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; font-size:var(--font-size-xl); font-weight:700; }
+            .portal-name { font-size:var(--font-size-xl); font-weight:700; color:var(--color-text-primary); }
+            .portal-email { font-size:var(--font-size-sm); color:var(--color-text-secondary); }
+            .portal-vs-team { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:var(--font-size-xs); font-weight:600; }
             .portal-vs-team.above { background:#dcfce7; color:#166534; }
             .portal-vs-team.below { background:#fee2e2; color:#991b1b; }
             .portal-vs-team.equal { background:#f1f5f9; color:#64748b; }
             .improvement-list { list-style:none; padding:0; margin:0; }
-            .improvement-list li { padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px; color:var(--color-text-primary); display:flex; align-items:flex-start; gap:8px; }
+            .improvement-list li { padding:8px 0; border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); color:var(--color-text-primary); display:flex; align-items:flex-start; gap:8px; }
             .improvement-list li:last-child { border-bottom:none; }
             .improvement-icon { width:18px; height:18px; flex-shrink:0; margin-top:1px; }
         </style>
@@ -151,7 +151,7 @@ class MyPerformance {
                 <?php foreach ([7 => '7 Days', 30 => '30 Days', 60 => '60 Days', 90 => '90 Days'] as $d => $label): ?>
                     <a href="<?php echo esc_url(add_query_arg('days', $d, $base_url)); ?>"
                        class="ops-btn <?php echo $days == $d ? 'primary' : 'secondary'; ?>"
-                       style="padding:0 14px;height:34px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
+                       style="padding:0 14px;height:34px;font-size:var(--font-size-sm);font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -183,18 +183,18 @@ class MyPerformance {
 
         <!-- Score Trend Chart -->
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">My Score Trend</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">My Score Trend</h3>
             <div style="height:280px;"><canvas id="chart-my-trend"></canvas></div>
         </div>
 
         <!-- Score Breakdown -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;">
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Score Breakdown</h3>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Score Breakdown</h3>
                 <div style="max-width:300px;margin:0 auto;"><canvas id="chart-my-radar"></canvas></div>
             </div>
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Areas for Improvement</h3>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Areas for Improvement</h3>
                 <?php
                 $improvements = [];
                 foreach ($recent as $r) {
@@ -230,7 +230,7 @@ class MyPerformance {
         <!-- Flagged Tickets (if any) -->
         <?php if (!empty($flagged)): ?>
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Flagged Tickets</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Flagged Tickets</h3>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -246,9 +246,9 @@ class MyPerformance {
                     <tr>
                         <td><strong>#<?php echo esc_html($f->ticket_id); ?></strong></td>
                         <td><span class="status-badge <?php echo $f->flag_type === 'low_score' ? 'failed' : ''; ?>"><?php echo esc_html(str_replace('_', ' ', $f->flag_type)); ?></span></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:300px;"><?php echo esc_html(substr($f->flag_reason, 0, 120)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:300px;"><?php echo esc_html(substr($f->flag_reason, 0, 120)); ?></td>
                         <td><span class="status-badge <?php echo $f->status === 'dismissed' ? 'success' : ($f->status === 'reviewed' ? '' : 'pending'); ?>"><?php echo esc_html($f->status); ?></span></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($f->created_at)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($f->created_at)); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -258,7 +258,7 @@ class MyPerformance {
 
         <!-- Recent Evaluations -->
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Recent Evaluations</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Recent Evaluations</h3>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -283,9 +283,9 @@ class MyPerformance {
                         <td style="text-align:center;"><?php echo intval($r->resolution_score); ?></td>
                         <td style="text-align:center;"><?php echo intval($r->communication_score); ?></td>
                         <td style="text-align:center;"><?php echo intval($r->reply_count); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j, g:ia', strtotime($r->created_at)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);"><?php echo wp_date('M j, g:ia', strtotime($r->created_at)); ?></td>
                         <td>
-                            <button class="ops-btn secondary" style="font-size:11px;padding:2px 10px;height:24px;"
+                            <button class="ops-btn secondary" style="font-size:var(--font-size-xs);padding:2px 10px;height:24px;"
                                 onclick="openAppealModal(<?php echo intval($r->id); ?>, '<?php echo esc_js($r->ticket_id); ?>')">
                                 Appeal
                             </button>
@@ -299,12 +299,12 @@ class MyPerformance {
         <!-- Appeal Modal -->
         <div id="appeal-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:none;align-items:center;justify-content:center;">
             <div style="background:#fff;border-radius:var(--radius-lg);padding:24px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <h3 style="margin:0 0 16px;font-size:16px;font-weight:700;">Appeal Audit Score</h3>
+                <h3 style="margin:0 0 16px;font-size:var(--font-size-md);font-weight:700;">Appeal Audit Score</h3>
                 <input type="hidden" id="appeal-eval-id">
                 <input type="hidden" id="appeal-ticket-id">
                 <div style="margin-bottom:12px;">
-                    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Which score do you disagree with?</label>
-                    <select id="appeal-field" style="width:100%;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;">
+                    <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Which score do you disagree with?</label>
+                    <select id="appeal-field" style="width:100%;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);">
                         <option value="">General appeal (all scores)</option>
                         <option value="timing_score">Timing Score</option>
                         <option value="resolution_score">Resolution Score</option>
@@ -313,20 +313,20 @@ class MyPerformance {
                     </select>
                 </div>
                 <div style="margin-bottom:16px;">
-                    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Why do you disagree? (required)</label>
-                    <textarea id="appeal-reason" rows="4" style="width:100%;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;resize:vertical;" placeholder="Explain why you believe this score is incorrect..."></textarea>
+                    <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;color:var(--color-text-secondary);">Why do you disagree? (required)</label>
+                    <textarea id="appeal-reason" rows="4" style="width:100%;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:8px 10px;font-size:var(--font-size-sm);resize:vertical;" placeholder="Explain why you believe this score is incorrect..."></textarea>
                 </div>
-                <div id="appeal-modal-msg" style="display:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;"></div>
+                <div id="appeal-modal-msg" style="display:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:var(--font-size-sm);margin-bottom:12px;"></div>
                 <div style="display:flex;gap:8px;justify-content:flex-end;">
-                    <button class="ops-btn secondary" onclick="closeAppealModal()" style="height:34px;font-size:13px;">Cancel</button>
-                    <button class="ops-btn primary" onclick="submitAppeal()" style="height:34px;font-size:13px;">Submit Appeal</button>
+                    <button class="ops-btn secondary" onclick="closeAppealModal()" style="height:34px;font-size:var(--font-size-sm);">Cancel</button>
+                    <button class="ops-btn primary" onclick="submitAppeal()" style="height:34px;font-size:var(--font-size-sm);">Submit Appeal</button>
                 </div>
             </div>
         </div>
 
         <!-- My Appeals History -->
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">My Appeals</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">My Appeals</h3>
             <div id="my-appeals-list">
                 <div class="ops-empty-state" style="padding:20px;"><div class="ops-empty-state-title">Loading...</div></div>
             </div>
@@ -444,11 +444,11 @@ class MyPerformance {
                         var statusClass = a.status === 'approved' ? 'success' : (a.status === 'rejected' ? 'failed' : 'pending');
                         html += '<tr>';
                         html += '<td><strong>#' + a.ticket_id + '</strong></td>';
-                        html += '<td style="font-size:12px;">' + (a.disputed_field ? a.disputed_field.replace('_', ' ') : 'General') + '</td>';
-                        html += '<td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;">' + (a.reason || '').substring(0, 100) + '</td>';
+                        html += '<td style="font-size:var(--font-size-xs);">' + (a.disputed_field ? a.disputed_field.replace('_', ' ') : 'General') + '</td>';
+                        html += '<td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;">' + (a.reason || '').substring(0, 100) + '</td>';
                         html += '<td><span class="status-badge ' + statusClass + '">' + a.status + '</span></td>';
-                        html += '<td style="font-size:12px;color:var(--color-text-secondary);">' + (a.resolution_notes || '-') + '</td>';
-                        html += '<td style="font-size:12px;color:var(--color-text-secondary);">' + (a.created_at || '').substring(0, 10) + '</td>';
+                        html += '<td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">' + (a.resolution_notes || '-') + '</td>';
+                        html += '<td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">' + (a.created_at || '').substring(0, 10) + '</td>';
                         html += '</tr>';
                     });
                     html += '</tbody></table>';

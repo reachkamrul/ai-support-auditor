@@ -428,8 +428,8 @@ class Manager {
      */
     private function render_coming_soon($feature, $description) {
         echo '<div class="ops-card" style="text-align:center;padding:60px 40px;">';
-        echo '<div style="font-size:48px;margin-bottom:16px;opacity:0.3;">&#128736;</div>';
-        echo '<h3 style="font-size:20px;margin-bottom:8px;">' . esc_html($feature) . '</h3>';
+        echo '<div style="font-size:var(--font-size-2xl);margin-bottom:16px;opacity:0.3;">&#128736;</div>';
+        echo '<h3 style="font-size:var(--font-size-xl);margin-bottom:8px;">' . esc_html($feature) . '</h3>';
         echo '<p style="color:var(--color-text-secondary);max-width:400px;margin:0 auto;">' . esc_html($description) . '</p>';
         echo '<span class="status-badge pending" style="margin-top:16px;">Coming Soon</span>';
         echo '</div>';

@@ -372,13 +372,13 @@ class Assets {
             
             .cal-date {
                 font-weight: 600;
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 color: var(--color-text-primary);
                 margin-bottom: 4px;
             }
             
             .shift-pill {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 padding: 4px 8px;
                 border-radius: 4px;
                 margin-bottom: 4px;
@@ -420,7 +420,7 @@ class Assets {
             /* ===== SCORE COLORS ===== */
             .col-score {
                 font-weight: 700;
-                font-size: 14px;
+                font-size: var(--font-size-base);
             }
             
             .col-score.score-good {
@@ -512,7 +512,7 @@ class Assets {
                 padding: var(--space-md);
                 border-radius: var(--radius-sm);
                 font-family: var(--font-mono);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 white-space: pre-wrap;
                 word-wrap: break-word;
                 max-height: 60vh;
@@ -575,7 +575,7 @@ class Assets {
             /* ===== SUMMARY COLUMN ===== */
             .col-summary {
                 color: var(--color-text-secondary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 line-height: 1.5;
             }
             
@@ -593,14 +593,14 @@ class Assets {
             
             .btn-view,
             .btn-force {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
             }
             
             /* ===== MODAL CLOSE BUTTON ===== */
             .close-modal {
                 cursor: pointer;
                 float: right;
-                font-size: 20px;
+                font-size: var(--font-size-xl);
                 font-weight: 300;
                 line-height: 1;
                 color: var(--color-text-tertiary);

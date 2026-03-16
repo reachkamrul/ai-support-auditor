@@ -111,7 +111,7 @@ class AgentPerformance {
             }
             
             .agent-filters-form .audit-filter-group label {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-text-secondary);
                 letter-spacing: 0;
@@ -122,7 +122,7 @@ class AgentPerformance {
                 min-width: 0;
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm);
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 padding: 0 12px;
                 background: var(--color-bg);
                 transition: all 0.15s ease;
@@ -196,12 +196,12 @@ class AgentPerformance {
             .agent-name-cell strong {
                 font-weight: 600;
                 color: var(--color-text-primary);
-                font-size: 14px;
+                font-size: var(--font-size-base);
             }
             
             .agent-name-cell small {
                 color: var(--color-text-tertiary);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
             }
             
             .score-cell {
@@ -224,7 +224,7 @@ class AgentPerformance {
             .agent-actions-cell .ops-btn {
                 height: 32px;
                 padding: 0 16px;
-                font-size: 12px;
+                font-size: var(--font-size-xs);
             }
             
             .empty-agents {
@@ -234,7 +234,7 @@ class AgentPerformance {
             }
             
             .empty-agents-text {
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 margin: 0;
             }
             
@@ -249,7 +249,7 @@ class AgentPerformance {
             }
             
             .sort-indicator {
-                font-size: 10px;
+                font-size: var(--font-size-xs);
                 margin-left: 4px;
                 opacity: 0.5;
             }
@@ -702,7 +702,7 @@ class AgentPerformance {
                 align-items: center;
                 justify-content: center;
                 font-weight: 700;
-                font-size: 20px;
+                font-size: var(--font-size-xl);
                 flex-shrink: 0;
                 border: 3px solid var(--color-border);
             }
@@ -715,7 +715,7 @@ class AgentPerformance {
             
             .agent-detail-title h1 {
                 margin: 0;
-                font-size: 24px;
+                font-size: var(--font-size-2xl);
                 font-weight: 700;
                 color: var(--color-text-primary);
                 display: flex;
@@ -725,7 +725,7 @@ class AgentPerformance {
             
             .agent-detail-title h1::before {
                 content: "👤";
-                font-size: 20px;
+                font-size: var(--font-size-xl);
                 opacity: 0.8;
             }
             
@@ -734,7 +734,7 @@ class AgentPerformance {
                 align-items: center;
                 gap: 8px;
                 color: var(--color-text-secondary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 margin: 0;
                 padding: 6px 12px;
                 background: var(--color-bg-subtle);
@@ -747,7 +747,7 @@ class AgentPerformance {
             
             .agent-detail-email::before {
                 content: "✉️";
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 opacity: 0.7;
             }
             
@@ -769,7 +769,7 @@ class AgentPerformance {
             }
             
             .agent-detail-filters-form .audit-filter-group label {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 color: var(--color-text-secondary);
                 letter-spacing: 0;
@@ -780,7 +780,7 @@ class AgentPerformance {
                 width: 150px;
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm);
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 padding: 0 12px;
                 background: var(--color-bg);
                 transition: all 0.15s ease;
@@ -820,7 +820,7 @@ class AgentPerformance {
             }
             
             .agent-summary-label {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-secondary);
                 letter-spacing: 0;
                 margin-bottom: 12px;
@@ -828,7 +828,7 @@ class AgentPerformance {
             }
             
             .agent-summary-value {
-                font-size: 32px;
+                font-size: var(--font-size-2xl);
                 font-weight: 700;
                 color: var(--color-text-primary);
                 line-height: 1.2;
@@ -840,7 +840,7 @@ class AgentPerformance {
             
             .agent-tickets-preview h2 {
                 margin: 0 0 20px 0;
-                font-size: 18px;
+                font-size: var(--font-size-lg);
                 font-weight: 600;
                 color: var(--color-text-primary);
             }
@@ -1038,7 +1038,7 @@ class AgentPerformance {
         <!-- Score Trends Chart -->
         <?php if (count($chart_labels) > 0): ?>
         <div class="ops-card" style="margin-bottom: 24px;">
-            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: var(--color-text-primary);">Score Trends (Last 30 Days)</h2>
+            <h2 style="margin: 0 0 20px 0; font-size: var(--font-size-lg); font-weight: 600; color: var(--color-text-primary);">Score Trends (Last 30 Days)</h2>
             <canvas id="scoreTrendsChart" style="max-height: 300px;"></canvas>
         </div>
         <script>
@@ -1109,7 +1109,7 @@ class AgentPerformance {
         <!-- Team Comparison Chart -->
         <?php if ($team_avg): ?>
         <div class="ops-card" style="margin-bottom: 24px;">
-            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: var(--color-text-primary);">Agent vs Team Average</h2>
+            <h2 style="margin: 0 0 20px 0; font-size: var(--font-size-lg); font-weight: 600; color: var(--color-text-primary);">Agent vs Team Average</h2>
             <canvas id="teamComparisonChart" style="max-height: 300px;"></canvas>
         </div>
         <script>
@@ -1220,7 +1220,7 @@ class AgentPerformance {
             
             <?php if ($latest_insights && !empty($latest_insights->key_achievements)): ?>
             <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>✅</span> Key Achievements
                 </h3>
                 <div style="padding: 16px; background: var(--color-success-bg); border-left: 4px solid var(--color-success); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6;">
@@ -1231,7 +1231,7 @@ class AgentPerformance {
             
             <?php if ($latest_insights && !empty($latest_insights->areas_for_improvement)): ?>
             <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>📈</span> Areas for Improvement
                 </h3>
                 <div style="padding: 16px; background: var(--color-warning-bg); border-left: 4px solid var(--color-warning); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6;">
@@ -1242,7 +1242,7 @@ class AgentPerformance {
             
             <?php if ($latest_insights && !empty($latest_insights->reasoning)): ?>
             <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>🧠</span> AI Reasoning
                 </h3>
                 <div style="padding: 16px; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6; font-family: var(--font-sans);">
@@ -1253,14 +1253,14 @@ class AgentPerformance {
             
             <?php if ($latest_insights && !empty($latest_insights->shift_compliance)): ?>
             <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>⏰</span> Shift Compliance
                 </h3>
                 <div style="padding: 16px; background: var(--color-info-bg); border-left: 4px solid var(--color-info); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6;">
                     <?php 
                     $shift_data = json_decode($latest_insights->shift_compliance, true);
                     if (is_array($shift_data)) {
-                        echo '<pre style="margin: 0; font-family: var(--font-mono); font-size: 13px;">' . esc_html(print_r($shift_data, true)) . '</pre>';
+                        echo '<pre style="margin: 0; font-family: var(--font-mono); font-size: var(--font-size-sm);">' . esc_html(print_r($shift_data, true)) . '</pre>';
                     } else {
                         echo nl2br(esc_html($latest_insights->shift_compliance));
                     }
@@ -1271,10 +1271,10 @@ class AgentPerformance {
             
             <?php if ($latest_insights && !empty($latest_insights->response_breakdown)): ?>
             <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>📊</span> Response Breakdown
                 </h3>
-                <div style="padding: 16px; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6; font-family: var(--font-mono); font-size: 13px;">
+                <div style="padding: 16px; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-primary); line-height: 1.6; font-family: var(--font-mono); font-size: var(--font-size-sm);">
                     <?php 
                     $breakdown = json_decode($latest_insights->response_breakdown, true);
                     if (is_array($breakdown)) {
@@ -1359,7 +1359,7 @@ class AgentPerformance {
                         <td>
                             <button class="ops-btn secondary btn-view-audit" 
                                     data-id="<?php echo esc_attr($ticket->ticket_id); ?>" 
-                                    style="height: 32px; padding: 0 14px; font-size: 12px; cursor: pointer;">
+                                    style="height: 32px; padding: 0 14px; font-size: var(--font-size-xs); cursor: pointer;">
                             View Audit
                             </button>
                     </td>

@@ -145,10 +145,10 @@ class MySchedule {
         <style>
             /* Calendar Grid */
             .my-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-            .my-cal-nav h3 { margin:0; font-size:16px; font-weight:700; }
-            .my-cal-nav .ops-btn { height:30px; padding:0 12px; font-size:12px; }
+            .my-cal-nav h3 { margin:0; font-size:var(--font-size-md); font-weight:700; }
+            .my-cal-nav .ops-btn { height:30px; padding:0 12px; font-size:var(--font-size-xs); }
             .my-cal { width:100%; border-collapse:collapse; table-layout:fixed; }
-            .my-cal th { padding:8px 4px; font-size:11px; font-weight:600; color:var(--color-text-tertiary); text-align:center; text-transform:uppercase; letter-spacing:0.5px; }
+            .my-cal th { padding:8px 4px; font-size:var(--font-size-xs); font-weight:600; color:var(--color-text-tertiary); text-align:center; text-transform:uppercase; letter-spacing:0.5px; }
             .my-cal td { height:80px; padding:6px; vertical-align:top; border:1px solid var(--color-border); background:var(--color-bg-subtle); cursor:pointer; transition:all 0.15s ease; position:relative; }
             .my-cal td:hover { box-shadow:inset 0 0 0 2px var(--color-primary); }
             .my-cal td.outside { background:var(--color-bg-subtle); opacity:0.3; cursor:default; }
@@ -158,18 +158,18 @@ class MySchedule {
             .my-cal td.today.working-day { border-color:#3b82f6; }
             .my-cal td.holiday-cell { background:#fff7ed; border-color:#fed7aa; }
             .my-cal td.leave-cell { background:#fef2f2; border-color:#fecaca; }
-            .my-cal .day-num { font-size:12px; font-weight:600; color:var(--color-text-secondary); margin-bottom:2px; display:flex; align-items:center; gap:4px; }
+            .my-cal .day-num { font-size:var(--font-size-xs); font-weight:600; color:var(--color-text-secondary); margin-bottom:2px; display:flex; align-items:center; gap:4px; }
             .my-cal td.today .day-num { color:#2563eb; font-weight:700; }
             .my-cal td.working-day .day-num { color:#15803d; }
-            .my-cal .cal-shift-label { display:block; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:600; color:#fff; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-            .my-cal .cal-holiday-label { display:block; font-size:9px; font-weight:600; color:#c2410c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-            .my-cal .cal-leave-label { display:block; font-size:9px; font-weight:600; color:#dc2626; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .my-cal .cal-shift-label { display:block; padding:1px 5px; border-radius:3px; font-size:var(--font-size-xs); font-weight:600; color:#fff; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .my-cal .cal-holiday-label { display:block; font-size:var(--font-size-xs); font-weight:600; color:#c2410c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .my-cal .cal-leave-label { display:block; font-size:var(--font-size-xs); font-weight:600; color:#dc2626; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
             .my-cal .cal-leave-label.pending { color:#a16207; }
-            .my-cal .today-badge { font-size:8px; background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px; font-weight:700; letter-spacing:0.3px; }
+            .my-cal .today-badge { font-size:var(--font-size-xs); background:#3b82f6; color:#fff; padding:1px 4px; border-radius:3px; font-weight:700; letter-spacing:0.3px; }
 
             /* Legend */
             .cal-legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--color-border); }
-            .cal-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--color-text-secondary); }
+            .cal-legend-item { display:flex; align-items:center; gap:6px; font-size:var(--font-size-xs); color:var(--color-text-secondary); }
             .cal-legend-swatch { width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,0.1); }
 
             /* Schedule Grid */
@@ -177,7 +177,7 @@ class MySchedule {
             @media (max-width:900px) { .schedule-grid { grid-template-columns:1fr; } }
 
             /* Comp-off badge */
-            .compoff-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+            .compoff-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:var(--font-size-xs); font-weight:600; }
             .compoff-badge.confirmed { background:#dcfce7; color:#166534; }
             .compoff-badge.used { background:#f1f5f9; color:#64748b; }
             .compoff-badge.pending { background:#fef9c3; color:#854d0e; }
@@ -186,18 +186,18 @@ class MySchedule {
             .leave-modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:100000; align-items:center; justify-content:center; }
             .leave-modal-overlay.active { display:flex; }
             .leave-modal { background:#fff; border-radius:12px; padding:28px; width:420px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative; }
-            .leave-modal h3 { margin:0 0 20px; font-size:16px; font-weight:700; color:var(--color-text); }
-            .leave-modal-close { position:absolute; top:12px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:var(--color-text-tertiary); padding:4px 8px; line-height:1; }
+            .leave-modal h3 { margin:0 0 20px; font-size:var(--font-size-md); font-weight:700; color:var(--color-text); }
+            .leave-modal-close { position:absolute; top:12px; right:16px; background:none; border:none; font-size:var(--font-size-xl); cursor:pointer; color:var(--color-text-tertiary); padding:4px 8px; line-height:1; }
             .leave-modal-close:hover { color:var(--color-text); }
             .leave-modal .form-row { margin-bottom:16px; }
-            .leave-modal .form-row label { display:block; font-size:12px; font-weight:600; color:var(--color-text-secondary); margin-bottom:6px; }
+            .leave-modal .form-row label { display:block; font-size:var(--font-size-xs); font-weight:600; color:var(--color-text-secondary); margin-bottom:6px; }
             .leave-modal .form-row input,
             .leave-modal .form-row select,
-            .leave-modal .form-row textarea { width:100%; height:36px; border:1px solid var(--color-border); border-radius:6px; padding:0 10px; font-size:13px; box-sizing:border-box; }
+            .leave-modal .form-row textarea { width:100%; height:36px; border:1px solid var(--color-border); border-radius:6px; padding:0 10px; font-size:var(--font-size-sm); box-sizing:border-box; }
             .leave-modal .form-row textarea { height:70px; padding:8px 10px; resize:vertical; }
             .leave-modal .form-row-inline { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
             .leave-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
-            .leave-modal-msg { display:none; padding:8px 12px; border-radius:6px; font-size:13px; margin-top:12px; }
+            .leave-modal-msg { display:none; padding:8px 12px; border-radius:6px; font-size:var(--font-size-sm); margin-top:12px; }
         </style>
 
         <!-- KPI Row -->
@@ -328,7 +328,7 @@ class MySchedule {
         <div class="schedule-grid">
             <!-- My Leaves -->
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">My Leaves</h3>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">My Leaves</h3>
                 <?php
                 // Merge regular leaves + comp-off leaves for this month
                 $all_leave_entries = [];
@@ -384,9 +384,9 @@ class MySchedule {
                                 }
                             ?>
                             <tr style="<?php echo $is_past ? 'opacity:0.5;' : ''; ?>">
-                                <td style="font-size:12px;white-space:nowrap;"><?php echo esc_html($date_display); ?></td>
-                                <td style="font-size:12px;"><?php echo esc_html($entry['type']); ?></td>
-                                <td style="font-size:11px;color:var(--color-text-tertiary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?php echo esc_attr($entry['reason']); ?>"><?php echo esc_html($entry['reason'] ?: '-'); ?></td>
+                                <td style="font-size:var(--font-size-xs);white-space:nowrap;"><?php echo esc_html($date_display); ?></td>
+                                <td style="font-size:var(--font-size-xs);"><?php echo esc_html($entry['type']); ?></td>
+                                <td style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?php echo esc_attr($entry['reason']); ?>"><?php echo esc_html($entry['reason'] ?: '-'); ?></td>
                                 <td><span class="status-badge <?php echo $status_class; ?>"><?php echo esc_html(ucfirst($entry['status'])); ?></span></td>
                             </tr>
                             <?php endforeach; ?>
@@ -397,7 +397,7 @@ class MySchedule {
 
             <!-- Comp-Off Balance -->
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Comp-Off Balance</h3>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Comp-Off Balance</h3>
                 <?php if (empty($comp_offs)): ?>
                     <div class="ops-empty-state" style="padding:20px;"><div class="ops-empty-state-title">No comp-offs earned</div></div>
                 <?php else: ?>
@@ -406,9 +406,9 @@ class MySchedule {
                         <tbody>
                             <?php foreach ($comp_offs as $c): ?>
                             <tr>
-                                <td style="font-size:12px;"><?php echo esc_html($c->holiday_name ?: 'Holiday'); ?></td>
-                                <td style="font-size:12px;"><?php echo !empty($c->date) ? wp_date('D, M j', strtotime($c->date)) : '<em style="color:var(--color-text-tertiary);">N/A</em>'; ?></td>
-                                <td style="font-size:12px;"><?php echo $c->comp_off_date ? wp_date('D, M j', strtotime($c->comp_off_date)) : '<em style="color:var(--color-text-tertiary);">Not scheduled</em>'; ?></td>
+                                <td style="font-size:var(--font-size-xs);"><?php echo esc_html($c->holiday_name ?: 'Holiday'); ?></td>
+                                <td style="font-size:var(--font-size-xs);"><?php echo !empty($c->date) ? wp_date('D, M j', strtotime($c->date)) : '<em style="color:var(--color-text-tertiary);">N/A</em>'; ?></td>
+                                <td style="font-size:var(--font-size-xs);"><?php echo $c->comp_off_date ? wp_date('D, M j', strtotime($c->comp_off_date)) : '<em style="color:var(--color-text-tertiary);">Not scheduled</em>'; ?></td>
                                 <td><span class="compoff-badge <?php echo esc_attr($c->comp_off_status ?: 'pending'); ?>"><?php echo esc_html(ucfirst($c->comp_off_status ?: 'pending')); ?></span></td>
                             </tr>
                             <?php endforeach; ?>

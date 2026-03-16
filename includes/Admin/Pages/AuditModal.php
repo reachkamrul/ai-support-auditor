@@ -25,8 +25,8 @@ class AuditModal {
                 <div class="audit-modal-header">
                     <h2 id="modal-title">Audit Details</h2>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <a id="btn-view-ticket" href="#" target="_blank" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;text-decoration:none;display:none;">View Ticket &nearr;</a>
-                        <button id="btn-toggle-json" class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;">Raw JSON</button>
+                        <a id="btn-view-ticket" href="#" target="_blank" class="ops-btn secondary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;text-decoration:none;display:none;">View Ticket &nearr;</a>
+                        <button id="btn-toggle-json" class="ops-btn secondary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;">Raw JSON</button>
                         <span class="close-modal">&times;</span>
                     </div>
                 </div>
@@ -50,9 +50,9 @@ class AuditModal {
                 background: var(--color-bg-subtle); flex-shrink: 0;
                 position: sticky; top: 0; z-index: 1;
             }
-            .audit-modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+            .audit-modal-header h2 { margin: 0; font-size: var(--font-size-lg); font-weight: 600; }
             .close-modal {
-                cursor: pointer; font-size: 24px; font-weight: 300; line-height: 1;
+                cursor: pointer; font-size: var(--font-size-2xl); font-weight: 300; line-height: 1;
                 color: var(--color-text-tertiary); width: 32px; height: 32px;
                 display: flex; align-items: center; justify-content: center;
                 border-radius: var(--radius-sm); background: transparent;
@@ -70,7 +70,7 @@ class AuditModal {
             .ar-section:last-child { margin-bottom: 0; }
             .ar-section + .ar-section { padding-top: 24px; border-top: 1px solid var(--color-border); }
             .ar-section-title {
-                font-size: 13px; font-weight: 600; color: var(--color-text-secondary);
+                font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary);
                 margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border);
             }
             .ar-score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
@@ -78,13 +78,13 @@ class AuditModal {
                 background: var(--color-bg-subtle); border: 1px solid var(--color-border);
                 border-radius: var(--radius-md); padding: 16px; text-align: center;
             }
-            .ar-score-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); margin-bottom: 6px; }
-            .ar-score-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+            .ar-score-label { font-size: var(--font-size-xs); font-weight: 500; color: var(--color-text-tertiary); margin-bottom: 6px; }
+            .ar-score-value { font-size: var(--font-size-2xl); font-weight: 700; line-height: 1.2; }
             .ar-score-value.score-good { color: var(--color-success); }
             .ar-score-value.score-ok { color: var(--color-info); }
             .ar-score-value.score-warning { color: var(--color-warning); }
             .ar-score-value.score-negative { color: var(--color-error); }
-            .ar-summary-text { font-size: 14px; line-height: 1.7; color: var(--color-text-primary); }
+            .ar-summary-text { font-size: var(--font-size-base); line-height: 1.7; color: var(--color-text-primary); }
 
             /* Agent cards */
             .ar-agent-card {
@@ -94,23 +94,23 @@ class AuditModal {
             .ar-agent-header {
                 display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
             }
-            .ar-agent-name { font-size: 15px; font-weight: 700; color: var(--color-text-primary); }
-            .ar-agent-email { font-size: 12px; color: var(--color-text-tertiary); }
+            .ar-agent-name { font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); }
+            .ar-agent-email { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
             .ar-agent-scores { display: flex; gap: 16px; flex-wrap: wrap; }
             .ar-agent-score-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-            .ar-agent-score-item .label { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); }
-            .ar-agent-score-item .value { font-size: 18px; font-weight: 700; }
+            .ar-agent-score-item .label { font-size: var(--font-size-xs); font-weight: 500; color: var(--color-text-tertiary); }
+            .ar-agent-score-item .value { font-size: var(--font-size-lg); font-weight: 700; }
 
             /* Mini table */
-            .ar-mini-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+            .ar-mini-table { width: 100%; font-size: var(--font-size-sm); border-collapse: collapse; }
             .ar-mini-table th {
-                text-align: left; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary);
+                text-align: left; font-size: var(--font-size-xs); font-weight: 500; color: var(--color-text-tertiary);
                 padding: 6px 8px; border-bottom: 1px solid var(--color-border);
             }
             .ar-mini-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); }
 
             /* Badges */
-            .ar-badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; }
+            .ar-badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: var(--font-size-xs); font-weight: 600; }
             .ar-badge.critical { background: var(--color-error-bg); color: #991b1b; }
             .ar-badge.high { background: #fef3c7; color: #92400e; }
             .ar-badge.medium { background: var(--color-info-bg); color: #1e40af; }
@@ -123,42 +123,42 @@ class AuditModal {
             /* Tags */
             .ar-tags { display: flex; gap: 6px; flex-wrap: wrap; }
             .ar-tag {
-                font-size: 11px; padding: 3px 10px; border-radius: var(--radius-pill);
+                font-size: var(--font-size-xs); padding: 3px 10px; border-radius: var(--radius-pill);
                 background: var(--color-bg-subtle); border: 1px solid var(--color-border); color: var(--color-text-secondary);
             }
 
             /* JSON fallback view */
             .json-viewer {
                 background: var(--color-bg-subtle); padding: 24px; font-family: var(--font-mono);
-                font-size: 12px; white-space: pre-wrap; word-wrap: break-word;
+                font-size: var(--font-size-xs); white-space: pre-wrap; word-wrap: break-word;
                 max-height: calc(90vh - 80px); overflow-y: auto; color: var(--color-text-primary); line-height: 1.6;
             }
 
             /* Review note */
             .ar-review-note {
-                width: 100%; padding: 8px 10px; font-size: 12px; border: 1px solid var(--color-border);
+                width: 100%; padding: 8px 10px; font-size: var(--font-size-xs); border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-text-primary);
                 resize: vertical; min-height: 36px; font-family: inherit;
             }
-            .ar-review-saved { font-size: 12px; color: var(--color-success); font-weight: 600; display: none; }
+            .ar-review-saved { font-size: var(--font-size-xs); color: var(--color-success); font-weight: 600; display: none; }
 
             /* Score override panel */
             .ar-override-panel {
                 margin-top: 10px; padding: 12px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: var(--radius-sm);
             }
-            .ar-override-title { font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 10px; }
+            .ar-override-title { font-size: var(--font-size-xs); font-weight: 700; color: #92400e; margin-bottom: 10px; }
             .ar-override-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-            .ar-override-row label { font-size: 12px; font-weight: 500; min-width: 120px; color: var(--color-text-secondary); }
+            .ar-override-row label { font-size: var(--font-size-xs); font-weight: 500; min-width: 120px; color: var(--color-text-secondary); }
             .ar-override-row input[type="number"] {
-                width: 70px; padding: 4px 8px; font-size: 13px; border: 1px solid var(--color-border);
+                width: 70px; padding: 4px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm); text-align: center;
             }
-            .ar-override-row .old-val { font-size: 11px; color: var(--color-text-tertiary); }
+            .ar-override-row .old-val { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
             .ar-override-reason {
-                width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--color-border);
+                width: 100%; padding: 6px 10px; font-size: var(--font-size-xs); border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm); margin-top: 4px; font-family: inherit;
             }
-            .ar-override-trail { margin-top: 10px; font-size: 11px; color: var(--color-text-tertiary); }
+            .ar-override-trail { margin-top: 10px; font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
             .ar-override-trail-item { padding: 4px 0; border-bottom: 1px solid var(--color-border); }
             .ar-override-trail-item:last-child { border-bottom: none; }
 
@@ -172,18 +172,18 @@ class AuditModal {
                 padding: 6px 14px; background: var(--color-bg-subtle); border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm); min-width: 80px;
             }
-            .ar-shift-stat-val { font-size: 16px; font-weight: 700; color: var(--color-text-primary); }
-            .ar-shift-stat-label { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+            .ar-shift-stat-val { font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); }
+            .ar-shift-stat-label { font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: 2px; }
 
             /* Shift data notes */
             .ar-shift-note {
-                font-size: 12px; color: var(--color-text-secondary); padding: 6px 12px;
+                font-size: var(--font-size-xs); color: var(--color-text-secondary); padding: 6px 12px;
                 background: #fffbeb; border: 1px solid #fcd34d; border-radius: var(--radius-sm);
             }
 
             /* Response timeline toggle */
             .ar-section-toggle { cursor: pointer; user-select: none; }
-            .ar-toggle-arrow { font-size: 10px; color: var(--color-text-tertiary); display: inline-block; transition: transform 0.2s; }
+            .ar-toggle-arrow { font-size: var(--font-size-xs); color: var(--color-text-tertiary); display: inline-block; transition: transform 0.2s; }
             .ar-toggle-arrow.open { transform: rotate(180deg); }
         </style>
         <?php
@@ -277,10 +277,10 @@ class AuditModal {
                     contribs.forEach(function(c) {
                         var pct = parseInt(c.contribution_percentage || c.percentage || 0);
                         h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">';
-                        h += '<span style="font-weight:600;font-size:13px;min-width:180px;">' + escHtml(c.agent_email || '') + '</span>';
+                        h += '<span style="font-weight:600;font-size:var(--font-size-sm);min-width:180px;">' + escHtml(c.agent_email || '') + '</span>';
                         h += '<div class="ar-contrib-bar" style="flex:1;"><div class="ar-contrib-fill" style="width:' + pct + '%;"></div></div>';
-                        h += '<span style="font-weight:700;font-size:13px;min-width:40px;text-align:right;">' + pct + '%</span>';
-                        if (c.reply_count) h += '<span style="font-size:11px;color:var(--color-text-tertiary);">(' + c.reply_count + ' replies)</span>';
+                        h += '<span style="font-weight:700;font-size:var(--font-size-sm);min-width:40px;text-align:right;">' + pct + '%</span>';
+                        if (c.reply_count) h += '<span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">(' + c.reply_count + ' replies)</span>';
                         h += '</div>';
                     });
                     h += '</div>';
@@ -296,11 +296,11 @@ class AuditModal {
                         var agents = p.handling_agents || [];
                         var hasDetails = agents.length > 0;
                         h += '<tr' + (hasDetails ? ' style="cursor:pointer;" onclick="jQuery(\'#prob-detail-' + idx + '\').slideToggle(200)" title="Click for details"' : '') + '>';
-                        h += '<td>' + escHtml(p.issue_description || '') + (hasDetails ? ' <span style="color:var(--color-text-tertiary);font-size:11px;">&#9660;</span>' : '') + '</td>';
+                        h += '<td>' + escHtml(p.issue_description || '') + (hasDetails ? ' <span style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">&#9660;</span>' : '') + '</td>';
                         h += '<td>' + escHtml(p.category || '') + '</td>';
                         h += '<td><span class="ar-badge ' + sev + '">' + escHtml(p.severity || '') + '</span></td></tr>';
                         if (hasDetails) {
-                            h += '<tr id="prob-detail-' + idx + '" style="display:none;"><td colspan="3" style="padding:8px 12px;background:var(--color-bg-subtle);font-size:12px;">';
+                            h += '<tr id="prob-detail-' + idx + '" style="display:none;"><td colspan="3" style="padding:8px 12px;background:var(--color-bg-subtle);font-size:var(--font-size-xs);">';
                             agents.forEach(function(a) {
                                 h += '<div style="padding:6px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:6px;margin-bottom:6px;">';
                                 h += '<strong>' + escHtml(a.agent_id || '') + '</strong>';
@@ -321,17 +321,17 @@ class AuditModal {
                 if (cats.length || gaps.length || faqs.length) {
                     h += '<div class="ar-section"><div class="ar-section-title">Knowledge Base Analytics</div>';
                     if (cats.length) {
-                        h += '<div style="margin-bottom:12px;"><strong style="font-size:12px;color:var(--color-text-secondary);">Categories:</strong><div class="ar-tags" style="margin-top:6px;">';
+                        h += '<div style="margin-bottom:12px;"><strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">Categories:</strong><div class="ar-tags" style="margin-top:6px;">';
                         cats.forEach(function(c) { h += '<span class="ar-tag">' + escHtml(c) + '</span>'; });
                         h += '</div></div>';
                     }
                     if (gaps.length) {
-                        h += '<div style="margin-bottom:12px;"><strong style="font-size:12px;color:var(--color-text-secondary);">Documentation Gaps:</strong><ul style="margin:6px 0 0 16px;font-size:13px;color:var(--color-text-primary);">';
+                        h += '<div style="margin-bottom:12px;"><strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">Documentation Gaps:</strong><ul style="margin:6px 0 0 16px;font-size:var(--font-size-sm);color:var(--color-text-primary);">';
                         gaps.forEach(function(g) { h += '<li>' + escHtml(g) + '</li>'; });
                         h += '</ul></div>';
                     }
                     if (faqs.length) {
-                        h += '<div><strong style="font-size:12px;color:var(--color-text-secondary);">Recommended FAQ:</strong><ul style="margin:6px 0 0 16px;font-size:13px;color:var(--color-text-primary);">';
+                        h += '<div><strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">Recommended FAQ:</strong><ul style="margin:6px 0 0 16px;font-size:var(--font-size-sm);color:var(--color-text-primary);">';
                         faqs.forEach(function(f) { h += '<li>' + escHtml(f) + '</li>'; });
                         h += '</ul></div>';
                     }
@@ -345,7 +345,7 @@ class AuditModal {
                     h += '<div style="display:flex;align-items:center;gap:12px;">';
                     h += '<button class="ops-btn primary" onclick="markAsReviewed()" id="btn-mark-reviewed" style="padding:8px 24px;">Mark as Reviewed</button>';
                     h += '<span class="ar-review-saved" id="review-saved-msg" style="display:none;">Marked as reviewed!</span>';
-                    h += '<span id="reviewed-by-info" style="font-size:12px;color:var(--color-text-tertiary);"></span>';
+                    h += '<span id="reviewed-by-info" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);"></span>';
                     h += '</div>';
                     h += '</div>';
                 }
@@ -374,7 +374,7 @@ class AuditModal {
                 var h = '<div class="ar-agent-card">';
                 h += '<div class="ar-agent-header"><div><span class="ar-agent-name">' + escHtml(ev.agent_name || 'Unknown') + '</span>';
                 h += '<br><span class="ar-agent-email">' + escHtml(ev.agent_email || '') + '</span></div>';
-                h += '<div style="font-size:11px;color:var(--color-text-tertiary);">' + (ev.reply_count || 0) + ' replies &middot; ' + (ev.contribution_percentage || 0) + '% contribution</div></div>';
+                h += '<div style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">' + (ev.reply_count || 0) + ' replies &middot; ' + (ev.contribution_percentage || 0) + '% contribution</div></div>';
 
                 // Sub-scores
                 h += '<div class="ar-agent-scores">';
@@ -387,7 +387,7 @@ class AuditModal {
                 // Key achievements
                 var achievements = ev.key_achievements || [];
                 if (achievements.length) {
-                    h += '<div style="margin-top:12px;"><strong style="font-size:11px;color:var(--color-text-secondary);">Achievements:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
+                    h += '<div style="margin-top:12px;"><strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">Achievements:</strong><ul style="margin:4px 0 0 16px;font-size:var(--font-size-sm);">';
                     achievements.forEach(function(a) { h += '<li style="color:var(--color-success);">' + escHtml(a) + '</li>'; });
                     h += '</ul></div>';
                 }
@@ -395,14 +395,14 @@ class AuditModal {
                 // Areas for improvement
                 var improvements = ev.areas_for_improvement || [];
                 if (improvements.length) {
-                    h += '<div style="margin-top:8px;"><strong style="font-size:11px;color:var(--color-text-secondary);">Areas for Improvement:</strong><ul style="margin:4px 0 0 16px;font-size:13px;">';
+                    h += '<div style="margin-top:8px;"><strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);">Areas for Improvement:</strong><ul style="margin:4px 0 0 16px;font-size:var(--font-size-sm);">';
                     improvements.forEach(function(a) { h += '<li style="color:var(--color-warning);">' + escHtml(a) + '</li>'; });
                     h += '</ul></div>';
                 }
 
                 // Reasoning
                 if (ev.reasoning) {
-                    h += '<div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary);font-style:italic;">' + escHtml(ev.reasoning) + '</div>';
+                    h += '<div style="margin-top:8px;font-size:var(--font-size-xs);color:var(--color-text-tertiary);font-style:italic;">' + escHtml(ev.reasoning) + '</div>';
                 }
 
                 // Shift Compliance summary
@@ -421,10 +421,10 @@ class AuditModal {
                 if (rb.length > 0) {
                     h += '<div style="margin-top:12px;">';
                     h += '<div class="ar-section-toggle" onclick="jQuery(this).next().slideToggle(200);jQuery(this).find(\'.ar-toggle-arrow\').toggleClass(\'open\');">';
-                    h += '<strong style="font-size:11px;color:var(--color-text-secondary);cursor:pointer;">Response Timeline (' + rb.length + ')</strong>';
+                    h += '<strong style="font-size:var(--font-size-xs);color:var(--color-text-secondary);cursor:pointer;">Response Timeline (' + rb.length + ')</strong>';
                     h += ' <span class="ar-toggle-arrow">&#9660;</span></div>';
                     h += '<div class="ar-response-timeline" style="display:none;margin-top:8px;">';
-                    h += '<table class="ar-mini-table" style="font-size:12px;"><thead><tr>';
+                    h += '<table class="ar-mini-table" style="font-size:var(--font-size-xs);"><thead><tr>';
                     h += '<th>#</th><th>Time</th><th>Since Prev</th><th>Shift</th><th>Quality</th><th>Resolution</th><th>Note</th>';
                     h += '</tr></thead><tbody>';
                     rb.forEach(function(r) {
@@ -441,7 +441,7 @@ class AuditModal {
                         h += '<td>' + shiftIcon + '</td>';
                         h += '<td class="' + qCls + '" style="font-weight:600;">' + qPrefix + (r.quality_score || 0) + '</td>';
                         h += '<td>' + resIcon + '</td>';
-                        h += '<td style="font-size:11px;color:var(--color-text-secondary);max-width:250px;">' + escHtml(r.brief_note || '') + '</td>';
+                        h += '<td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;">' + escHtml(r.brief_note || '') + '</td>';
                         h += '</tr>';
                     });
                     h += '</tbody></table></div></div>';
@@ -464,7 +464,7 @@ class AuditModal {
                         h += '<label>' + f.label + ':</label>';
                         h += '<input type="number" id="ov-' + safeEmail + '-' + f.name + '" value="' + f.val + '" min="-200" max="100">';
                         h += '<span class="old-val">(AI: ' + f.val + ')</span>';
-                        h += '<button class="ops-btn secondary" style="height:26px;font-size:11px;padding:0 10px;" onclick="saveOverride(\'' + escHtml(email) + '\',\'' + f.name + '\',\'' + safeEmail + '\',' + f.val + ')">Save</button>';
+                        h += '<button class="ops-btn secondary" style="height:26px;font-size:var(--font-size-xs);padding:0 10px;" onclick="saveOverride(\'' + escHtml(email) + '\',\'' + f.name + '\',\'' + safeEmail + '\',' + f.val + ')">Save</button>';
                         h += '</div>';
                     });
                     h += '<input type="text" class="ar-override-reason" id="ov-reason-' + safeEmail + '" placeholder="Reason for override...">';
@@ -483,10 +483,10 @@ class AuditModal {
                     var safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
                     h += '<div class="ar-request-panel" id="req-panel-' + safeEmail + '">';
                     h += '<div class="ar-override-title" style="cursor:pointer;" onclick="toggleRequestForm(\'' + safeEmail + '\')">';
-                    h += 'Request Score Review <span style="font-size:11px;color:var(--color-text-tertiary);">&#9660;</span></div>';
+                    h += 'Request Score Review <span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);">&#9660;</span></div>';
                     h += '<div class="ar-request-form" id="req-form-' + safeEmail + '" style="display:none;">';
                     h += '<div class="ar-override-row"><label>Field:</label>';
-                    h += '<select id="req-field-' + safeEmail + '" class="ops-input" style="width:160px;height:28px;font-size:12px;" onchange="updateReqCurrentVal(\'' + safeEmail + '\',' + JSON.stringify({
+                    h += '<select id="req-field-' + safeEmail + '" class="ops-input" style="width:160px;height:28px;font-size:var(--font-size-xs);" onchange="updateReqCurrentVal(\'' + safeEmail + '\',' + JSON.stringify({
                         timing_score: parseInt(ev.timing_score || 0),
                         resolution_score: parseInt(ev.resolution_score || 0),
                         communication_score: parseInt(ev.communication_score || 0)
@@ -501,8 +501,8 @@ class AuditModal {
                     h += '<div class="ar-override-row" style="flex-direction:column;align-items:stretch;">';
                     h += '<textarea id="req-notes-' + safeEmail + '" class="ar-review-note" placeholder="Why should this score be changed?" style="min-height:50px;margin-top:4px;"></textarea>';
                     h += '</div>';
-                    h += '<button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 12px;margin-top:8px;" onclick="submitOverrideRequest(\'' + escHtml(email) + '\',\'' + safeEmail + '\')">Submit Request</button>';
-                    h += '<span class="ar-req-msg" id="req-msg-' + safeEmail + '" style="display:none;margin-left:8px;font-size:11px;color:var(--color-success);">Submitted!</span>';
+                    h += '<button class="ops-btn primary" style="height:28px;font-size:var(--font-size-xs);padding:0 12px;margin-top:8px;" onclick="submitOverrideRequest(\'' + escHtml(email) + '\',\'' + safeEmail + '\')">Submit Request</button>';
+                    h += '<span class="ar-req-msg" id="req-msg-' + safeEmail + '" style="display:none;margin-left:8px;font-size:var(--font-size-xs);color:var(--color-success);">Submitted!</span>';
                     h += '</div>';
 
                     // Show existing requests by this lead

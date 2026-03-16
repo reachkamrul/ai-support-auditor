@@ -48,7 +48,7 @@ class Settings {
             
             .settings-header h3 {
                 margin: 0;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
                 color: var(--color-text-primary);
             }
@@ -63,11 +63,11 @@ class Settings {
             
             .shift-time-cell {
                 font-family: var(--font-mono);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 color: var(--color-text-secondary);
                 font-weight: 500;
             }
-            
+
             .shift-color-preview {
                 display: inline-flex;
                 align-items: center;
@@ -84,11 +84,11 @@ class Settings {
             
             .shift-color-code {
                 font-family: var(--font-mono);
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-secondary);
                 font-weight: 600;
             }
-            
+
             .shift-actions {
                 display: flex;
                 gap: 8px;
@@ -96,7 +96,7 @@ class Settings {
             }
             
             .shift-actions .ops-btn {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 padding: 0 14px;
                 height: 32px;
                 min-width: 70px;
@@ -113,13 +113,13 @@ class Settings {
             
             .shift-form-header h3 {
                 margin: 0;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
                 color: var(--color-text-primary);
             }
             
             .shift-form-mode {
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-weight: 500;
                 color: var(--color-text-secondary);
                 padding: 5px 12px;
@@ -141,7 +141,7 @@ class Settings {
             }
             
             .shift-form-group label {
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 color: var(--color-text-secondary);
             }
@@ -192,7 +192,7 @@ class Settings {
             
             .shift-color-display {
                 font-family: var(--font-mono);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-secondary);
                 font-weight: 600;
                 padding: 0 8px;
@@ -205,7 +205,7 @@ class Settings {
             }
             
             .empty-shifts-text {
-                font-size: 14px;
+                font-size: var(--font-size-base);
                 margin: 0;
             }
         </style>
@@ -249,7 +249,7 @@ class Settings {
                                        onclick="return confirm('Are you sure you want to delete this shift type? This will remove it from all assigned shifts.')">Delete</a>
                                 </div>
                                 <?php else: ?>
-                                <span style="color:var(--color-text-tertiary);font-size:12px;">View only</span>
+                                <span style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">View only</span>
                                 <?php endif; ?>
                         </td>
                     </tr>

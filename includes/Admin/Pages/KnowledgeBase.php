@@ -74,7 +74,7 @@ class KnowledgeBase {
                         </div>
                     </div>
                 </div>
-                <div style="margin-top:8px;font-size:12px;color:var(--color-text-tertiary);">
+                <div style="margin-top:8px;font-size: var(--font-size-xs);color:var(--color-text-tertiary);">
                     URL pattern: <code>https://docs.{productname}.com/sitemap.xml</code> — Supports both flat sitemaps and sitemap indexes.
                 </div>
             </div>
@@ -96,7 +96,7 @@ class KnowledgeBase {
                 <!-- Registered sitemaps -->
                 <?php if (!empty($sitemaps)): ?>
                 <div style="padding:16px 20px;">
-                    <table class="audit-table" style="font-size:13px;">
+                    <table class="audit-table" style="font-size: var(--font-size-sm);">
                         <thead>
                             <tr>
                                 <th>Product</th>
@@ -111,24 +111,24 @@ class KnowledgeBase {
                             <tr id="sm-row-<?php echo esc_attr(sanitize_title($product)); ?>">
                                 <td style="font-weight:600;"><?php echo esc_html($product); ?></td>
                                 <td>
-                                    <a href="<?php echo esc_url($info['url']); ?>" target="_blank" style="font-size:12px;color:var(--color-primary);word-break:break-all;">
+                                    <a href="<?php echo esc_url($info['url']); ?>" target="_blank" style="font-size: var(--font-size-xs);color:var(--color-primary);word-break:break-all;">
                                         <?php echo esc_html($info['url']); ?>
                                     </a>
                                 </td>
                                 <td style="text-align:center;font-weight:600;">
                                     <?php echo count($docs_by_product[$product] ?? []); ?>
                                 </td>
-                                <td style="font-size:12px;color:var(--color-text-tertiary);">
+                                <td style="font-size: var(--font-size-xs);color:var(--color-text-tertiary);">
                                     <?php echo !empty($info['last_import']) ? wp_date('M j, g:ia', strtotime($info['last_import'])) : '—'; ?>
                                 </td>
                                 <td style="text-align:right;">
-                                    <button class="ops-btn secondary" style="font-size:11px;height:26px;padding:0 10px;" onclick="syncSitemap('<?php echo esc_attr($product); ?>', '<?php echo esc_url($info['url']); ?>')">
+                                    <button class="ops-btn secondary" style="font-size: var(--font-size-xs);height:26px;padding:0 10px;" onclick="syncSitemap('<?php echo esc_attr($product); ?>', '<?php echo esc_url($info['url']); ?>')">
                                         Sync
                                     </button>
-                                    <button class="ops-btn secondary" style="font-size:11px;height:26px;padding:0 10px;" onclick="toggleProductDocs('<?php echo esc_attr(sanitize_title($product)); ?>')">
+                                    <button class="ops-btn secondary" style="font-size: var(--font-size-xs);height:26px;padding:0 10px;" onclick="toggleProductDocs('<?php echo esc_attr(sanitize_title($product)); ?>')">
                                         View Docs
                                     </button>
-                                    <button class="ops-btn secondary" style="font-size:11px;height:26px;padding:0 8px;color:var(--color-error);" onclick="removeSitemap('<?php echo esc_attr($product); ?>')">
+                                    <button class="ops-btn secondary" style="font-size: var(--font-size-xs);height:26px;padding:0 8px;color:var(--color-error);" onclick="removeSitemap('<?php echo esc_attr($product); ?>')">
                                         Remove
                                     </button>
                                 </td>
@@ -138,7 +138,7 @@ class KnowledgeBase {
                                 <td colspan="5" style="padding:0;">
                                     <?php if (!empty($docs_by_product[$product])): ?>
                                     <div style="max-height:400px;overflow-y:auto;background:var(--color-bg-subtle);border-top:1px solid var(--color-border);">
-                                        <table class="audit-table" style="font-size:12px;margin:0;">
+                                        <table class="audit-table" style="font-size: var(--font-size-xs);margin:0;">
                                             <thead>
                                                 <tr>
                                                     <th>Title</th>
@@ -160,7 +160,7 @@ class KnowledgeBase {
                                                     <td><span class="kb-cat-badge"><?php echo esc_html($doc->category ?: '—'); ?></span></td>
                                                     <td><?php echo $this->status_badge($doc->status); ?></td>
                                                     <td style="text-align:right;">
-                                                        <button class="ops-btn secondary" style="font-size:10px;height:22px;padding:0 6px;color:var(--color-error);" onclick="deleteDoc(<?php echo $doc->id; ?>)">Del</button>
+                                                        <button class="ops-btn secondary" style="font-size: var(--font-size-xs);height:22px;padding:0 6px;color:var(--color-error);" onclick="deleteDoc(<?php echo $doc->id; ?>)">Del</button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -168,7 +168,7 @@ class KnowledgeBase {
                                         </table>
                                     </div>
                                     <?php else: ?>
-                                        <div style="padding:12px 20px;font-size:13px;color:var(--color-text-tertiary);background:var(--color-bg-subtle);">No docs imported yet. Click "Sync" to import from sitemap.</div>
+                                        <div style="padding:12px 20px;font-size: var(--font-size-sm);color:var(--color-text-tertiary);background:var(--color-bg-subtle);">No docs imported yet. Click "Sync" to import from sitemap.</div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -184,22 +184,22 @@ class KnowledgeBase {
                 if (!empty($orphan_products)):
                 ?>
                 <div style="padding:0 20px 16px;">
-                    <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:8px;font-weight:500;">Manually Added (no sitemap)</div>
+                    <div style="font-size: var(--font-size-xs);color:var(--color-text-tertiary);margin-bottom:8px;font-weight:500;">Manually Added (no sitemap)</div>
                     <?php foreach ($orphan_products as $product => $product_docs): ?>
                     <div class="kb-product-group">
                         <div class="kb-product-header">
                             <strong><?php echo esc_html($product); ?></strong>
                             <span class="kb-doc-count"><?php echo count($product_docs); ?> docs</span>
                         </div>
-                        <table class="audit-table" style="font-size:12px;">
+                        <table class="audit-table" style="font-size: var(--font-size-xs);">
                             <tbody>
                             <?php foreach ($product_docs as $doc): ?>
                                 <tr id="doc-row-<?php echo $doc->id; ?>">
                                     <td style="font-weight:500;"><?php echo esc_html($doc->doc_title ?: '(untitled)'); ?></td>
-                                    <td><a href="<?php echo esc_url($doc->doc_url); ?>" target="_blank" style="color:var(--color-primary);font-size:12px;"><?php echo esc_html(strlen($doc->doc_url) > 60 ? substr($doc->doc_url, 0, 60) . '...' : $doc->doc_url); ?></a></td>
+                                    <td><a href="<?php echo esc_url($doc->doc_url); ?>" target="_blank" style="color:var(--color-primary);font-size: var(--font-size-xs);"><?php echo esc_html(strlen($doc->doc_url) > 60 ? substr($doc->doc_url, 0, 60) . '...' : $doc->doc_url); ?></a></td>
                                     <td width="80"><?php echo $this->status_badge($doc->status); ?></td>
                                     <td width="60" style="text-align:right;">
-                                        <button class="ops-btn secondary" style="font-size:10px;height:22px;padding:0 6px;color:var(--color-error);" onclick="deleteDoc(<?php echo $doc->id; ?>)">Del</button>
+                                        <button class="ops-btn secondary" style="font-size: var(--font-size-xs);height:22px;padding:0 6px;color:var(--color-error);" onclick="deleteDoc(<?php echo $doc->id; ?>)">Del</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -216,7 +216,7 @@ class KnowledgeBase {
         <div class="ops-card">
             <div class="ops-card-header">
                 <h3 style="margin:0;">Gap Analysis</h3>
-                <span style="font-size:12px;color:var(--color-text-tertiary);">Cross-references flagged topics against imported docs</span>
+                <span style="font-size: var(--font-size-xs);color:var(--color-text-tertiary);">Cross-references flagged topics against imported docs</span>
             </div>
 
             <?php if (empty($flagged_topics)): ?>
@@ -225,7 +225,7 @@ class KnowledgeBase {
                     <div class="ops-empty-state-description">Topics flagged as FAQ candidates or needing doc updates will appear here once audits detect them.</div>
                 </div>
             <?php else: ?>
-                <table class="audit-table" style="font-size:13px;">
+                <table class="audit-table" style="font-size: var(--font-size-sm);">
                     <thead>
                         <tr>
                             <th>Topic</th>
@@ -244,13 +244,13 @@ class KnowledgeBase {
                             <td style="text-align:center;font-weight:600;"><?php echo intval($gap['ticket_count']); ?></td>
                             <td>
                                 <?php if ($gap['is_faq_candidate']): ?>
-                                    <span class="status-badge warning" style="font-size:10px;">FAQ</span>
+                                    <span class="status-badge warning" style="font-size: var(--font-size-xs);">FAQ</span>
                                 <?php endif; ?>
                                 <?php if ($gap['is_doc_update_needed']): ?>
-                                    <span class="status-badge failed" style="font-size:10px;">Doc Update</span>
+                                    <span class="status-badge failed" style="font-size: var(--font-size-xs);">Doc Update</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="font-size:12px;color:var(--color-text-tertiary);"><?php echo $gap['last_seen'] ? wp_date('M j', strtotime($gap['last_seen'])) : '—'; ?></td>
+                            <td style="font-size: var(--font-size-xs);color:var(--color-text-tertiary);"><?php echo $gap['last_seen'] ? wp_date('M j', strtotime($gap['last_seen'])) : '—'; ?></td>
                             <td>
                                 <?php if ($gap['doc_match']): ?>
                                     <span class="kb-gap-covered" title="<?php echo esc_attr($gap['doc_match']); ?>">Covered</span>
@@ -454,14 +454,14 @@ class KnowledgeBase {
             'archived'     => ['Archived', 'pending'],
         ];
         $info = $map[$status] ?? ['Unknown', 'pending'];
-        return '<span class="status-badge ' . $info[1] . '" style="font-size:10px;">' . $info[0] . '</span>';
+        return '<span class="status-badge ' . $info[1] . '" style="font-size: var(--font-size-xs);">' . $info[0] . '</span>';
     }
 
     private function render_styles() {
         ?>
         <style>
             .kb-label {
-                display: block; font-size: 12px; font-weight: 500;
+                display: block; font-size: var(--font-size-xs); font-weight: 500;
                 color: var(--color-text-tertiary); margin-bottom: 4px;
             }
             .kb-product-group {
@@ -473,14 +473,14 @@ class KnowledgeBase {
                 display: flex; align-items: center; justify-content: space-between;
                 border-bottom: 1px solid var(--color-border);
             }
-            .kb-product-header strong { font-size: 13px; }
+            .kb-product-header strong { font-size: var(--font-size-sm); }
             .kb-doc-count {
-                font-size: 11px; color: var(--color-text-tertiary);
+                font-size: var(--font-size-xs); color: var(--color-text-tertiary);
                 background: var(--color-bg); padding: 2px 8px;
                 border-radius: var(--radius-pill); border: 1px solid var(--color-border);
             }
             .kb-cat-badge {
-                font-size: 11px; padding: 2px 8px; border-radius: var(--radius-pill);
+                font-size: var(--font-size-xs); padding: 2px 8px; border-radius: var(--radius-pill);
                 background: var(--color-bg-subtle); border: 1px solid var(--color-border);
                 color: var(--color-text-secondary);
             }
@@ -488,17 +488,17 @@ class KnowledgeBase {
             /* Gap analysis badges */
             .kb-gap-covered {
                 display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
-                font-size: 11px; font-weight: 600;
+                font-size: var(--font-size-xs); font-weight: 600;
                 background: var(--color-success-bg); color: #065f46;
             }
             .kb-gap-outdated {
                 display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
-                font-size: 11px; font-weight: 600;
+                font-size: var(--font-size-xs); font-weight: 600;
                 background: #fef3c7; color: #92400e;
             }
             .kb-gap-missing {
                 display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill);
-                font-size: 11px; font-weight: 600;
+                font-size: var(--font-size-xs); font-weight: 600;
                 background: var(--color-error-bg); color: #991b1b;
             }
 
@@ -508,13 +508,13 @@ class KnowledgeBase {
                 border-radius: var(--radius-md); padding: 16px;
             }
             .kb-coverage-header { margin-bottom: 12px; }
-            .kb-coverage-header strong { font-size: 15px; }
+            .kb-coverage-header strong { font-size: var(--font-size-md); }
             .kb-coverage-stats {
                 display: flex; gap: 16px; margin-bottom: 12px;
             }
             .kb-stat { display: flex; flex-direction: column; align-items: center; }
-            .kb-stat-value { font-size: 22px; font-weight: 700; line-height: 1.2; }
-            .kb-stat-label { font-size: 11px; color: var(--color-text-tertiary); }
+            .kb-stat-value { font-size: var(--font-size-xl); font-weight: 700; line-height: 1.2; }
+            .kb-stat-label { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
             .kb-coverage-bar-wrapper {
                 display: flex; align-items: center; gap: 8px;
             }
@@ -523,13 +523,13 @@ class KnowledgeBase {
                 border-radius: 3px; overflow: hidden;
             }
             .kb-coverage-fill { height: 100%; border-radius: 3px; }
-            .kb-coverage-pct { font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap; }
+            .kb-coverage-pct { font-size: var(--font-size-xs); color: var(--color-text-tertiary); white-space: nowrap; }
 
             /* Import result toast */
             .kb-toast {
                 position: fixed; top: 40px; right: 20px; z-index: 99999;
                 padding: 12px 20px; border-radius: var(--radius-md);
-                font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+                font-size: var(--font-size-sm); font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,.15);
                 animation: kbSlideIn .3s ease;
             }
             .kb-toast.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }

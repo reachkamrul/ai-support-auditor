@@ -172,7 +172,7 @@ class FlaggedTickets {
                         <tr>
                             <td><strong>#<?php echo esc_html($f->ticket_id); ?></strong></td>
                             <td><?php echo $this->flag_badge($f->flag_type); ?></td>
-                            <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;">
+                            <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;">
                                 <?php echo esc_html($this->format_details($f->flag_type, $details)); ?>
                             </td>
                             <td>
@@ -181,29 +181,29 @@ class FlaggedTickets {
                                 </span>
                             </td>
                             <td><?php echo $this->status_badge($f->status); ?></td>
-                            <td style="color:var(--color-text-tertiary);font-size:12px;"><?php echo wp_date('M j, H:i', strtotime($f->created_at)); ?></td>
+                            <td style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);"><?php echo wp_date('M j, H:i', strtotime($f->created_at)); ?></td>
                             <td>
                                 <div style="display:flex;gap:4px;">
-                                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&audit_search=' . $f->ticket_id); ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" title="View Audit">View</a>
+                                    <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&audit_search=' . $f->ticket_id); ?>" class="ops-btn secondary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;" title="View Audit">View</a>
                                     <?php if ($f->status === 'needs_review'): ?>
                                         <form method="post" style="display:inline;">
                                             <?php wp_nonce_field('flagged_action_' . $f->id); ?>
                                             <input type="hidden" name="flagged_action" value="review">
                                             <input type="hidden" name="flag_id" value="<?php echo $f->id; ?>">
-                                            <button type="submit" class="ops-btn primary" style="font-size:11px;height:28px;padding:0 8px;">Reviewed</button>
+                                            <button type="submit" class="ops-btn primary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;">Reviewed</button>
                                         </form>
                                         <form method="post" style="display:inline;">
                                             <?php wp_nonce_field('flagged_action_' . $f->id); ?>
                                             <input type="hidden" name="flagged_action" value="dismiss">
                                             <input type="hidden" name="flag_id" value="<?php echo $f->id; ?>">
-                                            <button type="submit" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;">Dismiss</button>
+                                            <button type="submit" class="ops-btn secondary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;">Dismiss</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
                         <?php if (!empty($f->reviewer_notes)): ?>
-                            <tr><td colspan="7" style="padding:4px 16px 12px;font-size:12px;color:var(--color-text-secondary);background:var(--color-bg-subtle);">
+                            <tr><td colspan="7" style="padding:4px 16px 12px;font-size:var(--font-size-xs);color:var(--color-text-secondary);background:var(--color-bg-subtle);">
                                 <strong>Note:</strong> <?php echo esc_html($f->reviewer_notes); ?>
                             </td></tr>
                         <?php endif; ?>
@@ -248,7 +248,7 @@ class FlaggedTickets {
         if (empty($appeals)) return;
         ?>
         <div class="ops-card" style="margin-top:24px;">
-            <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">
                 Pending Agent Appeals
                 <span class="ops-nav-badge" style="margin-left:8px;"><?php echo count($appeals); ?></span>
             </h3>
@@ -269,15 +269,15 @@ class FlaggedTickets {
                     <tr id="appeal-row-<?php echo intval($ap->id); ?>">
                         <td><strong><?php echo esc_html($ap->agent_name ?: $ap->agent_email); ?></strong></td>
                         <td><a href="<?php echo esc_url(admin_url('admin.php?page=fluent-support#/tickets/' . intval($ap->ticket_id))); ?>" target="_blank">#<?php echo esc_html($ap->ticket_id); ?></a></td>
-                        <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
+                        <td style="font-size:var(--font-size-xs);"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
                         <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
                         <td>
                             <div style="display:flex;gap:6px;align-items:center;">
-                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">
-                                <button class="ops-btn primary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
-                                <button class="ops-btn secondary" style="height:28px;font-size:11px;padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
+                                <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:var(--font-size-xs);flex:1;">
+                                <button class="ops-btn primary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'approved')">Approve</button>
+                                <button class="ops-btn secondary" style="height:28px;font-size:var(--font-size-xs);padding:0 10px;" onclick="resolveAppeal(<?php echo intval($ap->id); ?>, 'rejected')">Reject</button>
                             </div>
                         </td>
                     </tr>

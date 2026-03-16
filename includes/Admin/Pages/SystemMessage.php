@@ -42,7 +42,7 @@ class SystemMessage {
             #system_message_editor {
                 width: 100%;
                 font-family: var(--font-mono);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 padding: 16px;
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-md);
@@ -88,7 +88,7 @@ class SystemMessage {
                 align-items: center;
                 gap: 6px;
                 color: var(--color-text-secondary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 margin-left: auto;
             }
             
@@ -112,7 +112,7 @@ class SystemMessage {
                 background: rgba(255, 255, 255, 0.8);
                 padding: 2px 6px;
                 border-radius: 4px;
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 font-family: var(--font-mono);
                 color: var(--color-primary);
                 font-weight: 600;
@@ -120,7 +120,7 @@ class SystemMessage {
             
             .tip-text {
                 color: var(--color-text-secondary);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 line-height: 1.5;
                 flex: 1;
             }
@@ -159,7 +159,7 @@ class SystemMessage {
             
             #test-result h4 {
                 margin: 0 0 12px 0;
-                font-size: 15px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
                 color: var(--color-text-primary);
                 display: flex;
@@ -178,7 +178,7 @@ class SystemMessage {
                 border: 1px solid var(--color-border);
                 max-height: 600px;
                 overflow-y: auto;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 line-height: 1.6;
             }
             
@@ -193,7 +193,7 @@ class SystemMessage {
                 gap: 8px;
                 padding: 8px 12px;
                 border-radius: var(--radius-sm);
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 font-weight: 600;
                 margin-bottom: 16px;
             }
@@ -227,16 +227,16 @@ class SystemMessage {
             .test-detail-label {
                 font-weight: 500;
                 color: var(--color-text-tertiary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
             }
-            
+
             .test-detail-value {
                 color: var(--color-text-primary);
                 font-weight: 500;
             }
             
             .test-detail-value.score {
-                font-size: 18px;
+                font-size: var(--font-size-lg);
                 font-weight: 700;
                 color: var(--color-primary);
             }
@@ -249,7 +249,7 @@ class SystemMessage {
                 cursor: pointer;
                 color: var(--color-primary);
                 font-weight: 600;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 padding: 8px 12px;
                 background: var(--color-bg);
                 border: 1px solid var(--color-border);
@@ -272,7 +272,7 @@ class SystemMessage {
                 display: inline-block;
                 margin-right: 8px;
                 transition: transform 0.2s ease;
-                font-size: 10px;
+                font-size: var(--font-size-xs);
             }
             
             details[open] summary::before {
@@ -288,16 +288,16 @@ class SystemMessage {
                 overflow-x: auto;
                 max-height: 400px;
                 font-family: var(--font-mono);
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 line-height: 1.5;
             }
-            
+
             .char-count {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 margin-top: 8px;
-                font-size: 11px;
+                font-size: var(--font-size-xs);
                 color: var(--color-text-tertiary);
             }
         </style>
@@ -306,7 +306,7 @@ class SystemMessage {
             <div class="system-message-header">
                 <div>
                     <h3 style="margin: 0 0 4px 0;">System message editor</h3>
-                    <p style="margin: 0; color: var(--color-text-secondary); font-size: 13px;">
+                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
                         Configure the prompt that guides AI ticket auditing. This message is sent to the AI model for every audit.
                     </p>
                 </div>
@@ -314,7 +314,7 @@ class SystemMessage {
             
             <form method="post" id="system-message-form">
                 <div>
-                    <label style="font-weight: 500; font-size: 13px; display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
+                    <label style="font-weight: 500; font-size: var(--font-size-sm); display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
                         System message
                     </label>
                     <textarea 
@@ -351,13 +351,13 @@ class SystemMessage {
         
         <div class="ops-card">
             <h3 style="margin: 0 0 4px 0;">Test system message</h3>
-            <p style="margin: 0 0 0 0; color: var(--color-text-secondary); font-size: 13px;">
+            <p style="margin: 0 0 0 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
                 Test your system message with a real ticket to preview how the AI will respond before deploying.
             </p>
             
             <form method="post" id="test-form">
                 <div>
-                    <label style="font-weight: 500; font-size: 13px; display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
+                    <label style="font-weight: 500; font-size: var(--font-size-sm); display: block; margin-bottom: 8px; color: var(--color-text-secondary);">
                         Test ticket ID
                     </label>
                     <input type="number" name="test_ticket_id" id="test_ticket_id" class="ops-input" 
@@ -432,7 +432,7 @@ class SystemMessage {
                     return;
                 }
                 
-                contentDiv.innerHTML = '<div class="test-status loading">⏳ Test triggered. Waiting for results...</div><div id="polling-status" style="margin-top:12px;font-size:12px;color:var(--color-text-secondary);padding:8px 12px;background:var(--color-bg);border-radius:6px;border:1px solid var(--color-border);"></div>';
+                contentDiv.innerHTML = '<div class="test-status loading">⏳ Test triggered. Waiting for results...</div><div id="polling-status" style="margin-top:12px;font-size:var(--font-size-xs);color:var(--color-text-secondary);padding:8px 12px;background:var(--color-bg);border-radius:6px;border:1px solid var(--color-border);"></div>';
                 
                 var attempts = 0;
                 var maxAttempts = 40;

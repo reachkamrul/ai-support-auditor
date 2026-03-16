@@ -157,7 +157,7 @@ class SlaDashboard {
         $on_time_rate = $kpis->total_evals > 0 ? round(($kpis->on_time / $kpis->total_evals) * 100, 1) : 0;
         ?>
         <style>
-            .sla-severity { display:inline-block; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+            .sla-severity { display:inline-block; padding:2px 10px; border-radius:12px; font-size:var(--font-size-xs); font-weight:600; }
             .sla-severity.green { background:#dcfce7; color:#166534; }
             .sla-severity.yellow { background:#fef9c3; color:#854d0e; }
             .sla-severity.orange { background:#ffedd5; color:#9a3412; }
@@ -170,7 +170,7 @@ class SlaDashboard {
                 <?php foreach ([7 => '7 Days', 30 => '30 Days', 60 => '60 Days', 90 => '90 Days'] as $d => $label): ?>
                     <a href="<?php echo esc_url(add_query_arg('days', $d, $base_url)); ?>"
                        class="ops-btn <?php echo $days == $d ? 'primary' : 'secondary'; ?>"
-                       style="padding:0 16px;height:36px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
+                       style="padding:0 16px;height:36px;font-size:var(--font-size-sm);font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -201,20 +201,20 @@ class SlaDashboard {
         <!-- Charts row -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 4px;">Timing Score Distribution</h3>
-                <p style="font-size:12px;color:var(--color-text-secondary);margin:0 0 16px;">How evaluations distribute across penalty levels</p>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 4px;">Timing Score Distribution</h3>
+                <p style="font-size:var(--font-size-xs);color:var(--color-text-secondary);margin:0 0 16px;">How evaluations distribute across penalty levels</p>
                 <div style="height:280px;"><canvas id="chart-sla-dist"></canvas></div>
             </div>
             <div class="ops-card">
-                <h3 style="font-size:15px;font-weight:600;margin:0 0 4px;">Daily SLA Trend</h3>
-                <p style="font-size:12px;color:var(--color-text-secondary);margin:0 0 16px;">Average timing score and breach count per day</p>
+                <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 4px;">Daily SLA Trend</h3>
+                <p style="font-size:var(--font-size-xs);color:var(--color-text-secondary);margin:0 0 16px;">Average timing score and breach count per day</p>
                 <div style="height:280px;"><canvas id="chart-sla-trend"></canvas></div>
             </div>
         </div>
 
         <!-- Agent Timing Table -->
         <div class="ops-card" style="margin-bottom:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Agent Timing Performance</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Agent Timing Performance</h3>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -252,7 +252,7 @@ class SlaDashboard {
         <!-- Worst Tickets -->
         <?php if (!empty($worst_tickets)): ?>
         <div class="ops-card" style="margin-bottom:24px;">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 16px;">Worst Delayed Tickets (timing &lt; -15)</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Worst Delayed Tickets (timing &lt; -15)</h3>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -268,7 +268,7 @@ class SlaDashboard {
                         <td><a href="<?php echo esc_url(admin_url('admin.php?page=fluent-support#/tickets/' . intval($wt->ticket_id))); ?>" target="_blank">#<?php echo esc_html($wt->ticket_id); ?></a></td>
                         <td><?php echo esc_html($wt->agent_name ?: $wt->agent_email); ?></td>
                         <td style="text-align:center;"><span class="sla-severity red"><?php echo intval($wt->timing_score); ?></span></td>
-                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(wp_date('M j, g:ia', strtotime($wt->created_at))); ?></td>
+                        <td style="color:var(--color-text-secondary);font-size:var(--font-size-xs);"><?php echo esc_html(wp_date('M j, g:ia', strtotime($wt->created_at))); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -279,8 +279,8 @@ class SlaDashboard {
         <!-- Aging Open Tickets -->
         <?php if (!empty($aging_tickets)): ?>
         <div class="ops-card">
-            <h3 style="font-size:15px;font-weight:600;margin:0 0 4px;">Aging Open Tickets</h3>
-            <p style="font-size:12px;color:var(--color-text-secondary);margin:0 0 16px;">Active tickets waiting 2+ hours for response</p>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 4px;">Aging Open Tickets</h3>
+            <p style="font-size:var(--font-size-xs);color:var(--color-text-secondary);margin:0 0 16px;">Active tickets waiting 2+ hours for response</p>
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -300,7 +300,7 @@ class SlaDashboard {
                         <td><?php echo esc_html($at->customer_name); ?></td>
                         <td><?php echo esc_html($at->assigned_to); ?></td>
                         <td style="text-align:center;"><span class="sla-severity <?php echo $severity_class; ?>"><?php echo $at->hours_waiting; ?>h</span></td>
-                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(wp_date('M j, g:ia', strtotime($at->last_response))); ?></td>
+                        <td style="color:var(--color-text-secondary);font-size:var(--font-size-xs);"><?php echo esc_html(wp_date('M j, g:ia', strtotime($at->last_response))); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

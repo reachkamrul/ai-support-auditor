@@ -88,19 +88,19 @@ class Reset {
 
         <div class="ops-card" style="border-left:4px solid #ef4444;">
             <h3 style="color:#ef4444;">Database Reset</h3>
-            <p style="margin:0 0 20px;color:var(--color-text-secondary);font-size:13px;">
+            <p style="margin:0 0 20px;color:var(--color-text-secondary);font-size:var(--font-size-sm);">
                 This will permanently delete all plugin data. This action cannot be undone.
                 Remove <code>define('AUDIT_RESET', 'TRUE');</code> from wp-config.php when done.
             </p>
 
             <div style="padding:20px;border-radius:var(--radius-md);background:var(--color-bg-subtle);border:1px solid var(--color-border);margin-bottom:20px;">
-                <h4 style="margin:0 0 12px;font-size:14px;">Tables to be dropped</h4>
+                <h4 style="margin:0 0 12px;font-size:var(--font-size-base);">Tables to be dropped</h4>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;">
                     <?php foreach ($this->tables as $table):
                         $full = $prefix . $table;
                         $exists = $wpdb->get_var("SHOW TABLES LIKE '{$full}'");
                     ?>
-                        <div style="font-size:12px;font-family:monospace;padding:4px 8px;border-radius:4px;background:<?php echo $exists ? '#fef2f2' : '#f0fdf4'; ?>;color:<?php echo $exists ? '#991b1b' : '#166534'; ?>;">
+                        <div style="font-size:var(--font-size-xs);font-family:monospace;padding:4px 8px;border-radius:4px;background:<?php echo $exists ? '#fef2f2' : '#f0fdf4'; ?>;color:<?php echo $exists ? '#991b1b' : '#166534'; ?>;">
                             <?php echo esc_html($table); ?>
                             <span style="float:right;"><?php echo $exists ? 'exists' : 'missing'; ?></span>
                         </div>
@@ -109,13 +109,13 @@ class Reset {
             </div>
 
             <div style="padding:20px;border-radius:var(--radius-md);background:var(--color-bg-subtle);border:1px solid var(--color-border);margin-bottom:20px;">
-                <h4 style="margin:0 0 12px;font-size:14px;">Options to be deleted</h4>
+                <h4 style="margin:0 0 12px;font-size:var(--font-size-base);">Options to be deleted</h4>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;">
                     <?php foreach ($this->options as $opt):
                         $val = get_option($opt, '__NOT_SET__');
                         $has = ($val !== '__NOT_SET__');
                     ?>
-                        <div style="font-size:12px;font-family:monospace;padding:4px 8px;border-radius:4px;background:<?php echo $has ? '#fef2f2' : '#f0fdf4'; ?>;color:<?php echo $has ? '#991b1b' : '#166534'; ?>;">
+                        <div style="font-size:var(--font-size-xs);font-family:monospace;padding:4px 8px;border-radius:4px;background:<?php echo $has ? '#fef2f2' : '#f0fdf4'; ?>;color:<?php echo $has ? '#991b1b' : '#166534'; ?>;">
                             <?php echo esc_html($opt); ?>
                             <span style="float:right;"><?php echo $has ? 'set' : 'empty'; ?></span>
                         </div>

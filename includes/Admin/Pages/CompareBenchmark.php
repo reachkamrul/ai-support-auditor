@@ -65,23 +65,23 @@ class CompareBenchmark {
         <style>
             .compare-filters { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
             .compare-mode-tabs { display:flex; gap:4px; background:var(--color-bg-subtle); border-radius:var(--radius-sm); padding:3px; }
-            .compare-mode-tabs a { padding:6px 16px; font-size:13px; font-weight:500; border-radius:var(--radius-sm); text-decoration:none; color:var(--color-text-secondary); transition:all .2s; }
+            .compare-mode-tabs a { padding:6px 16px; font-size:var(--font-size-sm); font-weight:500; border-radius:var(--radius-sm); text-decoration:none; color:var(--color-text-secondary); transition:all .2s; }
             .compare-mode-tabs a.active { background:#fff; color:var(--color-text-primary); box-shadow:0 1px 3px rgba(0,0,0,.1); }
             .compare-side { flex:1; min-width:0; }
             .compare-grid { display:grid; grid-template-columns:1fr 60px 1fr; gap:0; margin-bottom:24px; align-items:start; }
-            .compare-vs { display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:var(--color-text-tertiary); padding-top:60px; }
+            .compare-vs { display:flex; align-items:center; justify-content:center; font-size:var(--font-size-xl); font-weight:800; color:var(--color-text-tertiary); padding-top:60px; }
             .compare-stat-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--color-border); }
-            .compare-stat-label { font-size:13px; color:var(--color-text-secondary); }
-            .compare-stat-value { font-size:16px; font-weight:700; color:var(--color-text-primary); }
+            .compare-stat-label { font-size:var(--font-size-sm); color:var(--color-text-secondary); }
+            .compare-stat-value { font-size:var(--font-size-md); font-weight:700; color:var(--color-text-primary); }
             .compare-stat-value.better { color:var(--color-success); }
             .compare-stat-value.worse { color:var(--color-error); }
-            .compare-header { font-size:16px; font-weight:700; color:var(--color-text-primary); margin-bottom:4px; }
-            .compare-subheader { font-size:12px; color:var(--color-text-secondary); margin-bottom:16px; }
+            .compare-header { font-size:var(--font-size-md); font-weight:700; color:var(--color-text-primary); margin-bottom:4px; }
+            .compare-subheader { font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:16px; }
             .compare-bar-container { margin-bottom:24px; }
             .compare-bar-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-            .compare-bar-label { width:140px; font-size:13px; color:var(--color-text-secondary); text-align:right; flex-shrink:0; }
+            .compare-bar-label { width:140px; font-size:var(--font-size-sm); color:var(--color-text-secondary); text-align:right; flex-shrink:0; }
             .compare-bar-track { flex:1; height:28px; background:var(--color-bg-subtle); border-radius:var(--radius-sm); position:relative; overflow:hidden; }
-            .compare-bar-fill { height:100%; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:flex-end; padding:0 8px; font-size:11px; font-weight:700; color:#fff; min-width:30px; transition:width .5s ease; }
+            .compare-bar-fill { height:100%; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:flex-end; padding:0 8px; font-size:var(--font-size-xs); font-weight:700; color:#fff; min-width:30px; transition:width .5s ease; }
             @media (max-width:900px) { .compare-grid { grid-template-columns:1fr; } .compare-vs { padding:16px 0; } }
         </style>
 
@@ -98,7 +98,7 @@ class CompareBenchmark {
                     <?php foreach ([30 => '30 Days', 60 => '60 Days', 90 => '90 Days', 0 => 'All Time'] as $d => $label): ?>
                         <a href="<?php echo esc_url(add_query_arg(['days' => $d, 'mode' => $mode], $base_url)); ?>"
                            class="ops-btn <?php echo $days == $d ? 'primary' : 'secondary'; ?>"
-                           style="padding:0 14px;height:34px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
+                           style="padding:0 14px;height:34px;font-size:var(--font-size-sm);font-weight:500;border-radius:var(--radius-sm);"><?php echo $label; ?></a>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -120,8 +120,8 @@ class CompareBenchmark {
         ?>
         <div class="ops-card" style="margin-bottom:24px;padding:16px 20px;">
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                <label style="font-size:13px;font-weight:600;color:var(--color-text-secondary);">Compare:</label>
-                <select id="agent-a-select" style="min-width:200px;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;">
+                <label style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-secondary);">Compare:</label>
+                <select id="agent-a-select" style="min-width:200px;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);">
                     <?php foreach ($agents as $a): ?>
                         <option value="<?php echo esc_attr($a->agent_email); ?>" <?php selected($agent_a, $a->agent_email); ?>>
                             <?php echo esc_html($a->agent_name ?: $a->agent_email); ?>
@@ -129,14 +129,14 @@ class CompareBenchmark {
                     <?php endforeach; ?>
                 </select>
                 <span style="font-weight:700;color:var(--color-text-tertiary);">vs</span>
-                <select id="agent-b-select" style="min-width:200px;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;">
+                <select id="agent-b-select" style="min-width:200px;height:34px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);">
                     <?php foreach ($agents as $a): ?>
                         <option value="<?php echo esc_attr($a->agent_email); ?>" <?php selected($agent_b, $a->agent_email); ?>>
                             <?php echo esc_html($a->agent_name ?: $a->agent_email); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <button onclick="doCompare()" class="ops-btn primary" style="height:34px;padding:0 20px;font-size:13px;">Compare</button>
+                <button onclick="doCompare()" class="ops-btn primary" style="height:34px;padding:0 20px;font-size:var(--font-size-sm);">Compare</button>
             </div>
         </div>
 
@@ -490,7 +490,7 @@ class CompareBenchmark {
         <!-- Top Improvers / Decliners -->
         <?php if (!empty($improvers)): ?>
         <div class="ops-card">
-            <h3 style="font-size:16px;font-weight:600;margin:0 0 16px;">Top Movers (Improvement vs Previous Period)</h3>
+            <h3 style="font-size:var(--font-size-md);font-weight:600;margin:0 0 16px;">Top Movers (Improvement vs Previous Period)</h3>
             <table class="audit-table">
                 <thead>
                     <tr>

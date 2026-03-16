@@ -78,15 +78,15 @@ class Teams {
                             <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:<?php echo esc_attr($team->color); ?>;margin-right:8px;vertical-align:middle;"></span>
                             <?php echo esc_html($team->name); ?>
                         </h3>
-                        <p style="margin:0;font-size:13px;color:var(--color-text-secondary);">
+                        <p style="margin:0;font-size:var(--font-size-sm);color:var(--color-text-secondary);">
                             <?php echo $member_count; ?> agent<?php echo $member_count !== 1 ? 's' : ''; ?> &middot;
                             <?php echo $product_count; ?> product<?php echo $product_count !== 1 ? 's' : ''; ?>
                         </p>
                     </div>
                     <?php if (!$is_read_only): ?>
                     <div style="display:flex;gap:4px;">
-                        <a href="?page=ai-ops&section=teams&edit_team=<?php echo $team->id; ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;">Edit</a>
-                        <a href="?page=ai-ops&section=teams&delete_team=<?php echo $team->id; ?>" class="ops-btn danger" style="font-size:11px;height:28px;padding:0 8px;" onclick="return confirm('Delete this team?')">Delete</a>
+                        <a href="?page=ai-ops&section=teams&edit_team=<?php echo $team->id; ?>" class="ops-btn secondary" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;">Edit</a>
+                        <a href="?page=ai-ops&section=teams&delete_team=<?php echo $team->id; ?>" class="ops-btn danger" style="font-size:var(--font-size-xs);height:28px;padding:0 8px;" onclick="return confirm('Delete this team?')">Delete</a>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -142,7 +142,7 @@ class Teams {
         <div class="ops-card" id="team-form">
             <h3>
                 <?php if ($editing): ?>
-                    <span style="background:var(--color-warning-bg);color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:8px;">Editing</span>
+                    <span style="background:var(--color-warning-bg);color:#92400e;padding:2px 8px;border-radius:4px;font-size:var(--font-size-xs);font-weight:500;margin-right:8px;">Editing</span>
                     <?php echo esc_html($editing['team']->name); ?>
                 <?php else: ?>
                     Create New Team
@@ -183,7 +183,7 @@ class Teams {
                             $checked = in_array($a->email, $selected_members) ? 'checked' : '';
                             $name = trim($a->first_name . ' ' . $a->last_name) ?: $a->email;
                         ?>
-                            <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:12px;cursor:pointer;transition:all 0.15s;">
+                            <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:var(--font-size-xs);cursor:pointer;transition:all 0.15s;">
                                 <input type="checkbox" name="team_members[]" value="<?php echo esc_attr($a->email); ?>" <?php echo $checked; ?> style="margin:0;">
                                 <?php echo esc_html($name); ?>
                             </label>
@@ -200,13 +200,13 @@ class Teams {
                         foreach ($products as $p):
                             $checked = in_array($p->id, $selected_products) ? 'checked' : '';
                         ?>
-                            <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:12px;cursor:pointer;transition:all 0.15s;">
+                            <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-pill);font-size:var(--font-size-xs);cursor:pointer;transition:all 0.15s;">
                                 <input type="checkbox" name="team_products[]" value="<?php echo intval($p->id); ?>" <?php echo $checked; ?> style="margin:0;">
                                 <?php echo esc_html($p->title); ?>
                             </label>
                         <?php endforeach; ?>
                         <?php if (empty($products)): ?>
-                            <span style="color:var(--color-text-tertiary);font-size:12px;">No FluentSupport products found</span>
+                            <span style="color:var(--color-text-tertiary);font-size:var(--font-size-xs);">No FluentSupport products found</span>
                         <?php endif; ?>
                     </div>
                 </div>

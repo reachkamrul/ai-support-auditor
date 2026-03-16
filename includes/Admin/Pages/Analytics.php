@@ -225,7 +225,7 @@ class Analytics {
 
             .analytics-header h3 {
                 margin: 0;
-                font-size: 18px;
+                font-size: var(--font-size-lg);
                 font-weight: 600;
                 color: var(--color-text-primary);
             }
@@ -239,7 +239,7 @@ class Analytics {
             .analytics-filters .ops-btn {
                 padding: 0 16px;
                 height: 36px;
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 font-weight: 500;
                 border-radius: var(--radius-sm);
                 transition: all 0.2s ease;
@@ -296,20 +296,20 @@ class Analytics {
 
             .analytics-card-header h3 {
                 margin: 0;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 font-weight: 600;
                 color: var(--color-text-primary);
             }
 
             .analytics-card-description {
                 color: var(--color-text-secondary);
-                font-size: 13px;
+                font-size: var(--font-size-sm);
                 line-height: 1.5;
                 margin-bottom: 16px;
             }
 
             .leaderboard-link {
-                font-size: 12px;
+                font-size: var(--font-size-xs);
                 padding: 6px 12px;
                 height: 28px;
                 text-decoration: none;
@@ -317,13 +317,13 @@ class Analytics {
 
             .rank-cell {
                 font-weight: 700;
-                font-size: 16px;
+                font-size: var(--font-size-md);
                 width: 60px;
                 text-align: center;
             }
 
             .rank-medal {
-                font-size: 20px;
+                font-size: var(--font-size-xl);
             }
 
             .agent-name-cell {
@@ -338,8 +338,8 @@ class Analytics {
             .trends-chart-grid.two-col { grid-template-columns:1fr 1fr; }
             @media (max-width:1200px) { .trends-chart-grid.two-col { grid-template-columns:1fr; } }
             .chart-container { position:relative; height:320px; }
-            .chart-title { font-size:15px; font-weight:600; color:var(--color-text-primary); margin-bottom:4px; }
-            .chart-subtitle { font-size:12px; color:var(--color-text-secondary); margin-bottom:16px; }
+            .chart-title { font-size:var(--font-size-md); font-weight:600; color:var(--color-text-primary); margin-bottom:4px; }
+            .chart-subtitle { font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:16px; }
         </style>
 
         <div class="ops-card" style="margin-bottom:24px;">
@@ -352,7 +352,7 @@ class Analytics {
                         <a href="?page=ai-ops&section=analytics&days=90<?php echo $selected_agent ? '&agent=' . urlencode($selected_agent) : ''; ?>" class="ops-btn <?php echo $days==90?'primary':'secondary'; ?>">90 Days</a>
                         <a href="?page=ai-ops&section=analytics&days=365<?php echo $selected_agent ? '&agent=' . urlencode($selected_agent) : ''; ?>" class="ops-btn <?php echo $days==365?'primary':'secondary'; ?>">1 Year</a>
                     </div>
-                    <select id="analytics-agent-select" style="min-width:220px;height:36px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:13px;">
+                    <select id="analytics-agent-select" style="min-width:220px;height:36px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 10px;font-size:var(--font-size-sm);">
                         <option value="">All Agents (Team Average)</option>
                         <?php foreach ($agents as $a): ?>
                             <option value="<?php echo esc_attr($a->agent_email); ?>" <?php selected($selected_agent, $a->agent_email); ?>>

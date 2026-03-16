@@ -120,7 +120,7 @@ class HandoffReport {
                     <div class="ops-empty-state-description">Audited tickets with reassignments will populate this report.</div>
                 </div>
             <?php else: ?>
-                <table class="audit-table" style="font-size:13px;">
+                <table class="audit-table" style="font-size:var(--font-size-sm);">
                     <thead>
                         <tr>
                             <th>Agent</th>
@@ -138,7 +138,7 @@ class HandoffReport {
                         $rate_class = $agent->compliance_rate >= 80 ? 'handoff-good' : ($agent->compliance_rate >= 50 ? 'handoff-neutral' : 'handoff-bad');
                     ?>
                         <tr>
-                            <td><strong><?php echo esc_html($name); ?></strong><br><span style="font-size:11px;color:var(--color-text-tertiary);"><?php echo esc_html($agent->agent_email); ?></span></td>
+                            <td><strong><?php echo esc_html($name); ?></strong><br><span style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);"><?php echo esc_html($agent->agent_email); ?></span></td>
                             <td><?php echo $agent->total_events; ?></td>
                             <td class="handoff-good"><?php echo $agent->good_handoffs; ?></td>
                             <td class="handoff-bad"><?php echo $agent->failed_handoffs; ?></td>
@@ -160,7 +160,7 @@ class HandoffReport {
             <div style="padding:20px 20px 0;">
                 <h3>Recent failed handoffs</h3>
             </div>
-            <table class="audit-table" style="font-size:13px;">
+            <table class="audit-table" style="font-size:var(--font-size-sm);">
                 <thead>
                     <tr>
                         <th>Ticket</th>
@@ -181,7 +181,7 @@ class HandoffReport {
                         <td style="color:var(--color-text-tertiary);"><?php echo $f->shift_end ? wp_date('M j, H:i', strtotime($f->shift_end)) : '—'; ?></td>
                         <td style="color:var(--color-text-tertiary);"><?php echo $f->reassigned_at ? wp_date('M j, H:i', strtotime($f->reassigned_at)) : 'Never'; ?></td>
                         <td class="handoff-bad" style="font-weight:600;"><?php echo $f->gap_hours; ?>h</td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html($f->reason); ?></td>
+                        <td style="font-size:var(--font-size-xs);color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html($f->reason); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
