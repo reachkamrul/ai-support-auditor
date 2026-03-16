@@ -446,7 +446,16 @@ class Manager {
         if (!$exists) {
             return 0;
         }
-        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'needs_review'");
+        // Only count flags on the latest audit per ticket
+        return (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$table} f
+             INNER JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+             INNER JOIN (
+                 SELECT ticket_id, MAX(id) as max_id
+                 FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id
+             ) latest ON a.ticket_id = latest.ticket_id AND a.id = latest.max_id
+             WHERE f.status = 'needs_review'"
+        );
     }
 
     private function get_queue_count() {

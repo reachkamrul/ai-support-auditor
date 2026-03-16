@@ -60,8 +60,13 @@ class FlaggedTickets {
 
         $where_sql = implode(' AND ', $where);
 
+        // Only show flags on the latest audit per ticket
+        $latest_join = "INNER JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+            INNER JOIN (SELECT ticket_id, MAX(id) as max_id FROM {$wpdb->prefix}ais_audits GROUP BY ticket_id) latest
+            ON a.ticket_id = latest.ticket_id AND a.id = latest.max_id";
+
         $count_sql = "SELECT COUNT(DISTINCT f.id) FROM {$table} f
-            LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+            {$latest_join}
             {$team_join}
             WHERE {$where_sql}{$team_where}";
         $total = (int) ($params
@@ -78,7 +83,7 @@ class FlaggedTickets {
         $flags = $wpdb->get_results($wpdb->prepare(
             "SELECT DISTINCT f.*, a.overall_score, a.overall_sentiment
              FROM {$table} f
-             LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
+             {$latest_join}
              {$team_join}
              WHERE {$where_sql}{$team_where}
              ORDER BY FIELD(f.status, 'needs_review', 'reviewed', 'dismissed'), f.created_at DESC
@@ -86,20 +91,14 @@ class FlaggedTickets {
             ...$all_params
         ));
 
-        // Summary counts (team-filtered)
-        if (!empty($team_emails)) {
-            $count_base = "SELECT COUNT(DISTINCT f.id) FROM {$table} f
-                LEFT JOIN {$wpdb->prefix}ais_audits a ON f.audit_id = a.id
-                {$team_join}
-                WHERE f.status = %s{$team_where}";
-            $count_review   = (int) $wpdb->get_var($wpdb->prepare($count_base, 'needs_review'));
-            $count_reviewed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'reviewed'));
-            $count_dismissed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'dismissed'));
-        } else {
-            $count_review  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='needs_review'");
-            $count_reviewed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='reviewed'");
-            $count_dismissed = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status='dismissed'");
-        }
+        // Summary counts — only flags on latest audit per ticket
+        $count_base = "SELECT COUNT(DISTINCT f.id) FROM {$table} f
+            {$latest_join}
+            {$team_join}
+            WHERE f.status = %s{$team_where}";
+        $count_review   = (int) $wpdb->get_var($wpdb->prepare($count_base, 'needs_review'));
+        $count_reviewed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'reviewed'));
+        $count_dismissed = (int) $wpdb->get_var($wpdb->prepare($count_base, 'dismissed'));
 
         ?>
         <!-- Summary Stats -->
@@ -127,6 +126,7 @@ class FlaggedTickets {
                     <label>Flag Type</label>
                     <select name="flag_type" class="ops-input" style="width:160px;">
                         <option value="">All Types</option>
+                        <option value="ai_recommended" <?php selected($filter_type, 'ai_recommended'); ?>>AI Flagged</option>
                         <option value="low_score" <?php selected($filter_type, 'low_score'); ?>>Low Score</option>
                         <option value="problem_context" <?php selected($filter_type, 'problem_context'); ?>>Problem Context</option>
                         <option value="long_delay" <?php selected($filter_type, 'long_delay'); ?>>Long Delay</option>
@@ -335,6 +335,7 @@ class FlaggedTickets {
 
     private function flag_badge($type) {
         $map = [
+            'ai_recommended'  => ['AI Flagged',  'warning'],
             'low_score'       => ['Low Score',   'failed'],
             'problem_context' => ['Problem',     'warning'],
             'long_delay'      => ['Long Delay',  'pending'],

@@ -92,7 +92,7 @@ class AllAudits {
             $review_where = " AND ar.id IS NULL";
         }
 
-        // Flag filter
+        // Flag filter — only match flags on the current (latest) audit
         $flag_join = '';
         $flag_where = '';
         if ($filter_flag) {
