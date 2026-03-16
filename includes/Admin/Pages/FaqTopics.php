@@ -160,7 +160,7 @@ class FaqTopics {
                                     <span class="status-badge <?php echo $badge_class; ?>"><?php echo $count; ?>x</span>
                                 </td>
                                 <td style="color:var(--color-text-secondary);font-size:13px;">
-                                    <?php echo $row['last_seen'] ? esc_html(date('M j, Y', strtotime($row['last_seen']))) : '-'; ?>
+                                    <?php echo $row['last_seen'] ? esc_html(wp_date('M j, Y', strtotime($row['last_seen']))) : '-'; ?>
                                 </td>
                                 <td>
                                     <?php if ($row['has_doc']): ?>

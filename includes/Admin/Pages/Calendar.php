@@ -927,8 +927,8 @@ class Calendar {
                                 <tr id="hol-row-<?php echo $h->id; ?>">
                                     <td><?php echo esc_html($h->name); ?></td>
                                     <td><?php
-                                        echo date('M j', strtotime($h->date_start));
-                                        if ($h->date_start !== $h->date_end) echo ' - ' . date('M j', strtotime($h->date_end));
+                                        echo wp_date('M j', strtotime($h->date_start));
+                                        if ($h->date_start !== $h->date_end) echo ' - ' . wp_date('M j', strtotime($h->date_end));
                                     ?></td>
                                     <td><span class="type-badge <?php echo $h->type === 'government' ? 'govt' : 'company'; ?>"><?php echo esc_html(ucfirst($h->type)); ?></span></td>
                                     <td><button class="shift-list-delete" onclick="deleteHoliday(<?php echo $h->id; ?>)" title="Delete">&times;</button></td>
@@ -994,8 +994,8 @@ class Calendar {
                             <tr id="pending-leave-<?php echo $pl->id; ?>">
                                 <td><?php echo esc_html($pl_name); ?></td>
                                 <td><span class="type-badge <?php echo esc_attr($pl->leave_type); ?>"><?php echo esc_html(ucfirst(str_replace('_', ' ', $pl->leave_type))); ?></span></td>
-                                <td><?php echo date('M j', strtotime($pl->date_start)); ?></td>
-                                <td><?php echo date('M j', strtotime($pl->date_end)); ?></td>
+                                <td><?php echo wp_date('M j', strtotime($pl->date_start)); ?></td>
+                                <td><?php echo wp_date('M j', strtotime($pl->date_end)); ?></td>
                                 <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo esc_html($pl->reason ?: '-'); ?></td>
                                 <?php if (!$is_read_only): ?>
                                 <td style="text-align:right;">

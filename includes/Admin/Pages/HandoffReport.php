@@ -178,8 +178,8 @@ class HandoffReport {
                     <tr>
                         <td><strong>#<?php echo esc_html($f->ticket_id); ?></strong></td>
                         <td><?php echo esc_html($name); ?></td>
-                        <td style="color:var(--color-text-tertiary);"><?php echo $f->shift_end ? date('M j, H:i', strtotime($f->shift_end)) : '—'; ?></td>
-                        <td style="color:var(--color-text-tertiary);"><?php echo $f->reassigned_at ? date('M j, H:i', strtotime($f->reassigned_at)) : 'Never'; ?></td>
+                        <td style="color:var(--color-text-tertiary);"><?php echo $f->shift_end ? wp_date('M j, H:i', strtotime($f->shift_end)) : '—'; ?></td>
+                        <td style="color:var(--color-text-tertiary);"><?php echo $f->reassigned_at ? wp_date('M j, H:i', strtotime($f->reassigned_at)) : 'Never'; ?></td>
                         <td class="handoff-bad" style="font-weight:600;"><?php echo $f->gap_hours; ?>h</td>
                         <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html($f->reason); ?></td>
                     </tr>

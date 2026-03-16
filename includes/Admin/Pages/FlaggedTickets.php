@@ -181,7 +181,7 @@ class FlaggedTickets {
                                 </span>
                             </td>
                             <td><?php echo $this->status_badge($f->status); ?></td>
-                            <td style="color:var(--color-text-tertiary);font-size:12px;"><?php echo date('M j, H:i', strtotime($f->created_at)); ?></td>
+                            <td style="color:var(--color-text-tertiary);font-size:12px;"><?php echo wp_date('M j, H:i', strtotime($f->created_at)); ?></td>
                             <td>
                                 <div style="display:flex;gap:4px;">
                                     <a href="<?php echo admin_url('admin.php?page=ai-ops&section=audits&audit_search=' . $f->ticket_id); ?>" class="ops-btn secondary" style="font-size:11px;height:28px;padding:0 8px;" title="View Audit">View</a>
@@ -272,7 +272,7 @@ class FlaggedTickets {
                         <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
                         <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
                         <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j', strtotime($ap->created_at)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
                         <td>
                             <div style="display:flex;gap:6px;align-items:center;">
                                 <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">

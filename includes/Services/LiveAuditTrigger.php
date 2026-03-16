@@ -82,6 +82,12 @@ class LiveAuditTrigger {
         global $wpdb;
         $table = $wpdb->prefix . 'ais_audits';
 
+        // Cancel any failed audits for this ticket — superseded by the new queue entry
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$table} SET status = 'cancelled' WHERE ticket_id = %s AND status = 'failed'",
+            $ticket_id
+        ));
+
         $existing = $this->get_latest_successful_audit($ticket_id);
 
         if ($existing) {
@@ -114,9 +120,9 @@ class LiveAuditTrigger {
         global $wpdb;
         $table = $wpdb->prefix . 'ais_audits';
 
-        // Cancel any pending audits for this ticket
+        // Cancel any pending or failed audits for this ticket
         $wpdb->query($wpdb->prepare(
-            "UPDATE {$table} SET status = 'cancelled' WHERE ticket_id = %s AND status = 'pending'",
+            "UPDATE {$table} SET status = 'cancelled' WHERE ticket_id = %s AND status IN ('pending', 'failed')",
             $ticket_id
         ));
 

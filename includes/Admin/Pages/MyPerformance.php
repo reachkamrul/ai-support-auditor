@@ -248,7 +248,7 @@ class MyPerformance {
                         <td><span class="status-badge <?php echo $f->flag_type === 'low_score' ? 'failed' : ''; ?>"><?php echo esc_html(str_replace('_', ' ', $f->flag_type)); ?></span></td>
                         <td style="font-size:12px;color:var(--color-text-secondary);max-width:300px;"><?php echo esc_html(substr($f->flag_reason, 0, 120)); ?></td>
                         <td><span class="status-badge <?php echo $f->status === 'dismissed' ? 'success' : ($f->status === 'reviewed' ? '' : 'pending'); ?>"><?php echo esc_html($f->status); ?></span></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j', strtotime($f->created_at)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($f->created_at)); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -283,7 +283,7 @@ class MyPerformance {
                         <td style="text-align:center;"><?php echo intval($r->resolution_score); ?></td>
                         <td style="text-align:center;"><?php echo intval($r->communication_score); ?></td>
                         <td style="text-align:center;"><?php echo intval($r->reply_count); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j, g:ia', strtotime($r->created_at)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j, g:ia', strtotime($r->created_at)); ?></td>
                         <td>
                             <button class="ops-btn secondary" style="font-size:11px;padding:2px 10px;height:24px;"
                                 onclick="openAppealModal(<?php echo intval($r->id); ?>, '<?php echo esc_js($r->ticket_id); ?>')">
@@ -338,7 +338,7 @@ class MyPerformance {
             new Chart(document.getElementById('chart-my-trend'), {
                 type: 'line',
                 data: {
-                    labels: <?php echo json_encode(array_map(function($r) { return date('M j', strtotime($r->day)); }, $daily)); ?>,
+                    labels: <?php echo json_encode(array_map(function($r) { return wp_date('M j', strtotime($r->day)); }, $daily)); ?>,
                     datasets: [
                         {
                             label: 'My Score',

@@ -578,7 +578,7 @@ class Analytics {
             };
 
             // Data from PHP
-            var dailyLabels = <?php echo json_encode(array_map(function($r) { return date('M j', strtotime($r->day)); }, $daily_scores)); ?>;
+            var dailyLabels = <?php echo json_encode(array_map(function($r) { return wp_date('M j', strtotime($r->day)); }, $daily_scores)); ?>;
             var dailyOverall = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_score); }, $daily_scores)); ?>;
             var dailyTiming = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_timing); }, $daily_scores)); ?>;
             var dailyResolution = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_resolution); }, $daily_scores)); ?>;
@@ -586,7 +586,7 @@ class Analytics {
             var dailyTickets = <?php echo json_encode(array_map(function($r) { return intval($r->tickets); }, $daily_scores)); ?>;
 
             <?php if ($selected_agent && !empty($agent_daily)): ?>
-            var agentLabels = <?php echo json_encode(array_map(function($r) { return date('M j', strtotime($r->day)); }, $agent_daily)); ?>;
+            var agentLabels = <?php echo json_encode(array_map(function($r) { return wp_date('M j', strtotime($r->day)); }, $agent_daily)); ?>;
             var agentOverall = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_score); }, $agent_daily)); ?>;
             var agentTiming = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_timing); }, $agent_daily)); ?>;
             var agentResolution = <?php echo json_encode(array_map(function($r) { return floatval($r->avg_resolution); }, $agent_daily)); ?>;

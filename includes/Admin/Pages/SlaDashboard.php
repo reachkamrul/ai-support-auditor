@@ -268,7 +268,7 @@ class SlaDashboard {
                         <td><a href="<?php echo esc_url(admin_url('admin.php?page=fluent-support#/tickets/' . intval($wt->ticket_id))); ?>" target="_blank">#<?php echo esc_html($wt->ticket_id); ?></a></td>
                         <td><?php echo esc_html($wt->agent_name ?: $wt->agent_email); ?></td>
                         <td style="text-align:center;"><span class="sla-severity red"><?php echo intval($wt->timing_score); ?></span></td>
-                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(date('M j, g:ia', strtotime($wt->created_at))); ?></td>
+                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(wp_date('M j, g:ia', strtotime($wt->created_at))); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -300,7 +300,7 @@ class SlaDashboard {
                         <td><?php echo esc_html($at->customer_name); ?></td>
                         <td><?php echo esc_html($at->assigned_to); ?></td>
                         <td style="text-align:center;"><span class="sla-severity <?php echo $severity_class; ?>"><?php echo $at->hours_waiting; ?>h</span></td>
-                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(date('M j, g:ia', strtotime($at->last_response))); ?></td>
+                        <td style="color:var(--color-text-secondary);font-size:12px;"><?php echo esc_html(wp_date('M j, g:ia', strtotime($at->last_response))); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -335,7 +335,7 @@ class SlaDashboard {
             new Chart(document.getElementById('chart-sla-trend'), {
                 type: 'line',
                 data: {
-                    labels: <?php echo json_encode(array_map(function($r) { return date('M j', strtotime($r->day)); }, $daily_timing)); ?>,
+                    labels: <?php echo json_encode(array_map(function($r) { return wp_date('M j', strtotime($r->day)); }, $daily_timing)); ?>,
                     datasets: [
                         {
                             label: 'Avg Timing Score',

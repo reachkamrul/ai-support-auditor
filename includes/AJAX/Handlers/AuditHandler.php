@@ -43,10 +43,16 @@ class AuditHandler {
             return;
         }
         
-        // 1. Try to fetch transcript
+        // 1. Cancel any existing failed audits for this ticket (superseded by re-audit)
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$this->database->get_table('audits')} SET status = 'cancelled' WHERE ticket_id = %s AND status = 'failed'",
+            $ticket_id
+        ));
+
+        // 2. Try to fetch transcript
         $transcript = $this->transcript_builder->build($ticket_id);
-        
-        // 2. Create new database record
+
+        // 3. Create new database record
         $wpdb->insert($this->database->get_table('audits'), [
             'ticket_id' => $ticket_id,
             'raw_json' => $transcript ?: '',

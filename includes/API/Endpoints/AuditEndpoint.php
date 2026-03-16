@@ -887,6 +887,17 @@ class AuditEndpoint {
             return;
         }
 
+        // Skip flagging for audits excluded from stats (e.g. test tickets)
+        if (!empty($audit['audit_summary']['exclude_from_stats'])) {
+            return;
+        }
+
+        // Skip flagging for product_limitation/feature_request contexts — not agent failures
+        $context = $audit['audit_summary']['ticket_context'] ?? 'normal';
+        if (in_array($context, ['product_limitation', 'feature_request', 'spam_or_junk', 'admin_action_only'])) {
+            return;
+        }
+
         // PRIMARY: AI-recommended flag — the AI is the judge
         if (!empty($audit['flag_recommendation'])) {
             $flag_rec = $audit['flag_recommendation'];

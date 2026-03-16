@@ -71,9 +71,11 @@ class AllAudits {
         // Count query
         $where = "WHERE 1=1";
         $params = [];
-        if ($filter_status) {
+        if ($filter_status && $filter_status !== 'all') {
             $where .= " AND a.status = %s";
             $params[] = $filter_status;
+        } elseif ($filter_status !== 'all') {
+            $where .= " AND a.status IN ('success', 'failed')";
         }
         if ($filter_search) {
             $where .= " AND (a.ticket_id LIKE %s OR a.audit_response LIKE %s)";
@@ -142,10 +144,12 @@ class AllAudits {
                     <div class="audit-filter-group narrow">
                         <label>Status</label>
                         <select name="audit_status" class="ops-input">
-                            <option value="">All</option>
-                            <option value="pending" <?php selected($filter_status, 'pending'); ?>>Pending</option>
+                            <option value="" <?php selected($filter_status, ''); ?>>Completed</option>
                             <option value="success" <?php selected($filter_status, 'success'); ?>>Success</option>
                             <option value="failed" <?php selected($filter_status, 'failed'); ?>>Failed</option>
+                            <option value="pending" <?php selected($filter_status, 'pending'); ?>>Pending</option>
+                            <option value="processing" <?php selected($filter_status, 'processing'); ?>>Processing</option>
+                            <option value="all" <?php selected($filter_status, 'all'); ?>>All</option>
                         </select>
                     </div>
                     <div class="audit-filter-group narrow">
@@ -338,7 +342,7 @@ class AllAudits {
         while ($next_run < $now) {
             $next_run += $interval;
         }
-        $next_time = date('H:i', $next_run);
+        $next_time = wp_date('H:i', $next_run);
 
         $type_label = 'Full';
         if ($audit_type === 'incremental') $type_label = 'Incremental';
@@ -518,7 +522,7 @@ class AllAudits {
                         <td style="font-size:12px;"><?php echo esc_html($ap->disputed_field ? str_replace('_', ' ', $ap->disputed_field) : 'General'); ?></td>
                         <td style="text-align:center;"><?php echo $ap->current_score !== null ? intval($ap->current_score) : '-'; ?></td>
                         <td style="font-size:12px;color:var(--color-text-secondary);max-width:250px;"><?php echo esc_html(substr($ap->reason, 0, 150)); ?></td>
-                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo date('M j', strtotime($ap->created_at)); ?></td>
+                        <td style="font-size:12px;color:var(--color-text-secondary);"><?php echo wp_date('M j', strtotime($ap->created_at)); ?></td>
                         <td>
                             <div style="display:flex;gap:6px;align-items:center;">
                                 <input type="text" id="appeal-note-<?php echo intval($ap->id); ?>" placeholder="Notes..." style="height:28px;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0 8px;font-size:11px;flex:1;">

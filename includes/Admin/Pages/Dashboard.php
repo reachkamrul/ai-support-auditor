@@ -276,7 +276,7 @@ class Dashboard {
                                 <td><strong>#<?php echo esc_html($ft->ticket_id); ?></strong></td>
                                 <td><?php echo $this->flag_badge($ft->flag_type); ?></td>
                                 <td><span class="col-score <?php echo self::score_class(intval($ft->overall_score)); ?>"><?php echo intval($ft->overall_score); ?></span></td>
-                                <td style="color:var(--color-text-tertiary);"><?php echo date('M j', strtotime($ft->created_at)); ?></td>
+                                <td style="color:var(--color-text-tertiary);"><?php echo wp_date('M j', strtotime($ft->created_at)); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -374,7 +374,7 @@ class Dashboard {
                                 ?>
                                 <span class="status-badge <?php echo $sc; ?>"><?php echo esc_html($s); ?></span>
                             </td>
-                            <td style="color:var(--color-text-tertiary);"><?php echo date('M j, Y H:i', strtotime($audit->created_at)); ?></td>
+                            <td style="color:var(--color-text-tertiary);"><?php echo wp_date('M j, Y H:i', strtotime($audit->created_at)); ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>

@@ -1323,7 +1323,7 @@ class AgentPerformance {
                 <?php foreach ($tickets as $ticket): ?>
                     <tr class="agent-row">
                         <td><strong style="color:var(--color-text-primary);">#<?php echo esc_html($ticket->ticket_id); ?></strong></td>
-                        <td style="color:var(--color-text-secondary);"><?php echo date('Y-m-d', strtotime($ticket->created_at)); ?></td>
+                        <td style="color:var(--color-text-secondary);"><?php echo wp_date('Y-m-d', strtotime($ticket->created_at)); ?></td>
                         <td class="score-cell">
                         <?php
                         $score = intval($ticket->overall_agent_score);

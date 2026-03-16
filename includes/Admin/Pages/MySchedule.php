@@ -407,8 +407,8 @@ class MySchedule {
                             <?php foreach ($comp_offs as $c): ?>
                             <tr>
                                 <td style="font-size:12px;"><?php echo esc_html($c->holiday_name ?: 'Holiday'); ?></td>
-                                <td style="font-size:12px;"><?php echo !empty($c->date) ? date('D, M j', strtotime($c->date)) : '<em style="color:var(--color-text-tertiary);">N/A</em>'; ?></td>
-                                <td style="font-size:12px;"><?php echo $c->comp_off_date ? date('D, M j', strtotime($c->comp_off_date)) : '<em style="color:var(--color-text-tertiary);">Not scheduled</em>'; ?></td>
+                                <td style="font-size:12px;"><?php echo !empty($c->date) ? wp_date('D, M j', strtotime($c->date)) : '<em style="color:var(--color-text-tertiary);">N/A</em>'; ?></td>
+                                <td style="font-size:12px;"><?php echo $c->comp_off_date ? wp_date('D, M j', strtotime($c->comp_off_date)) : '<em style="color:var(--color-text-tertiary);">Not scheduled</em>'; ?></td>
                                 <td><span class="compoff-badge <?php echo esc_attr($c->comp_off_status ?: 'pending'); ?>"><?php echo esc_html(ucfirst($c->comp_off_status ?: 'pending')); ?></span></td>
                             </tr>
                             <?php endforeach; ?>

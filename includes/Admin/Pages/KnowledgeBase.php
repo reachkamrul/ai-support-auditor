@@ -119,7 +119,7 @@ class KnowledgeBase {
                                     <?php echo count($docs_by_product[$product] ?? []); ?>
                                 </td>
                                 <td style="font-size:12px;color:var(--color-text-tertiary);">
-                                    <?php echo !empty($info['last_import']) ? date('M j, g:ia', strtotime($info['last_import'])) : '—'; ?>
+                                    <?php echo !empty($info['last_import']) ? wp_date('M j, g:ia', strtotime($info['last_import'])) : '—'; ?>
                                 </td>
                                 <td style="text-align:right;">
                                     <button class="ops-btn secondary" style="font-size:11px;height:26px;padding:0 10px;" onclick="syncSitemap('<?php echo esc_attr($product); ?>', '<?php echo esc_url($info['url']); ?>')">
@@ -250,7 +250,7 @@ class KnowledgeBase {
                                     <span class="status-badge failed" style="font-size:10px;">Doc Update</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="font-size:12px;color:var(--color-text-tertiary);"><?php echo $gap['last_seen'] ? date('M j', strtotime($gap['last_seen'])) : '—'; ?></td>
+                            <td style="font-size:12px;color:var(--color-text-tertiary);"><?php echo $gap['last_seen'] ? wp_date('M j', strtotime($gap['last_seen'])) : '—'; ?></td>
                             <td>
                                 <?php if ($gap['doc_match']): ?>
                                     <span class="kb-gap-covered" title="<?php echo esc_attr($gap['doc_match']); ?>">Covered</span>
